@@ -7,7 +7,7 @@ keeping. What more do we need?
 ## Running the project
 
 For debug:
-1. Clone this repo to `git clone ~/puda-pos`
+1. Clone this repo to `~/puda-pos`
 1. `cd ~/puda-pos/backend/pos` to get into the Django directory
 1. `pipenv install` to install the dependencies (a virtualenv will be created
 in your `~/.local/share/virtualenvs` folder. (You need to have dependencies
