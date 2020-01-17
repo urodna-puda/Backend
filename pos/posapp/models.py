@@ -23,6 +23,7 @@ class Unit(models.Model):
     group = models.ForeignKey(UnitGroup, on_delete=models.PROTECT)
     name = models.CharField(max_length=256, null=False)
     symbol = models.CharField(max_length=16, null=False)
+    ratio = models.FloatField()
 
 
 class Item(models.Model):
@@ -71,6 +72,7 @@ class ProductInTicket(models.Model):
     preparingAt = models.DateTimeField(null=True, blank=True)
     preparedAt = models.DateTimeField(null=True, blank=True)
     servedAt = models.DateTimeField(null=True, blank=True)
+    note = models.TextField(null=True)
 
 
 class Currency(models.Model):
