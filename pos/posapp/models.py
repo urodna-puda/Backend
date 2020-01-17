@@ -38,7 +38,7 @@ class ItemInProduct(models.Model):
     amount = models.FloatField()
 
 
-class Ticket(models.Model):
+class Tab(models.Model):
     OPEN = 'O'
     PAID = 'P'
     ORDER_STATES = [
@@ -47,13 +47,13 @@ class Ticket(models.Model):
     ]
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
     name = models.CharField(max_length=256, null=False)
-    products = models.ManyToManyField(Product, through="ProductInTicket")
+    products = models.ManyToManyField(Product, through="ProductInTab")
     state = models.CharField(max_length=1, choices=ORDER_STATES, default=OPEN)
     openedAt = models.DateTimeField(auto_now_add=True)
     closedAt = models.DateTimeField(null=True, blank=True)
 
 
-class ProductInTicket(models.Model):
+class ProductInTab(models.Model):
     ORDERED = 'O'
     PREPARING = 'P'
     TO_SERVE = 'T'
@@ -65,7 +65,7 @@ class ProductInTicket(models.Model):
         (SERVED, "Served"),
     ]
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
-    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE)
+    tab = models.ForeignKey(Tab, on_delete=models.CASCADE)
     state = models.CharField(max_length=1, choices=SERVING_STATES, default=ORDERED)
     price = models.DecimalField(max_digits=15, decimal_places=3)
     orderedAt = models.DateTimeField(auto_now_add=True)
@@ -99,7 +99,7 @@ class Order(models.Model):
         (PAID, "Paid"),
     ]
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
-    ticket = models.OneToOneField(Ticket, on_delete=models.PROTECT, related_name="order")
+    tab = models.OneToOneField(Tab, on_delete=models.PROTECT, related_name="order")
     state = models.CharField(max_length=1, choices=ORDER_STATES, default=CREATED)
     createdAt = models.DateTimeField(auto_now_add=True)
     payments = models.ManyToManyField(PaymentMethod, through="PaymentInOrder")
