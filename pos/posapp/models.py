@@ -6,14 +6,6 @@ from django_countries.fields import CountryField
 
 # Create your models here.
 
-class Product(models.Model):
-    id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
-    name = models.CharField(max_length=1024, null=False)
-    price = models.DecimalField(max_digits=15, decimal_places=3)
-
-    def __str__(self):
-        return self.name
-
 
 class UnitGroup(models.Model):
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
@@ -44,10 +36,23 @@ class Item(models.Model):
         return self.name
 
 
+class Product(models.Model):
+    id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
+    name = models.CharField(max_length=1024, null=False)
+    price = models.DecimalField(max_digits=15, decimal_places=3)
+    items = models.ManyToManyField(Item, through="ItemInProduct")
+
+    def __str__(self):
+        return self.name
+
+
 class ItemInProduct(models.Model):
     item = models.ForeignKey(Item, on_delete=models.PROTECT)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     amount = models.FloatField()
+
+    class Meta:
+        verbose_name_plural = "Items in products"
 
     def __str__(self):
         return f"{self.item} in {self.product}"
@@ -97,7 +102,10 @@ class ProductInTab(models.Model):
     preparingAt = models.DateTimeField(null=True, blank=True)
     preparedAt = models.DateTimeField(null=True, blank=True)
     servedAt = models.DateTimeField(null=True, blank=True)
-    note = models.TextField(null=True)
+    note = models.TextField(null=True, blank=True)
+
+    class Meta:
+        verbose_name_plural = "Products in tabs"
 
     def __str__(self):
         return f"{self.product} in {self.tab}"
@@ -111,6 +119,9 @@ class Currency(models.Model):
     subunit = models.CharField(max_length=1024, null=False)
     ratio = models.FloatField(default=1)
     enabled = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name_plural = "Currencies"
 
     def __str__(self):
         return self.name
@@ -146,6 +157,9 @@ class PaymentInOrder(models.Model):
     method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT)
     order = models.ForeignKey(Order, on_delete=models.PROTECT)
     amount = models.DecimalField(max_digits=15, decimal_places=3)
+
+    class Meta:
+        verbose_name_plural = "Payments in orders"
 
     def __str__(self):
         return f"Payment of {self.method.currency.symbol}{self.amount} via {self.method} for {self.order}"
