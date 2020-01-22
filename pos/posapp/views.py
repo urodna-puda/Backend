@@ -2,7 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 
 # Create your views here.
-from posapp.models import Tab, ProductInTab
+from posapp.models import Tab, ProductInTab, Product
 
 
 def prepare_context(page):
@@ -81,6 +81,12 @@ def waiter_tabs(request):
         tabs.append(out)
 
     context['tabs'] = tabs
+    context['products'] = []
+    for product in Product.objects.all():
+        context['products'].append({
+            'id': product.id,
+            'name': product.name,
+        })
     return render(request, template_name="waiter/tabs.html", context=context)
 
 

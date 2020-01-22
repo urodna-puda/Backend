@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import uuid4
 
 from django.db import models
@@ -87,8 +88,28 @@ class Tab(models.Model):
             sum += product.price
         return sum
 
-    def order_product(self, product, count, notes):
-        pass
+    def order_product(self, product, count, note, state):
+        for i in range(count):
+            new = ProductInTab()
+            new.product = product
+            new.tab = self
+            new.price = product.price
+            new.note = note
+            new.state = state
+
+            time = datetime.now()
+
+            if state == ProductInTab.SERVED:
+                new.preparingAt = time
+                new.preparedAt = time
+                new.servedAt = time
+            elif state == ProductInTab.TO_SERVE:
+                new.preparingAt = time
+                new.preparedAt = time
+            elif state == ProductInTab.PREPARING:
+                new.preparingAt = time
+
+            new.save()
 
 
 class ProductInTab(models.Model):
