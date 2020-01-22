@@ -3,13 +3,15 @@ from django.shortcuts import render, redirect
 
 # Create your views here.
 from posapp.models import Tab, ProductInTab, Product
+from posapp.security import waiter_login_required, manager_login_required
 
 
-def prepare_context(page):
+def prepare_context(request):
     return {
-        'page': page,
-        'waiter_role': True,
-        'manager_role': True,
+        'page': request.get_full_path()[1:],
+        'waiter_role': request.user.is_waiter,
+        'manager_role': request.user.is_manager,
+        'staff_role': request.user.is_staff,
     }
 
 
@@ -18,9 +20,9 @@ def index(request):
     return redirect("waiter/tabs")
 
 
-@login_required
+@waiter_login_required
 def waiter_tabs(request):
-    context = prepare_context("waiter/tabs")
+    context = prepare_context(request)
     tabs = []
     tabs_list = Tab.objects.filter(state=Tab.OPEN)
     for tab in tabs_list:
@@ -90,19 +92,19 @@ def waiter_tabs(request):
     return render(request, template_name="waiter/tabs.html", context=context)
 
 
-@login_required
+@waiter_login_required
 def waiter_orders(request):
-    context = prepare_context("waiter/orders")
+    context = prepare_context(request)
     return render(request, template_name="waiter/orders.html", context=context)
 
 
-@login_required
+@manager_login_required
 def manager_waiters_overview(request):
-    context = prepare_context("manager/waiters/overview")
+    context = prepare_context(request)
     return render(request, template_name="manager/waiters/overview.html", context=context)
 
 
-@login_required
+@manager_login_required
 def manager_waiters_assign(request):
-    context = prepare_context("manager/waiters/assign")
+    context = prepare_context(request)
     return render(request, template_name="manager/waiters/assign.html", context=context)
