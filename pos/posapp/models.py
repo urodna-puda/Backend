@@ -1,6 +1,7 @@
 from datetime import datetime
 from uuid import uuid4
 
+from django.contrib.auth.models import User
 from django.db import models
 from django_countries.fields import CountryField
 
@@ -70,7 +71,7 @@ class Tab(models.Model):
     name = models.CharField(max_length=256, null=False)
     products = models.ManyToManyField(Product, through="ProductInTab")
     state = models.CharField(max_length=1, choices=ORDER_STATES, default=OPEN)
-    openedAt = models.DateTimeField(auto_now_add=True)
+    openedAt = models.DateTimeField(editable=False, auto_now_add=True)
     closedAt = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -127,7 +128,7 @@ class ProductInTab(models.Model):
     tab = models.ForeignKey(Tab, on_delete=models.CASCADE)
     state = models.CharField(max_length=1, choices=SERVING_STATES, default=ORDERED)
     price = models.DecimalField(max_digits=15, decimal_places=3)
-    orderedAt = models.DateTimeField(auto_now_add=True)
+    orderedAt = models.DateTimeField(editable=False, auto_now_add=True)
     preparingAt = models.DateTimeField(null=True, blank=True)
     preparedAt = models.DateTimeField(null=True, blank=True)
     servedAt = models.DateTimeField(null=True, blank=True)
@@ -165,6 +166,23 @@ class PaymentMethod(models.Model):
         return self.name
 
 
+class Till(models.Model):
+    OPEN = 'O'
+    COUNTED = 'C'
+    TILL_STATES = [
+        (OPEN, "Open"),
+        (COUNTED, "Counted"),
+    ]
+    id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
+    cashiers = models.ManyToManyField(User, related_name="tills_owned")
+    changePaymentMethod = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT, related_name="tillsAsChange")
+    paymentMethods = models.ManyToManyField(PaymentMethod)
+    openedAt = models.DateTimeField(editable=False, auto_now_add=True)
+    countedAt = models.DateTimeField(null=True, blank=True)
+    countedBy = models.ForeignKey(User, on_delete=models.PROTECT, related_name="tills_counted")
+    state = models.CharField(max_length=1, choices=TILL_STATES, default=OPEN)
+
+
 class Order(models.Model):
     CREATED = 'C'
     PAID = 'P'
@@ -177,6 +195,7 @@ class Order(models.Model):
     state = models.CharField(max_length=1, choices=ORDER_STATES, default=CREATED)
     createdAt = models.DateTimeField(auto_now_add=True)
     payments = models.ManyToManyField(PaymentMethod, through="PaymentInOrder")
+    till = models.ForeignKey(Till, on_delete=models.PROTECT)
 
     def __str__(self):
         return f"Order of tab {self.tab}"
