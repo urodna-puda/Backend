@@ -10,6 +10,7 @@ django = "*"
 psycopg2 = "*"
 gunicorn = "*"
 django-countries = "*"
+djangorestframework = "*"
 
 [requires]
 python_version = "3.8"

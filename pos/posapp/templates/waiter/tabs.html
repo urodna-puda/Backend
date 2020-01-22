@@ -1,0 +1,94 @@
+{% extends "_base.html" %}
+
+{% block page_name %}
+    <i class="fas fa-receipt"></i>
+    Tabs
+{% endblock %}
+
+{% block no_description %}{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item" aria-current="page"><a href="/">Home</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="/waiter">Waiter</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Tabs</li>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-6"></div>
+            <div class="col-6">
+                <div class="float-right">
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-success">
+                            <i class="fas fa-plus"></i>
+                            Add
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-columns">
+            {% for tab in tabs %}
+                <div class="card card-default bg-light">
+                    <h5 class="card-header">
+                        {{ tab.name }}
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-toggle="tooltip" data-placement="top"
+                                    title="Order">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button type="button" class="btn btn-tool" data-toggle="tooltip" data-placement="top"
+                                    title="Pay">
+                                <i class="fas fa-coins"></i>
+                            </button>
+                        </div>
+                    </h5>
+                    <ul class="list-group list-group-flush">
+                        {% for product in tab.products %}
+                            {% for variant in product.variants %}
+                                <li class="list-group-item">
+                                    <div class="row">
+                                        <div class="col-6">{{ product.name }}</div>
+                                        <div class="col-6">
+                                            <div class="float-right">
+                                                {% if variant.showServed %}
+                                                <span class="badge badge-success" data-toggle="tooltip"
+                                                      data-placement="top"
+                                                      title="Finished">{{ variant.servedCount }}</span>
+                                                {% endif %}
+                                                {% if variant.showToServe %}
+                                                <span class="badge badge-info" data-toggle="tooltip"
+                                                      data-placement="top"
+                                                      title="To be served">{{ variant.toServeCount }}</span>
+                                                {% endif %}
+                                                {% if variant.showPreparing %}
+                                                <span class="badge badge-secondary" data-toggle="tooltip"
+                                                      data-placement="top"
+                                                      title="In preparation">{{ variant.preparingCount }}</span>
+                                                {% endif %}
+                                                {% if variant.showOrdered %}
+                                                <span class="badge badge-warning" data-toggle="tooltip"
+                                                      data-placement="top"
+                                                      title="Waiting">{{ variant.orderedCount }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                    <div class="card-footer">
+                        <div class="row">
+                            <h5 class="col-6">Total</h5>
+                            <div class="col-6">
+                                <h5 class="float-right">{{ tab.total }}</h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

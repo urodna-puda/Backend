@@ -72,6 +72,11 @@ class Tab(models.Model):
     openedAt = models.DateTimeField(auto_now_add=True)
     closedAt = models.DateTimeField(null=True, blank=True)
 
+    class Meta:
+        permissions = [
+            ("order_product", "Can order a product")
+        ]
+
     def __str__(self):
         return self.name
 
@@ -81,6 +86,9 @@ class Tab(models.Model):
         for product in ProductInTab.objects.filter(tab=self):
             sum += product.price
         return sum
+
+    def order_product(self, product, count, notes):
+        pass
 
 
 class ProductInTab(models.Model):

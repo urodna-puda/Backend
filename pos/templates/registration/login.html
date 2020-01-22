@@ -1,0 +1,12 @@
+{% extends "adminlte/login.html" %}
+{% load static %}
+
+{% block logo_href %}/{% endblock %}
+{% block logo_text %}<img src="{% static 'posapp/dist/img/logo.svg' %}" style="width:100%;"/>{% endblock %}
+
+{% block form %}
+    <form method="post">
+        {% csrf_token %}
+        {{ form }}
+    </form>
+{% endblock %}

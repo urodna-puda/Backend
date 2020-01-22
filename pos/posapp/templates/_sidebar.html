@@ -1,0 +1,63 @@
+{% extends "adminlte/lib/_main_sidebar.html" %}
+{% load static %}
+{% load sidebar %}
+
+{% block brand_img_src %}
+    {% static "posapp/dist/img/logo.svg" %}
+{% endblock %}
+
+{% block brand_img_alt %}
+    ÚRODNÁ PŮDA
+{% endblock %}
+
+{% block brand_text %}
+    PUDA POS
+{% endblock %}
+
+{% block nav_links_ul %}
+    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+        {% if waiter_role %}
+            <li class="nav-header">Waiter tasks</li>
+            <li class="nav-item">
+                <a href="{% url "waiter/tabs" %}" class="nav-link {% isactive page "waiter/tabs" %}">
+                    <i class="nav-icon fas fa-receipt"></i>
+                    <p>Tabs</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url "waiter/orders" %}" class="nav-link {% isactive page "waiter/orders" %}">
+                    <i class="nav-icon fas fa-beer"></i>
+                    <p>Orders</p>
+                </a>
+            </li>
+        {% endif %}
+        {% if manager_role %}
+            <li class="nav-header">Manager tasks</li>
+            <li class="nav-item has-treeview {% isopen page "manager/waiters" %}">
+                <a href="{% url "manager/waiters" %}" class="nav-link {% isactive page "manager/waiters" %}">
+                    <i class="nav-icon fas fa-users-cog"></i>
+                    <p>
+                        Waiters
+                        <i class="right fas fa-angle-left"></i>
+                    </p>
+                </a>
+                <ul class="nav nav-treeview">
+                    <li class="nav-item">
+                        <a href="{% url "manager/waiters/overview" %}"
+                           class="nav-link {% isactive page "manager/waiters/overview" %}">
+                            <i class="nav-icon fas fa-users"></i>
+                            <p>Overview</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url "manager/waiters/assign" %}"
+                           class="nav-link {% isactive page "manager/waiters/assign" %}">
+                            <i class="nav-icon fas fa-user-plus"></i>
+                            <p>Assign</p>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+        {% endif %}
+    </ul>
+{% endblock %}
