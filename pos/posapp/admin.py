@@ -13,6 +13,28 @@ class UserChangeForm(BaseUserChangeForm):
 
 class UserAdmin(BaseUserAdmin):
     form = UserChangeForm
+    list_display = BaseUserAdmin.list_display + ('is_waiter', 'is_manager',)
+    actions = BaseUserAdmin.actions + ['make_waiter', 'make_manager', 'strip_waiter', 'strip_manager',]
+
+    def make_waiter(self, request, queryset):
+        queryset.update(is_waiter=True)
+
+    make_waiter.short_description = 'Make waiter'
+
+    def make_manager(self, request, queryset):
+        queryset.update(is_manager=True)
+
+    make_manager.short_description = 'Make manager'
+
+    def strip_waiter(self, request, queryset):
+        queryset.update(is_waiter=False)
+
+    strip_waiter.short_description = 'Make not waiter'
+
+    def strip_manager(self, request, queryset):
+        queryset.update(is_manager=False)
+
+    strip_manager.short_description = 'Make not manager'
 
     fieldsets = BaseUserAdmin.fieldsets + (
         ("POS Abilities", {'fields': ('is_waiter', 'is_manager')}),
