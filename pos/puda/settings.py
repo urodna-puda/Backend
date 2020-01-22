@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'posapp',
     'django_countries',
+    'rest_framework',
     'adminlte3',
     'adminlte3_theme',
     'django.contrib.admin',
