@@ -128,3 +128,5 @@ STATIC_ROOT = 'static'
 
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
+
+AUTH_USER_MODEL = 'posapp.User'

@@ -1,9 +1,23 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.forms import UserChangeForm as BaseUserChangeForm
 
 from posapp.models import *
 
 
 # Register your models here.
+class UserChangeForm(BaseUserChangeForm):
+    class Meta(BaseUserChangeForm.Meta):
+        model = User
+
+
+class UserAdmin(BaseUserAdmin):
+    form = UserChangeForm
+
+    fieldsets = BaseUserAdmin.fieldsets + (
+        ("POS Abilities", {'fields': ('is_waiter', 'is_manager')}),
+    )
+
 
 class ProductItemInline(admin.TabularInline):
     verbose_name = "item in product"
@@ -120,6 +134,7 @@ class PaymentInOrderAdmin(admin.ModelAdmin):
     ordering = ['order', 'method', 'amount']
 
 
+admin.site.register(User, UserAdmin)
 admin.site.register(Product, ProductAdmin)
 admin.site.register(UnitGroup, UnitGroupAdmin)
 admin.site.register(Unit, UnitAdmin)

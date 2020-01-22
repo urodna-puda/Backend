@@ -17,3 +17,4 @@ python_version = "3.8"
 
 [scripts]
 startweb = "python manage.py runserver 0.0.0.0:8000"
+django = "python manage.py"

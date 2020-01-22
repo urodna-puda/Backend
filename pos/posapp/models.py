@@ -1,12 +1,18 @@
 from datetime import datetime
 from uuid import uuid4
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django_countries.fields import CountryField
 
 
 # Create your models here.
+
+class User(AbstractUser):
+    is_waiter = models.BooleanField(default=False)
+    is_manager = models.BooleanField(default=False)
+    current_till = models.ForeignKey("Till", null=True, on_delete=models.SET_NULL)
+    current_temp_tab = models.ForeignKey("Tab", null=True, on_delete=models.SET_NULL)
 
 
 class UnitGroup(models.Model):
@@ -174,12 +180,13 @@ class Till(models.Model):
         (COUNTED, "Counted"),
     ]
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
-    cashiers = models.ManyToManyField(User, related_name="tills_owned")
+    cashiers = models.ManyToManyField(User, related_name="tills_owned", limit_choices_to={"pudaUser.is_cashier": True})
     changePaymentMethod = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT, related_name="tillsAsChange")
     paymentMethods = models.ManyToManyField(PaymentMethod)
     openedAt = models.DateTimeField(editable=False, auto_now_add=True)
     countedAt = models.DateTimeField(null=True, blank=True)
-    countedBy = models.ForeignKey(User, on_delete=models.PROTECT, related_name="tills_counted")
+    countedBy = models.ForeignKey(User, on_delete=models.PROTECT, related_name="tills_counted",
+                                  limit_choices_to={"pudaUser.is_manager": True})
     state = models.CharField(max_length=1, choices=TILL_STATES, default=OPEN)
 
 
