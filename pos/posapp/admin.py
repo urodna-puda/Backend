@@ -1,12 +1,15 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import UserChangeForm as BaseUserChangeForm
+from phonenumber_field import formfields, widgets
 
 from posapp.models import *
 
 
 # Register your models here.
 class UserChangeForm(BaseUserChangeForm):
+    mobile_phone = formfields.PhoneNumberField(widget=widgets.PhoneNumberInternationalFallbackWidget)
+
     class Meta(BaseUserChangeForm.Meta):
         model = User
 
@@ -14,7 +17,7 @@ class UserChangeForm(BaseUserChangeForm):
 class UserAdmin(BaseUserAdmin):
     form = UserChangeForm
     list_display = BaseUserAdmin.list_display + ('is_waiter', 'is_manager',)
-    actions = BaseUserAdmin.actions + ['make_waiter', 'make_manager', 'strip_waiter', 'strip_manager',]
+    actions = BaseUserAdmin.actions + ['make_waiter', 'make_manager', 'strip_waiter', 'strip_manager', ]
 
     def make_waiter(self, request, queryset):
         queryset.update(is_waiter=True)
@@ -37,7 +40,8 @@ class UserAdmin(BaseUserAdmin):
     strip_manager.short_description = 'Make not manager'
 
     fieldsets = BaseUserAdmin.fieldsets + (
-        ("POS Abilities", {'fields': ('is_waiter', 'is_manager')}),
+        ("POS Abilities", {'fields': ('is_waiter', 'is_manager', 'is_admin',)}),
+        ("Contact info", {'fields': ('mobile_phone',)})
     )
 
 

@@ -9,8 +9,8 @@
 {% block no_description %}{% endblock %}
 
 {% block breadcrumbs %}
-    <li class="breadcrumb-item" aria-current="page"><a href="/">Home</a></li>
-    <li class="breadcrumb-item" aria-current="page"><a href="/waiter">Waiter</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "waiter" %}">Waiter</a></li>
     <li class="breadcrumb-item active" aria-current="page">Tabs</li>
 {% endblock %}
 

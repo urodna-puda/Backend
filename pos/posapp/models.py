@@ -4,6 +4,7 @@ from uuid import uuid4
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django_countries.fields import CountryField
+from phonenumber_field.modelfields import PhoneNumberField
 
 
 # Create your models here.
@@ -11,8 +12,14 @@ from django_countries.fields import CountryField
 class User(AbstractUser):
     is_waiter = models.BooleanField(default=False)
     is_manager = models.BooleanField(default=False)
+    is_admin = models.BooleanField(default=False)
     current_till = models.ForeignKey("Till", null=True, on_delete=models.SET_NULL)
     current_temp_tab = models.ForeignKey("Tab", null=True, on_delete=models.SET_NULL)
+    mobile_phone = PhoneNumberField()
+
+    @property
+    def requires_admin_to_toggle(self):
+        return self.is_manager or self.is_admin
 
 
 class UnitGroup(models.Model):

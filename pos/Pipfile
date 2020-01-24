@@ -11,6 +11,8 @@ psycopg2 = "*"
 gunicorn = "*"
 django-countries = "*"
 djangorestframework = "*"
+django-phonenumber-field = "*"
+phonenumbers = "*"
 
 [requires]
 python_version = "3.8"

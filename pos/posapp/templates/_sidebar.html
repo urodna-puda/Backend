@@ -34,26 +34,79 @@
         {% if manager_role %}
             <li class="nav-header">Manager tasks</li>
             <li class="nav-item has-treeview {% isopen page "manager/waiters" %}">
-                <a href="{% url "manager/waiters" %}" class="nav-link {% isactive page "manager/waiters" %}">
+                <a href="{% url "manager/users" %}" class="nav-link {% isactive page "manager/users" %}">
                     <i class="nav-icon fas fa-users-cog"></i>
                     <p>
-                        Waiters
+                        Users
                         <i class="right fas fa-angle-left"></i>
                     </p>
                 </a>
                 <ul class="nav nav-treeview">
                     <li class="nav-item">
-                        <a href="{% url "manager/waiters/overview" %}"
-                           class="nav-link {% isactive page "manager/waiters/overview" %}">
+                        <a href="{% url "manager/users/overview" %}"
+                           class="nav-link {% isactive page "manager/users/overview" %}">
                             <i class="nav-icon fas fa-users"></i>
                             <p>Overview</p>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{% url "manager/waiters/assign" %}"
-                           class="nav-link {% isactive page "manager/waiters/assign" %}">
+                        <a href="{% url "manager/users/create" %}"
+                           class="nav-link {% isactive page "manager/users/create" %}">
                             <i class="nav-icon fas fa-user-plus"></i>
-                            <p>Assign</p>
+                            <p>Create</p>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <li class="nav-item has-treeview {% isopen page "manager/tills" %}">
+                <a href="{% url "manager/tills" %}" class="nav-link {% isactive page "manager/tills" %}">
+                    <i class="nav-icon fas fa-cash-register"></i>
+                    <p>
+                        Tills
+                        <i class="right fas fa-angle-left"></i>
+                    </p>
+                </a>
+                <ul class="nav nav-treeview">
+                    <li class="nav-item">
+                        <a href="{% url "manager/tills/overview" %}"
+                           class="nav-link {% isactive page "manager/tills/overview" %}">
+                            <i class="nav-icon fas fa-table"></i>
+                            <p>Overview</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url "manager/tills/create" %}"
+                           class="nav-link {% isactive page "manager/tills/create" %}">
+                            <i class="nav-icon fas fa-plus-square"></i>
+                            <p>Create</p>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+        {% endif %}
+        {% if admin_role %}
+            <li class="nav-header">Staff tasks</li>
+            <li class="nav-item has-treeview {% isopen page "admin/finance" %}">
+                <a href="{% url "admin/finance" %}" class="nav-link {% isactive page "admin/finance" %}">
+                    <i class="nav-icon fas fa-coins"></i>
+                    <p>
+                        Finance
+                        <i class="right fas fa-angle-left"></i>
+                    </p>
+                </a>
+                <ul class="nav nav-treeview">
+                    <li class="nav-item">
+                        <a href="{% url "admin/finance/currencies" %}"
+                           class="nav-link {% isactive page "admin/finance/currencies" %}">
+                            <i class="nav-icon fas fa-euro-sign"></i>
+                            <p>Currencies</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url "admin/finance/methods" %}"
+                           class="nav-link {% isactive page "admin/finance/methods" %}">
+                            <i class="nav-icon fas fa-money-check-alt"></i>
+                            <p>Payment methods</p>
                         </a>
                     </li>
                 </ul>
