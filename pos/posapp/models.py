@@ -179,11 +179,34 @@ class PaymentMethod(models.Model):
         return self.name
 
 
+class Deposit(models.Model):
+    id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
+    name = models.CharField(max_length=1024, null=False)
+    values = models.ManyToManyField(PaymentMethod, through="DepositValue")
+
+    def __str__(self):
+        return self.name
+
+
+class DepositValue(models.Model):
+    method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT)
+    deposit = models.ForeignKey(Deposit, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=15, decimal_places=3)
+
+    class Meta:
+        verbose_name_plural = "Deposit values"
+
+    def __str__(self):
+        return f"{self.method.currency.symbol}{self.amount} via {self.method} in deposit {self.deposit}"
+
+
 class Till(models.Model):
     OPEN = 'O'
+    STOPPED = 'S'
     COUNTED = 'C'
     TILL_STATES = [
         (OPEN, "Open"),
+        (STOPPED, "Stopped"),
         (COUNTED, "Counted"),
     ]
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
@@ -195,6 +218,7 @@ class Till(models.Model):
     countedBy = models.ForeignKey(User, on_delete=models.PROTECT, related_name="tills_counted",
                                   limit_choices_to={"pudaUser.is_manager": True})
     state = models.CharField(max_length=1, choices=TILL_STATES, default=OPEN)
+    deposit = models.ForeignKey(Deposit, on_delete=models.PROTECT)
 
 
 class Order(models.Model):

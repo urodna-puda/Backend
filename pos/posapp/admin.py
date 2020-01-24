@@ -138,6 +138,18 @@ class PaymentMethodAdmin(admin.ModelAdmin):
     ordering = ['name']
 
 
+class DepositValueInline(admin.TabularInline):
+    verbose_name = "Value"
+    verbose_name_plural = "Values"
+    model = DepositValue
+    extra = 2
+
+
+class DepositAdmin(admin.ModelAdmin):
+    list_display = ['name']
+    inlines = [DepositValueInline]
+
+
 class OrderPaymentInline(admin.TabularInline):
     verbose_name = "Payment in order"
     verbose_name_plural = "Payments in order"
@@ -170,5 +182,6 @@ admin.site.register(Tab, TabAdmin)
 # admin.site.register(ProductInTab, ProductInTabAdmin)
 admin.site.register(Currency, CurrencyAdmin)
 admin.site.register(PaymentMethod, PaymentMethodAdmin)
+admin.site.register(Deposit, DepositAdmin)
 admin.site.register(Order, OrderAdmin)
 # admin.site.register(PaymentInOrder, PaymentInOrderAdmin)
