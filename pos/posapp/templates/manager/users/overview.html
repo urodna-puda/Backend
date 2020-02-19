@@ -175,6 +175,8 @@
                     body: 'For security reasons, you can\'t change your own roles. Ask someone else to do it for you.',
                     title: 'You can\'t change yourself',
                     icon: 'text-warning fas fa-exclamation-triangle fa-lg',
+                    autohide: true,
+                    delay: 5000,
                 });
                 return;
             }
@@ -191,12 +193,16 @@
                             body: result.message,
                             title: 'User updated',
                             icon: 'text-success fas fa-check fa-lg',
+                            autohide: true,
+                            delay: 5000,
                         })
                     } else {
                         $(document).Toasts('create', {
                             body: result.error,
                             title: 'User update failed',
                             icon: 'text-danger fas fa-times fa-lg',
+                            autohide: true,
+                            delay: 5000,
                         })
                     }
                 });
@@ -205,6 +211,8 @@
                     body: 'A manager can only give user waiter role. He may not promote or demote managers, admins or enable/disable them.',
                     title: 'You can\'t do this',
                     icon: 'text-warning fas fa-exclamation-triangle fa-lg',
+                    autohide: true,
+                    delay: 5000,
                 })
             }
         }
