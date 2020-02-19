@@ -1,0 +1,305 @@
+{% extends "_base.html" %}
+{% load generic %}
+
+{% block page_name %}
+    <i class="fas fa-table"></i>
+    Tills overview
+{% endblock %}
+
+{% block no_description %}{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager" %}">Manager</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager/tills" %}">Tills</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Overview</li>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-12 col-sm-12">
+                <div class="card">
+                    <div class="card-header border-0">
+                        <h2 class="card-title">
+                            <i class="fas fa-hand-holding-usd"></i>
+                            Open tills
+                        </h2>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool"
+                                    onclick="window.location='{% url "manager/tills/create" %}'">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped table-hover table-valign-middle">
+                            <thead>
+                            <tr>
+                                <th scope="col">Cashier(s)</th>
+                                <th scope="col">Deposit name</th>
+                                <th scope="col">Opened at</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for till in open.data %}
+                                <tr>
+                                <td>{{ till.cashier_names }}</td>
+                                <td>{{ till.deposit.name }}</td>
+                                <td>{{ till.openedAt }}</td>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer border-top">
+                        <div class="row">
+                            <div class="col-6">
+                                Showing items {{ open.showing.from|add_one }} through {{ open.showing.to|add_one }}
+                                of {{ open.showing.of }}.
+                                &nbsp;
+                                Items per page:
+                                <select onchange="window.location = '?page_open={{ page_open }}&page_stopped={{ page_stopped }}&page_counted={{ page_counted }}&page_length=' + this.options[this.selectedIndex].value;">
+                                    <option value="5" {% if page_length.len5 %}selected{% endif %}>5 items</option>
+                                    <option value="10" {% if page_length.len10 %}selected{% endif %}>10 items</option>
+                                    <option value="20" {% if page_length.len20 %}selected{% endif %}>20 items</option>
+                                    <option value="50" {% if page_length.len50 %}selected{% endif %}>50 items</option>
+                                    <option value="100" {% if page_length.len100 %}selected{% endif %}>100 items
+                                    </option>
+                                    <option value="200" {% if page_length.len200 %}selected{% endif %}>200 items
+                                    </option>
+                                    <option value="500" {% if page_length.len500 %}selected{% endif %}>500 items
+                                    </option>
+                                    {% if page_length.other %}
+                                        <option value="{{ page_length.value }}" selected>Other ({{ page_length.value }}
+                                            items)
+                                        </option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                            <div class="col-6 text-right">
+                                <div class="btn-group" role="group">
+                                    {% if open.pages.showPrevious %}
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="window.location = '?page_open=0&page_stopped={{ page_closed }}&page_counted={{ page_counted }}'">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="window.location = '?page_open={{ open.pages.previous }}&page_stopped={{ page_closed }}&page_counted={{ page_counted }}'">
+                                            <i class=" fas fa-angle-left"></i>
+                                        </button>
+                                    {% endif %}
+                                    {% for link in open.pages.links %}
+                                        <button type="button"
+                                                class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
+                                                onclick="window.location = '?page_open={{ link.page }}&page_stopped={{ page_closed }}&page_counted={{ page_counted }}'">
+                                            {{ link.page|add_one }}
+                                        </button>
+                                    {% endfor %}
+                                    {% if open.pages.showNext %}
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="window.location = '?page_open={{ open.pages.next }}&page_stopped={{ page_closed }}&page_counted={{ page_counted }}'">
+                                            <i class="fas fa-angle-right"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="window.location = '?page_open={{ open.pages.last }}&page_stopped={{ page_closed }}&page_counted={{ page_counted }}'">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12 col-sm-12">
+                <div class="card">
+                    <div class="card-header border-0">
+                        <h2 class="card-title">
+                            <span class="fa-stack" style="font-size: 0.5em;">
+                                <i class="fas fa-hand-holding fa-stack-2x"></i>
+                                <i class="fas fa-ban fa-inverse fa-stack-1x" style="color: tomato"></i>
+                            </span>
+                            Stopped tills
+                        </h2>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped table-hover table-valign-middle">
+                            <thead>
+                            <tr>
+                                <th scope="col">Cashier(s)</th>
+                                <th scope="col">Deposit name</th>
+                                <th scope="col">Opened at</th>
+                                <th scope="col">Stopped at</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for till in stopped.data %}
+                                <tr>
+                                <td>{{ till.cashier_names }}</td>
+                                <td>{{ till.deposit.name }}</td>
+                                <td>{{ till.openedAt }}</td>
+                                <td>{{ till.stoppedAt }}</td>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer border-top">
+                        <div class="row">
+                            <div class="col-6">
+                                Showing items {{ stopped.showing.from|add_one }}
+                                through {{ stopped.showing.to|add_one }}
+                                of {{ stopped.showing.of }}.
+                                &nbsp;
+                                Items per page:
+                                <select onchange="window.location = '?page_open={{ page_open }}&page_stopped={{ page_stopped }}&page_counted={{ page_counted }}&page_length=' + this.options[this.selectedIndex].value;">
+                                    <option value="5" {% if page_length.len5 %}selected{% endif %}>5 items</option>
+                                    <option value="10" {% if page_length.len10 %}selected{% endif %}>10 items</option>
+                                    <option value="20" {% if page_length.len20 %}selected{% endif %}>20 items</option>
+                                    <option value="50" {% if page_length.len50 %}selected{% endif %}>50 items</option>
+                                    <option value="100" {% if page_length.len100 %}selected{% endif %}>100 items
+                                    </option>
+                                    <option value="200" {% if page_length.len200 %}selected{% endif %}>200 items
+                                    </option>
+                                    <option value="500" {% if page_length.len500 %}selected{% endif %}>500 items
+                                    </option>
+                                    {% if page_length.other %}
+                                        <option value="{{ page_length.value }}" selected>Other ({{ page_length.value }}
+                                            items)
+                                        </option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                            <div class="col-6 text-right">
+                                <div class="btn-group" role="group">
+                                    {% if stopped.pages.showPrevious %}
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="window.location = '?page_stopped=0&page_open={{ page_open }}&page_counted={{ page_counted }}'">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="window.location = '?page_stopped={{ stopped.pages.previous }}&page_open={{ page_open }}&page_counted={{ page_counted }}'">
+                                            <i class=" fas fa-angle-left"></i>
+                                        </button>
+                                    {% endif %}
+                                    {% for link in stopped.pages.links %}
+                                        <button type="button"
+                                                class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
+                                                onclick="window.location = '?page_stopped={{ link.page }}&page_open={{ page_open }}&page_counted={{ page_counted }}'">
+                                            {{ link.page|add_one }}
+                                        </button>
+                                    {% endfor %}
+                                    {% if stopped.pages.showNext %}
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="window.location = '?page_stopped={{ stopped.pages.next }}&page_open={{ page_open }}&page_counted={{ page_counted }}'">
+                                            <i class="fas fa-angle-right"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="window.location = '?page_stopped={{ stopped.pages.last }}&page_open={{ page_open }}&page_counted={{ page_counted }}'">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12 col-sm-12">
+                <div class="card">
+                    <div class="card-header border-0">
+                        <h2 class="card-title">
+                            <i class="fas fa-lock"></i>
+                            Counted tills
+                        </h2>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped table-hover table-valign-middle">
+                            <thead>
+                            <tr>
+                                <th scope="col">Cashier(s)</th>
+                                <th scope="col">Deposit name</th>
+                                <th scope="col">Opened at</th>
+                                <th scope="col">Stopped at</th>
+                                <th scope="col">Counted at</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for till in counted.data %}
+                                <tr>
+                                <td>{{ till.cashier_names }}</td>
+                                <td>{{ till.deposit.name }}</td>
+                                <td>{{ till.openedAt }}</td>
+                                <td>{{ till.stoppedAt }}</td>
+                                <td>{{ till.countedAt }}</td>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer border-top">
+                        <div class="row">
+                            <div class="col-6">
+                                Showing items {{ counted.showing.from|add_one }}
+                                through {{ counted.showing.to|add_one }}
+                                of {{ counted.showing.of }}.
+                                &nbsp;
+                                Items per page:
+                                <select onchange="window.location = '?page_open={{ page_open }}&page_stopped={{ page_stopped }}&page_counted={{ page_counted }}&page_length=' + this.options[this.selectedIndex].value;">
+                                    <option value="5" {% if page_length.len5 %}selected{% endif %}>5 items</option>
+                                    <option value="10" {% if page_length.len10 %}selected{% endif %}>10 items</option>
+                                    <option value="20" {% if page_length.len20 %}selected{% endif %}>20 items</option>
+                                    <option value="50" {% if page_length.len50 %}selected{% endif %}>50 items</option>
+                                    <option value="100" {% if page_length.len100 %}selected{% endif %}>100 items
+                                    </option>
+                                    <option value="200" {% if page_length.len200 %}selected{% endif %}>200 items
+                                    </option>
+                                    <option value="500" {% if page_length.len500 %}selected{% endif %}>500 items
+                                    </option>
+                                    {% if page_length.other %}
+                                        <option value="{{ page_length.value }}" selected>Other ({{ page_length.value }}
+                                            items)
+                                        </option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                            <div class="col-6 text-right">
+                                <div class="btn-group" role="group">
+                                    {% if counted.pages.showPrevious %}
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="window.location = '?page_counted=0&page_open={{ page_open }}&page_stopped={{ page_stopped }}'">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="window.location = '?page_counted={{ counted.pages.previous }}&page_open={{ page_open }}&page_stopped={{ page_stopped }}'">
+                                            <i class=" fas fa-angle-left"></i>
+                                        </button>
+                                    {% endif %}
+                                    {% for link in counted.pages.links %}
+                                        <button type="button"
+                                                class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
+                                                onclick="window.location = '?page_counted={{ link.page }}&page_open={{ page_open }}&page_stopped={{ page_stopped }}'">
+                                            {{ link.page|add_one }}
+                                        </button>
+                                    {% endfor %}
+                                    {% if counted.pages.showNext %}
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="window.location = '?page_counted={{ counted.pages.next }}&page_open={{ page_open }}&page_stopped={{ page_stopped }}'">
+                                            <i class="fas fa-angle-right"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="window.location = '?page_counted={{ counted.pages.last }}&page_open={{ page_open }}&page_stopped={{ page_stopped }}'">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,12 +1,10 @@
-import json
-
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 
 # Create your views here.
 from posapp.forms import CreateUserForm
-from posapp.models import Tab, ProductInTab, Product, User, Currency
+from posapp.models import Tab, ProductInTab, Product, User, Currency, Till
 from posapp.security import waiter_login_required, manager_login_required, admin_login_required
 
 
@@ -52,6 +50,25 @@ def add_pagination_context(context, manager, page, page_length, key):
         links.append({'page': i, 'active': i == page})
 
     context[key]['pages']['links'] = links
+
+
+def generate_page_length_options(page_length):
+    options = {
+        "len5": False,
+        "len10": False,
+        "len20": False,
+        "len50": False,
+        "len100": False,
+        "len200": False,
+        "len500": False,
+        "other": False,
+        "value": page_length,
+    }
+    if "len" + str(page_length) in options:
+        options["len" + str(page_length)] = True
+    else:
+        options["other"] = True
+    return options
 
 
 @login_required
@@ -168,7 +185,8 @@ def manager_users_create(request):
         form = CreateUserForm(request.POST, instance=user)
         if form.is_valid():
             form.save()
-            return HttpResponseRedirect(f'/manager/users/overview?created={form.cleaned_data["username"]}', permanent=False)
+            return HttpResponseRedirect(f'/manager/users/overview?created={form.cleaned_data["username"]}',
+                                        permanent=False)
         else:
             print("form is not valid")
 
@@ -182,6 +200,24 @@ def manager_users_create(request):
 @manager_login_required
 def manager_tills_overview(request):
     context = prepare_context(request)
+    page_length = int(request.GET.get('page_length', 20))
+    page_open = int(request.GET.get('page_open', 0))
+    page_stopped = int(request.GET.get('page_closed', 0))
+    page_counted = int(request.GET.get('page_counted', 0))
+
+    open_tills = Till.objects.filter(state=Till.OPEN)
+    stopped_tills = Till.objects.filter(state=Till.STOPPED)
+    counted_tills = Till.objects.filter(state=Till.COUNTED)
+    add_pagination_context(context, open_tills, page_open, page_length, 'open')
+    add_pagination_context(context, stopped_tills, page_stopped, page_length, 'stopped')
+    add_pagination_context(context, counted_tills, page_counted, page_length, 'counted')
+
+    context["page_open"] = page_open
+    context["page_stopped"] = page_stopped
+    context["page_counted"] = page_counted
+    context["page_length"] = generate_page_length_options(page_length)
+
+    return render(request, template_name="manager/tills/overview.html", context=context)
 
 
 @manager_login_required
