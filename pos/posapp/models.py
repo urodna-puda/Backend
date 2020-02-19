@@ -21,6 +21,9 @@ class User(AbstractUser):
     def requires_admin_to_toggle(self):
         return self.is_manager or self.is_admin
 
+    def __str__(self):
+        return f"{self.last_name}, {self.first_name} ({self.username})"
+
 
 class UnitGroup(models.Model):
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
@@ -214,11 +217,19 @@ class Till(models.Model):
     changePaymentMethod = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT, related_name="tillsAsChange")
     paymentMethods = models.ManyToManyField(PaymentMethod)
     openedAt = models.DateTimeField(editable=False, auto_now_add=True)
+    stoppedAt = models.DateTimeField(null=True, blank=True)
     countedAt = models.DateTimeField(null=True, blank=True)
     countedBy = models.ForeignKey(User, on_delete=models.PROTECT, related_name="tills_counted",
                                   limit_choices_to={"pudaUser.is_manager": True})
     state = models.CharField(max_length=1, choices=TILL_STATES, default=OPEN)
     deposit = models.ForeignKey(Deposit, on_delete=models.PROTECT)
+
+    @property
+    def cashier_names(self):
+        names = self.cashiers.first().username
+        for name in self.cashiers.all()[1:-1]:
+            names += f", {name}"
+        names += f" and {self.cashiers.last()}"
 
 
 class Order(models.Model):
