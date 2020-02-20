@@ -35,18 +35,25 @@
                     <div class="card-body p-0">
                         <table class="table table-striped table-hover table-valign-middle">
                             <thead>
-                            <tr>
-                                <th scope="col">Cashier(s)</th>
-                                <th scope="col">Deposit name</th>
-                                <th scope="col">Opened at</th>
+                            <tr class="d-flex">
+                                <th scope="col" class="col-3">Cashier(s)</th>
+                                <th scope="col" class="col-2">Deposit name</th>
+                                <th scope="col" class="col-2">Opened at</th>
+                                <th scope="col" class="col-2">&nbsp;</th>
+                                <th scope="col" class="col-2">&nbsp;</th>
+                                <th scope="col" class="col-1">&nbsp;</th>
                             </tr>
                             </thead>
                             <tbody>
                             {% for till in open.data %}
-                                <tr>
-                                <td>{{ till.cashier_names }}</td>
-                                <td>{{ till.deposit.name }}</td>
-                                <td>{{ till.openedAt }}</td>
+                                <tr class="d-flex">
+                                    <td class="col-3">{{ till.cashier_names }}</td>
+                                    <td class="col-2">{{ till.deposit.name }}</td>
+                                    <td class="col-2">{{ till.openedAt }}</td>
+                                    <td class="col-2">&nbsp;</td>
+                                    <td class="col-2">&nbsp;</td>
+                                    <td class="col-1"></td>
+                                </tr>
                             {% endfor %}
                             </tbody>
                         </table>
@@ -127,20 +134,25 @@
                     <div class="card-body p-0">
                         <table class="table table-striped table-hover table-valign-middle">
                             <thead>
-                            <tr>
-                                <th scope="col">Cashier(s)</th>
-                                <th scope="col">Deposit name</th>
-                                <th scope="col">Opened at</th>
-                                <th scope="col">Stopped at</th>
+                            <tr class="d-flex">
+                                <th scope="col" class="col-3">Cashier(s)</th>
+                                <th scope="col" class="col-2">Deposit name</th>
+                                <th scope="col" class="col-2">Opened at</th>
+                                <th scope="col" class="col-2">Stopped at</th>
+                                <th scope="col" class="col-2">&nbsp;</th>
+                                <th scope="col" class="col-1">&nbsp;</th>
                             </tr>
                             </thead>
                             <tbody>
                             {% for till in stopped.data %}
-                                <tr>
-                                <td>{{ till.cashier_names }}</td>
-                                <td>{{ till.deposit.name }}</td>
-                                <td>{{ till.openedAt }}</td>
-                                <td>{{ till.stoppedAt }}</td>
+                                <tr class="d-flex">
+                                    <td class="col-4">{{ till.cashier_names }}</td>
+                                    <td class="col-2">{{ till.deposit.name }}</td>
+                                    <td class="col-2">{{ till.openedAt }}</td>
+                                    <td class="col-2">{{ till.stoppedAt }}</td>
+                                    <td class="col-2">&nbsp;</td>
+                                    <td class="col-1">&nbsp;</td>
+                                </tr>
                             {% endfor %}
                             </tbody>
                         </table>
@@ -219,22 +231,25 @@
                     <div class="card-body p-0">
                         <table class="table table-striped table-hover table-valign-middle">
                             <thead>
-                            <tr>
-                                <th scope="col">Cashier(s)</th>
-                                <th scope="col">Deposit name</th>
-                                <th scope="col">Opened at</th>
-                                <th scope="col">Stopped at</th>
-                                <th scope="col">Counted at</th>
+                            <tr class="d-flex">
+                                <th scope="col" class="col-3">Cashier(s)</th>
+                                <th scope="col" class="col-2">Deposit name</th>
+                                <th scope="col" class="col-2">Opened at</th>
+                                <th scope="col" class="col-2">Stopped at</th>
+                                <th scope="col" class="col-2">Counted at</th>
+                                <th scope="col" class="col-1">&nbsp;</th>
                             </tr>
                             </thead>
                             <tbody>
                             {% for till in counted.data %}
                                 <tr>
-                                <td>{{ till.cashier_names }}</td>
-                                <td>{{ till.deposit.name }}</td>
-                                <td>{{ till.openedAt }}</td>
-                                <td>{{ till.stoppedAt }}</td>
-                                <td>{{ till.countedAt }}</td>
+                                    <td class="col-3">{{ till.cashier_names }}</td>
+                                    <td class="col-2">{{ till.deposit.name }}</td>
+                                    <td class="col-2">{{ till.openedAt }}</td>
+                                    <td class="col-2">{{ till.stoppedAt }}</td>
+                                    <td class="col-2">{{ till.countedAt }}</td>
+                                    <td class="col-1">&nbsp;</td>
+                                </tr>
                             {% endfor %}
                             </tbody>
                         </table>
