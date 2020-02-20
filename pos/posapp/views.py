@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 
@@ -229,10 +230,16 @@ def manager_tills_create(request):
 def admin_finance_currencies(request):
     context = prepare_context(request)
     page_length = int(request.GET.get('page_length', 20))
+    search = request.GET.get('search', '')
     page = int(request.GET.get('page', 0))
 
-    currencies = Currency.objects.all().order_by('code')
+    currencies = Currency.objects.filter(
+        Q(name__contains=search) | Q(code__contains=search) | Q(symbol__contains=search)).order_by('code')
     add_pagination_context(context, currencies, page, page_length, 'currencies')
+
+    context["page_number"] = page
+    context["page_length"] = generate_page_length_options(page_length)
+    context["search"] = search
 
     return render(request, template_name="admin/finance/currencies.html", context=context)
 

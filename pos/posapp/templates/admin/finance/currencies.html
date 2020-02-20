@@ -26,10 +26,31 @@
                             Currencies
                         </h2>
                         <div class="card-tools">
-                            <button type="button" class="btn btn-tool"
-                                    onclick="window.location='{% url "manager/users/create" %}'">
-                                <i class="fas fa-plus"></i>
-                            </button>
+                            <div class="container-fluid">
+                                <div class="row">
+                                    <div class="col-10">
+                                        <div class="input-group mb-3">
+                                            <form id="searchForm">
+                                                <input type="text" class="form-control" placeholder="Search"
+                                                       aria-label="Search"
+                                                       aria-describedby="search-addon-button" id="searchField"
+                                                       name="search"{% if search %} value="{{ search }}"{% endif %}>
+                                                <div class="input-group-append">
+                                                    <button class="btn btn-outline-secondary" type="submit"
+                                                            id="search-addon-button"><i
+                                                            class="fas fa-search"></i></button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
+                                        <button type="button" class="btn btn-tool"
+                                                onclick="window.location='{% url "manager/users/create" %}'">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="card-body p-0">
@@ -67,33 +88,57 @@
                             <div class="col-6">
                                 Showing items {{ currencies.showing.from|add_one }}
                                 through {{ currencies.showing.to|add_one }} of {{ currencies.showing.of }}.
+                                &nbsp;
+                                Items per page:
+                                <select onchange="window.location = '?page={{ page_number }}&page_length=' + this.options[this.selectedIndex].value{% if search %} + '&search={{ search }}'{% endif %};">
+                                    <option value="5" {% if page_length.len5 %}selected{% endif %}>5 items</option>
+                                    <option value="10" {% if page_length.len10 %}selected{% endif %}>10 items</option>
+                                    <option value="20" {% if page_length.len20 %}selected{% endif %}>20 items</option>
+                                    <option value="50" {% if page_length.len50 %}selected{% endif %}>50 items</option>
+                                    <option value="100" {% if page_length.len100 %}selected{% endif %}>100 items
+                                    </option>
+                                    <option value="200" {% if page_length.len200 %}selected{% endif %}>200 items
+                                    </option>
+                                    <option value="500" {% if page_length.len500 %}selected{% endif %}>500 items
+                                    </option>
+                                    {% if page_length.other %}
+                                        <option value="{{ page_length.value }}" selected>Other ({{ page_length.value }}
+                                            items)
+                                        </option>
+                                    {% endif %}
+                                </select>
                             </div>
                             <div class="col-6 text-right">
                                 <div class="btn-group" role="group">
                                     {% if currencies.pages.showPrevious %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page=0'">
+                                                onclick="window.location = '?page=0&page_length={{ page_length.value }}'{% if search %} +
+                                                    '&search={{ search }}{% endif %}'">
                                             <i class="fas fa-angle-double-left"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ currencies.pages.previous }}'">
+                                                onclick="window.location = '?page={{ currencies.pages.previous }}&page_length={{ page_length.value }}'{% if search %} +
+                                                    '&search={{ search }}{% endif %}'">
                                             <i class=" fas fa-angle-left"></i>
                                         </button>
                                     {% endif %}
                                     {% for link in currencies.pages.links %}
                                         <button type="button"
                                                 class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
-                                                onclick="window.location = '?page={{ link.page }}'">
+                                                onclick="window.location = '?page={{ link.page }}&page_length={{ page_length.value }}'{% if search %} +
+                                                    '&search={{ search }}{% endif %}'">
                                             {{ link.page|add_one }}
                                         </button>
                                     {% endfor %}
                                     {% if currencies.pages.showNext %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ currencies.pages.next }}'">
+                                                onclick="window.location = '?page={{ currencies.pages.next }}&page_length={{ page_length.value }}'{% if search %} +
+                                                    '&search={{ search }}{% endif %}'">
                                             <i class="fas fa-angle-right"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ currencies.pages.last }}'">
+                                                onclick="window.location = '?page={{ currencies.pages.last }}&page_length={{ page_length.value }}'{% if search %} +
+                                                    '&search={{ search }}{% endif %}'">
                                             <i class="fas fa-angle-double-right"></i>
                                         </button>
                                     {% endif %}
@@ -105,4 +150,15 @@
             </div>
         </div>
     </div>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script>
+        $('#searchForm').bind('submit', function () {
+            let search = $('#searchField').val();
+            window.location = "?page={{ page_number }}&page_length={{ page_length.value }}" + (search ? "&search=" + search : "");
+            return false;
+        });
+    </script>
 {% endblock %}
