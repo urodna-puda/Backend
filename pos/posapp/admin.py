@@ -138,23 +138,23 @@ class PaymentMethodAdmin(admin.ModelAdmin):
     ordering = ['name']
 
 
-class DepositValueInline(admin.TabularInline):
-    verbose_name = "Value"
-    verbose_name_plural = "Values"
-    model = DepositValue
-    extra = 2
+class TillPaymentOptionsAdmin(admin.ModelAdmin):
+    pass
 
 
-class DepositAdmin(admin.ModelAdmin):
-    list_display = ['name']
-    inlines = [DepositValueInline]
+class TillMoneyCountsInline(admin.TabularInline):
+    verbose_name = "Money count"
+    verbose_name_plural = "Money counts"
+    model = TillMoneyCount
+    extra = 0
 
 
 class TillAdmin(admin.ModelAdmin):
     readonly_fields = ['cashier_names']
-    list_display = ['deposit', 'state', 'openedAt', 'stoppedAt', 'countedAt', 'countedBy']
-    list_filter = ['deposit', 'state', 'countedBy']
+    list_display = ['state', 'openedAt', 'stoppedAt', 'countedAt', 'countedBy']
+    list_filter = ['state', 'countedBy']
     ordering = ['openedAt', 'stoppedAt', 'countedAt']
+    inlines = [TillMoneyCountsInline]
 
 
 class OrderPaymentInline(admin.TabularInline):
@@ -189,7 +189,7 @@ admin.site.register(Tab, TabAdmin)
 # admin.site.register(ProductInTab, ProductInTabAdmin)
 admin.site.register(Currency, CurrencyAdmin)
 admin.site.register(PaymentMethod, PaymentMethodAdmin)
-admin.site.register(Deposit, DepositAdmin)
+admin.site.register(TillPaymentOptions, TillPaymentOptionsAdmin)
 admin.site.register(Till, TillAdmin)
 admin.site.register(Order, OrderAdmin)
 # admin.site.register(PaymentInOrder, PaymentInOrderAdmin)

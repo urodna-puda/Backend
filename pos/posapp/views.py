@@ -1,3 +1,5 @@
+import uuid
+
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import HttpResponseRedirect
@@ -5,7 +7,7 @@ from django.shortcuts import render, redirect
 
 # Create your views here.
 from posapp.forms import CreateUserForm
-from posapp.models import Tab, ProductInTab, Product, User, Currency, Till
+from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions
 from posapp.security import waiter_login_required, manager_login_required, admin_login_required
 
 
@@ -199,7 +201,7 @@ def manager_users_create(request):
 
 
 @manager_login_required
-def manager_tills_overview(request):
+def manager_tills_overview(request, result=None):
     context = prepare_context(request)
     page_length = int(request.GET.get('page_length', 20))
     page_open = int(request.GET.get('page_open', 0))
@@ -218,12 +220,79 @@ def manager_tills_overview(request):
     context["page_counted"] = page_counted
     context["page_length"] = generate_page_length_options(page_length)
 
+    if result:
+        context["message"] = result
+
     return render(request, template_name="manager/tills/overview.html", context=context)
 
 
 @manager_login_required
-def manager_tills_create(request):
+def manager_tills_assign(request):
     context = prepare_context(request)
+
+    if request.method == 'POST':
+        if all(k in request.POST for k in ["users", "options"]):
+            usernames = request.POST.getlist("users")
+            options_id = request.POST["options"]
+
+            try:
+                options = TillPaymentOptions.objects.get(id=uuid.UUID(options_id))
+                till = options.create_till()
+                for username in usernames:
+                    user = User.objects.get(username=username)
+                    till.cashiers.add(user)
+            except User.DoesNotExist:
+                context["error"] = "One of the selected users does not exist"
+            except TillPaymentOptions.DoesNotExist:
+                context["error"] = "The selected payment options config does not exist. " \
+                                   "It may have also been disabled by an administrator."
+        else:
+            context["error"] = "Some required fields are missing"
+
+    context["users"] = User.objects.filter(is_waiter=True)
+    context["options"] = TillPaymentOptions.objects.filter(enabled=True)
+
+    return render(request, template_name="manager/tills/assign.html", context=context)
+
+
+@manager_login_required
+def manager_tills_id(request, id):
+    context = prepare_context(request)
+
+
+@manager_login_required
+def manager_tills_id_stop(request):
+    if request.method == "GET":
+        return redirect('manager/tills/overview')
+    elif request.method == "POST":
+        try:
+            till = Till.objects.get(id=uuid.UUID(request.POST["id"]))
+            if till.state == Till.OPEN:
+                if till.stop():
+                    color = 'success'
+                    message = 'The till was stopped successfully. It is now available for counting.'
+                    icon = 'check'
+                else:
+                    color = 'danger'
+                    message = 'An error occured during stopping. Please try again.'
+                    icon = 'times'
+            else:
+                color = 'warning'
+                message = f'The till is in a state from which it cannot be closed: {till.state}'
+                icon = 'exclamation-triangle'
+        except Till.DoesNotExist:
+            color = 'danger'
+            message = 'The specified till does not exist.'
+            icon = 'times'
+        return manager_tills_overview(request, {"color": color, "message": message, "icon": icon})
+
+
+@manager_login_required
+def manager_tills_id_count(request, id):
+    context = prepare_context(request)
+    context["id"] = id
+
+    return render(request, template_name="manager/tills/id/count.html", context=context)
 
 
 @admin_login_required

@@ -1,0 +1,39 @@
+{% extends "_base.html" %}
+{% load generic %}
+
+{% block page_name %}
+    <i class="fas fa-piggy-bank"></i>
+    Count till
+{% endblock %}
+
+{% block no_description %}{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager" %}">Manager</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager/tills" %}">Tills</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager/tills/id" id=id %}">This till</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Count</li>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-8 col-sm-12">
+                <div class="card">
+                    <div class="card-header border-0">
+                        <h2 class="card-title">
+                           <i class="fas fa-coins"></i>
+                            Money amounts
+                        </h2>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped table-hover table-valign-middle">
+
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

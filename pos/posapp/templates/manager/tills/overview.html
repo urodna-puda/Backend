@@ -17,6 +17,18 @@
 
 {% block content %}
     <div class="container-fluid">
+        {% if message %}
+            <div class="row">
+                <div class="col-lg-12 col-sm-12">
+                    <div class="card bg-gradient-{{ message.color }}">
+                        <div class="card-body">
+                            <i class="fas fa-{{ message.icon }}"></i>
+                            {{ message.message }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
         <div class="row">
             <div class="col-lg-12 col-sm-12">
                 <div class="card">
@@ -27,7 +39,7 @@
                         </h2>
                         <div class="card-tools">
                             <button type="button" class="btn btn-tool"
-                                    onclick="window.location='{% url "manager/tills/create" %}'">
+                                    onclick="window.location='{% url "manager/tills/assign" %}'">
                                 <i class="fas fa-plus"></i>
                             </button>
                         </div>
@@ -37,22 +49,28 @@
                             <thead>
                             <tr class="d-flex">
                                 <th scope="col" class="col-3">Cashier(s)</th>
-                                <th scope="col" class="col-2">Deposit name</th>
+                                <th scope="col" class="col-2">Deposit</th>
                                 <th scope="col" class="col-2">Opened at</th>
                                 <th scope="col" class="col-2">&nbsp;</th>
                                 <th scope="col" class="col-2">&nbsp;</th>
-                                <th scope="col" class="col-1">&nbsp;</th>
+                                <th scope="col" class="col-1">Actions</th>
                             </tr>
                             </thead>
                             <tbody>
                             {% for till in open.data %}
                                 <tr class="d-flex">
-                                    <td class="col-3">{{ till.cashier_names }}</td>
-                                    <td class="col-2">{{ till.deposit.name }}</td>
+                                    <td class="col-3" id="till-{{ till.id }}-cashiers">{{ till.cashier_names }}</td>
+                                    <td class="col-2" id="till-{{ till.id }}-deposit">{{ till.deposit }}</td>
                                     <td class="col-2">{{ till.openedAt }}</td>
                                     <td class="col-2">&nbsp;</td>
                                     <td class="col-2">&nbsp;</td>
-                                    <td class="col-1"></td>
+                                    <td class="col-1">
+                                        <button type="button" class="btn btn-tool stopTillButton"
+                                                data-till-id="{{ till.id }}">
+                                            <i class="fas fa-stop-circle" data-toggle="tooltip" data-placement="top"
+                                               title="Stop till"></i>
+                                        </button>
+                                    </td>
                                 </tr>
                             {% endfor %}
                             </tbody>
@@ -136,22 +154,28 @@
                             <thead>
                             <tr class="d-flex">
                                 <th scope="col" class="col-3">Cashier(s)</th>
-                                <th scope="col" class="col-2">Deposit name</th>
+                                <th scope="col" class="col-2">Deposit</th>
                                 <th scope="col" class="col-2">Opened at</th>
                                 <th scope="col" class="col-2">Stopped at</th>
                                 <th scope="col" class="col-2">&nbsp;</th>
-                                <th scope="col" class="col-1">&nbsp;</th>
+                                <th scope="col" class="col-1">Actions</th>
                             </tr>
                             </thead>
                             <tbody>
                             {% for till in stopped.data %}
                                 <tr class="d-flex">
-                                    <td class="col-4">{{ till.cashier_names }}</td>
-                                    <td class="col-2">{{ till.deposit.name }}</td>
+                                    <td class="col-3" id="till-{{ till.id }}-cashiers">{{ till.cashier_names }}</td>
+                                    <td class="col-2" id="till-{{ till.id }}-deposit">{{ till.deposit }}</td>
                                     <td class="col-2">{{ till.openedAt }}</td>
                                     <td class="col-2">{{ till.stoppedAt }}</td>
                                     <td class="col-2">&nbsp;</td>
-                                    <td class="col-1">&nbsp;</td>
+                                    <td class="col-1">
+                                        <button type="button" class="btn btn-tool"
+                                                onclick="window.location = '{% url "manager/tills/id/count" id=till.id %}'">
+                                            <i class="fas fa-piggy-bank" data-toggle="tooltip" data-placement="top"
+                                               title="Count till"></i>
+                                        </button>
+                                    </td>
                                 </tr>
                             {% endfor %}
                             </tbody>
@@ -232,8 +256,8 @@
                         <table class="table table-striped table-hover table-valign-middle">
                             <thead>
                             <tr class="d-flex">
-                                <th scope="col" class="col-3">Cashier(s)</th>
-                                <th scope="col" class="col-2">Deposit name</th>
+                                <th scope="col" class="col-3" id="till-{{ till.id }}-cashiers">Cashier(s)</th>
+                                <th scope="col" class="col-2" id="till-{{ till.id }}-deposit">Deposit</th>
                                 <th scope="col" class="col-2">Opened at</th>
                                 <th scope="col" class="col-2">Stopped at</th>
                                 <th scope="col" class="col-2">Counted at</th>
@@ -244,11 +268,13 @@
                             {% for till in counted.data %}
                                 <tr>
                                     <td class="col-3">{{ till.cashier_names }}</td>
-                                    <td class="col-2">{{ till.deposit.name }}</td>
+                                    <td class="col-2">{{ till.deposit }}</td>
                                     <td class="col-2">{{ till.openedAt }}</td>
                                     <td class="col-2">{{ till.stoppedAt }}</td>
                                     <td class="col-2">{{ till.countedAt }}</td>
-                                    <td class="col-1">&nbsp;</td>
+                                    <td class="col-1">
+                                        <button type="button" class="btn btn-tool"><i class="far fa-edit"></i></button>
+                                    </td>
                                 </tr>
                             {% endfor %}
                             </tbody>
@@ -317,4 +343,43 @@
             </div>
         </div>
     </div>
+    <!-- MODALS -->
+    <div class="modal fade" id="confirmStopTillModal" tabindex="-1" role="dialog"
+         aria-labelledby="confirmStopTillModalTitle" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmStopTillModalTitle">Confirm action</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="confirmStopTillModalBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
+                    <form action="{% url "manager/tills/overview/stop" %}" method="post">
+                        {% csrf_token %}
+                        <input name="id" id="stopTillIdField" type="hidden"/>
+                        <button type="submit" class="btn btn-success" id="confirmStopTillButton">Confirm and close
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script>
+        $('.stopTillButton').click(function () {
+            let id = $(this).data('till-id');
+            let cashiers = $('#till-' + id + '-cashiers').html();
+            let deposit = $('#till-' + id + '-deposit').html();
+            let message = "Are you sure you want to close the " + deposit + " till of cashier(s) " + cashiers + "?<br>After this operation waiters won't be able to finish any orders and the till will have to be counted. After stopping, the till can't be reopened.";
+            $('#confirmStopTillModalBody').html(message);
+            $('#stopTillIdField').val($(this).data('till-id'));
+            $('#confirmStopTillModal').modal('show');
+        });
+    </script>
 {% endblock %}
