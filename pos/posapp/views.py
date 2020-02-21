@@ -227,6 +227,33 @@ def manager_tills_overview(request, result=None):
 
 
 @manager_login_required
+def manager_tills_overview_stop(request):
+    if request.method == "GET":
+        return redirect('manager/tills/overview')
+    elif request.method == "POST":
+        try:
+            till = Till.objects.get(id=uuid.UUID(request.POST["id"]))
+            if till.state == Till.OPEN:
+                if till.stop():
+                    color = 'success'
+                    message = 'The till was stopped successfully. It is now available for counting.'
+                    icon = 'check'
+                else:
+                    color = 'danger'
+                    message = 'An error occured during stopping. Please try again.'
+                    icon = 'times'
+            else:
+                color = 'warning'
+                message = f'The till is in a state from which it cannot be closed: {till.state}'
+                icon = 'exclamation-triangle'
+        except Till.DoesNotExist:
+            color = 'danger'
+            message = 'The specified till does not exist.'
+            icon = 'times'
+        return manager_tills_overview(request, {"color": color, "message": message, "icon": icon})
+
+
+@manager_login_required
 def manager_tills_assign(request):
     context = prepare_context(request)
 
@@ -258,33 +285,7 @@ def manager_tills_assign(request):
 @manager_login_required
 def manager_tills_id(request, id):
     context = prepare_context(request)
-
-
-@manager_login_required
-def manager_tills_id_stop(request):
-    if request.method == "GET":
-        return redirect('manager/tills/overview')
-    elif request.method == "POST":
-        try:
-            till = Till.objects.get(id=uuid.UUID(request.POST["id"]))
-            if till.state == Till.OPEN:
-                if till.stop():
-                    color = 'success'
-                    message = 'The till was stopped successfully. It is now available for counting.'
-                    icon = 'check'
-                else:
-                    color = 'danger'
-                    message = 'An error occured during stopping. Please try again.'
-                    icon = 'times'
-            else:
-                color = 'warning'
-                message = f'The till is in a state from which it cannot be closed: {till.state}'
-                icon = 'exclamation-triangle'
-        except Till.DoesNotExist:
-            color = 'danger'
-            message = 'The specified till does not exist.'
-            icon = 'times'
-        return manager_tills_overview(request, {"color": color, "message": message, "icon": icon})
+    return render(context, template_name="manager/tills/id.html", context=context)
 
 
 @manager_login_required

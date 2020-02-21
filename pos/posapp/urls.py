@@ -14,7 +14,7 @@ urlpatterns = [
     path('manager/users/create', views.manager_users_create, name='manager/users/create'),
     path('manager/tills', RedirectView.as_view(url="tills/overview"), name='manager/tills'),
     path('manager/tills/overview', views.manager_tills_overview, name='manager/tills/overview'),
-    path('manager/tills/overview/stop', views.manager_tills_id_stop, name='manager/tills/overview/stop'),
+    path('manager/tills/overview/stop', views.manager_tills_overview_stop, name='manager/tills/overview/stop'),
     path('manager/tills/assign', views.manager_tills_assign, name='manager/tills/assign'),
     path('manager/tills/<uuid:id>', views.manager_tills_id, name='manager/tills/id'),
     path('manager/tills/<uuid:id>/count', views.manager_tills_id_count, name='manager/tills/id/count'),
