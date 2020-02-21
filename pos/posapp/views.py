@@ -297,11 +297,14 @@ def manager_tills_till_count(request):
     context["id"] = id
     try:
         till = Till.objects.get(id=id)
-
+        zeroed = []
         if "save" in request.POST:
             counts = till.tillmoneycount_set.all()
             for count in counts:
                 count.amount = float(request.POST[f"counted-{count.id}"])
+                if count.amount < 0:
+                    zeroed.append(count.id)
+                    count.amount = 0
                 count.save()
 
         counts = till.tillmoneycount_set.all()
@@ -328,6 +331,7 @@ def manager_tills_till_count(request):
                 "expected": expected,
                 "variance": variance,
                 "warn": warn,
+                "zeroed": count.id in zeroed,
             })
             context["totals"]["counted"] += count.amount
             context["totals"]["expected"] += expected

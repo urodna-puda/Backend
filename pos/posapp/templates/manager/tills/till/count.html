@@ -39,7 +39,7 @@
                         </h2>
                         <div class="card-tools">
                             <div class="btn-group" role="group" aria-label="Controls">
-                                <button type="submit" class="btn btn-outline-warning" data-toggle="tooltip"
+                                <button type="submit" class="btn btn-outline-secondary" data-toggle="tooltip"
                                         data-posititon="top" title="Reset last change" name="show" form="refreshForm">
                                     <i class="fas fa-recycle"></i>
                                 </button>
@@ -78,9 +78,15 @@
                                                    required value="{{ count.amount }}"
                                                    data-original="{{ count.amount }}"
                                                    data-id="{{ count.id }}" class="count-input" min="0"/>
+                                            {% if count.zeroed %}
+                                                &nbsp;
+                                                <i class="fas fa-exclamation-triangle text-warning"
+                                                   data-toggle="tooltip" data-placement="top"
+                                                   title="This count was raised to zero as negative counts are not allowed"></i>
+                                            {% endif %}
                                         </td>
                                         <td>
-                                            <button type="button" class="btn btn-outline-warning reset-count"
+                                            <button type="button" class="btn btn-outline-secondary reset-count"
                                                     style="visibility: hidden;" id="reset-{{ count.id }}"
                                                     data-id="{{ count.id }}">
                                                 <i class="fas fa-recycle"></i>
@@ -146,7 +152,8 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" data-dismiss="modal">Continue editing</button>
-                    <button type="submit" class="btn btn-danger" form="closeForm"><i class="fas fa-lock"></i>&nbsp;Close and lock
+                    <button type="submit" class="btn btn-danger" form="closeForm"><i class="fas fa-lock"></i>&nbsp;Close
+                        and lock
                     </button>
                 </div>
             </div>
