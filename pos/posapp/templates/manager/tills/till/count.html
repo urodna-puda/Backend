@@ -1,0 +1,198 @@
+{% extends "_base.html" %}
+{% load generic %}
+
+{% block page_name %}
+    <i class="fas fa-piggy-bank"></i>
+    Count till
+{% endblock %}
+
+{% block no_description %}{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager" %}">Manager</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager/tills" %}">Tills</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager/tills/till" %}">This till</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Count</li>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        {% if error %}
+            <div class="row">
+                <div class="col-lg-8 col-sm-12">
+                    <div class="card bg-gradient-danger">
+                        <div class="card-body">
+                            {{ error }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        <div class="row">
+            <div class="col-lg-8 col-sm-12">
+                <div class="card">
+                    <div class="card-header border-0">
+                        <h2 class="card-title">
+                            <i class="fas fa-coins"></i>
+                            Money amounts
+                        </h2>
+                        <div class="card-tools">
+                            <div class="btn-group" role="group" aria-label="Controls">
+                                <button type="submit" class="btn btn-outline-warning" data-toggle="tooltip"
+                                        data-posititon="top" title="Reset last change" name="show" form="refreshForm">
+                                    <i class="fas fa-recycle"></i>
+                                </button>
+                                <button type="submit" class="btn btn-outline-primary" data-toggle="tooltip"
+                                        data-posititon="top" title="Save and refresh" name="save" form="countsForm">
+                                    <i class="fas fa-save"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" data-toggle="tooltip"
+                                        data-posititon="top" title="Close and lock till"
+                                        onclick="showConfirmCloseTillModal();"><i class="fas fa-lock"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped table-hover table-valign-middle">
+                            <thead>
+                            <tr>
+                                <th scope="col">Payment method</th>
+                                <th scope="col">Counted amount</th>
+                                <th scope="col">&nbsp;</th>
+                                <th scope="col">Expected amount</th>
+                                <th scope="col">Variance</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <form method="post" action="{% url "manager/tills/till/count" %}" id="countsForm">
+                                {% csrf_token %}
+                                <input type="hidden" name="id" value="{{ id }}"/>
+                                {% for count in counts %}
+                                    <tr>
+                                        <td>{{ count.name }}</td>
+                                        <td>
+                                            <input type="number" name="counted-{{ count.id }}"
+                                                   id="counted-{{ count.id }}"
+                                                   required value="{{ count.amount }}"
+                                                   data-original="{{ count.amount }}"
+                                                   data-id="{{ count.id }}" class="count-input" min="0"/>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-outline-warning reset-count"
+                                                    style="visibility: hidden;" id="reset-{{ count.id }}"
+                                                    data-id="{{ count.id }}">
+                                                <i class="fas fa-recycle"></i>
+                                            </button>
+                                        </td>
+                                        <td>{{ count.expected }}</td>
+                                        <td>
+                                            {{ count.variance }}
+                                            {% if count.warn %}
+                                                &nbsp;
+                                                <i class="fas fa-exclamation-triangle text-warning"
+                                                   data-toggle="tooltip"
+                                                   data-position="top" title="{{ count.warn }}"></i>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </form>
+                            </tbody>
+                            <tfoot>
+                            <tr class="bg-secondary rounded-bottom">
+                                <th>Totals</th>
+                                <th>{{ totals.counted }}</th>
+                                <th>&nbsp;</th>
+                                <th>{{ totals.expected }}</th>
+                                <th>
+                                    {{ totals.variance }}
+                                    {% if totals.warn %}
+                                        &nbsp;
+                                        <i class="fas fa-exclamation-triangle text-warning" data-toggle="tooltip"
+                                           data-position="top" title="{{ totals.warn }}"></i>
+                                    {% endif %}
+                                    {% if totals.danger %}
+                                        &nbsp;
+                                        <i class="fas fa-times-circle text-danger" data-toggle="tooltip"
+                                           data-position="top" title="{{ totals.danger }}"></i>
+                                    {% endif %}
+                                </th>
+                            </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--MODALS-->
+    <div class="modal fade" id="confirmCloseTillModal" tabindex="-1" aria-hidden="true"
+         aria-labelledby="confirmCloseTillModalTitle" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmCloseTillModalTitle">Confirmation</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to close and lock the till? This action cannot be undone.</p>
+                    <p id="existingChangesNotification" style="display: none;">There are still some unsaved changes
+                        marked with <i class="fas fa-exclamation-triangle text-warning"></i>. If you continue now, these
+                        changes will be lost.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal">Continue editing</button>
+                    <button type="submit" class="btn btn-danger" form="closeForm"><i class="fas fa-lock"></i>&nbsp;Close and lock
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--VIRTUAL FORMS-->
+    <form action="{% url "manager/tills/till/count" %}" method="post" id="refreshForm" style="display: none;">
+        {% csrf_token %}
+        <input type="hidden" name="id" value="{{ id }}"/>
+    </form>
+    <form action="{% url "manager/tills/till/close" %}" method="post" id="closeForm" style="display:none">
+        {% csrf_token %}
+        <input type="hidden" name="id" value="{{ id }}"/>
+    </form>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script>
+        $('.count-input').change(function () {
+            let input = $(this);
+            let button = $('#reset-' + input.data('id'));
+            let newVal = Number(input.val());
+            let originalVal = Number(input.data('original'));
+            if (newVal === originalVal) {
+                button.invisible();
+            } else {
+                button.visible();
+            }
+        });
+        $('.reset-count').click(function () {
+            let button = $(this);
+            let id = button.data('id');
+            let input = $('#counted-' + id);
+            input.val(input.data('original'));
+            button.invisible();
+        });
+
+        function showConfirmCloseTillModal() {
+            let changes = false;
+            $('.count-input').each(function () {
+                if (Number($(this).val()) !== Number($(this).data('original'))) changes = true;
+            });
+            if (changes) $('#existingChangesNotification').show();
+            else $('#existingChangesNotification').hide();
+            $('#confirmCloseTillModal').modal('show');
+        }
+    </script>
+{% endblock %}

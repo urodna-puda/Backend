@@ -40,6 +40,14 @@
             });
             return await response.json(); // parses JSON response into native JavaScript objects
         }
+
+        jQuery.fn.visible = function() {
+            return this.css('visibility', 'visible');
+        };
+
+        jQuery.fn.invisible = function() {
+            return this.css('visibility', 'hidden');
+        };
     </script>
 {% endblock %}
 

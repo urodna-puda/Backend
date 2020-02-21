@@ -221,36 +221,9 @@ def manager_tills_overview(request, result=None):
     context["page_length"] = generate_page_length_options(page_length)
 
     if result:
-        context["message"] = result
+        context["notifications"] = result
 
     return render(request, template_name="manager/tills/overview.html", context=context)
-
-
-@manager_login_required
-def manager_tills_overview_stop(request):
-    if request.method == "GET":
-        return redirect('manager/tills/overview')
-    elif request.method == "POST":
-        try:
-            till = Till.objects.get(id=uuid.UUID(request.POST["id"]))
-            if till.state == Till.OPEN:
-                if till.stop():
-                    color = 'success'
-                    message = 'The till was stopped successfully. It is now available for counting.'
-                    icon = 'check'
-                else:
-                    color = 'danger'
-                    message = 'An error occured during stopping. Please try again.'
-                    icon = 'times'
-            else:
-                color = 'warning'
-                message = f'The till is in a state from which it cannot be closed: {till.state}'
-                icon = 'exclamation-triangle'
-        except Till.DoesNotExist:
-            color = 'danger'
-            message = 'The specified till does not exist.'
-            icon = 'times'
-        return manager_tills_overview(request, {"color": color, "message": message, "icon": icon})
 
 
 @manager_login_required
@@ -283,17 +256,118 @@ def manager_tills_assign(request):
 
 
 @manager_login_required
-def manager_tills_id(request, id):
+def manager_tills_till(request):
     context = prepare_context(request)
-    return render(context, template_name="manager/tills/id.html", context=context)
+    return render(request, template_name="manager/tills/till.html", context=context)
 
 
 @manager_login_required
-def manager_tills_id_count(request, id):
-    context = prepare_context(request)
-    context["id"] = id
+def manager_tills_till_stop(request):
+    if request.method == "GET":
+        return redirect('manager/tills/overview')
+    elif request.method == "POST":
+        try:
+            till = Till.objects.get(id=uuid.UUID(request.POST["id"]))
+            if till.state == Till.OPEN:
+                if till.stop():
+                    color = 'success'
+                    message = 'The till was stopped successfully. It is now available for counting.'
+                    icon = 'check'
+                else:
+                    color = 'danger'
+                    message = 'An error occured during stopping. Please try again.'
+                    icon = 'times'
+            else:
+                color = 'warning'
+                message = f'The till is in a state from which it cannot be closed: {till.state}'
+                icon = 'exclamation-triangle'
+        except Till.DoesNotExist:
+            color = 'danger'
+            message = 'The specified till does not exist.'
+            icon = 'times'
+        return manager_tills_overview(request, [{"color": color, "message": message, "icon": icon}])
 
-    return render(request, template_name="manager/tills/id/count.html", context=context)
+
+@manager_login_required
+def manager_tills_till_count(request):
+    context = prepare_context(request)
+    if request.method == "GET":
+        return redirect("manager/tills/overview")
+    id = uuid.UUID(request.POST["id"])
+    context["id"] = id
+    try:
+        till = Till.objects.get(id=id)
+
+        if "save" in request.POST:
+            counts = till.tillmoneycount_set.all()
+            for count in counts:
+                count.amount = float(request.POST[f"counted-{count.id}"])
+                count.save()
+
+        counts = till.tillmoneycount_set.all()
+        context["counts"] = []
+        context["totals"] = {
+            "counted": 0,
+            "expected": 0,
+            "variance": 0,
+        }
+        for count in counts:
+            expected = count.expected
+            variance = count.amount - expected
+            if variance > 0:
+                warn = "The counted amount is higher than expected"
+            elif variance < 0:
+                warn = "The counted amount is lower than expected"
+            else:
+                warn = None
+
+            context["counts"].append({
+                "id": count.id,
+                "name": count.paymentMethod.name,
+                "amount": count.amount,
+                "expected": expected,
+                "variance": variance,
+                "warn": warn,
+            })
+            context["totals"]["counted"] += count.amount
+            context["totals"]["expected"] += expected
+            context["totals"]["variance"] += variance
+        if context["totals"]["variance"] > 0:
+            context["totals"]["warn"] = "The total is higher than expected"
+        if context["totals"]["variance"] < 0:
+            context["totals"]["danger"] = "Some money is (still) missing!"
+    except Till.DoesNotExist:
+        context["error"] = "The specified till does not exist"
+    except KeyError:
+        context["error"] = "One of the counts required was missing in the request. Please fill all counts"
+
+    return render(request, template_name="manager/tills/till/count.html", context=context)
+
+
+@manager_login_required
+def manager_tills_till_close(request):
+    color = 'danger'
+    message = 'Server error occured, please try again'
+    icon = 'times'
+    if request.method == "POST":
+        if "id" in request.POST:
+            try:
+                till = Till.objects.get(id=uuid.UUID(request.POST["id"]))
+                if till.state == Till.STOPPED:
+                    till.close()
+                    color = "success"
+                    message = "The till was closed successfully"
+                    icon = "check"
+                else:
+                    color = 'warning'
+                    message = f'The till is in a state from which it cannot be closed: {till.state}'
+                    icon = 'exclamation-triangle'
+            except Till.DoesNotExist:
+                color = 'danger'
+                message = 'The specified till does not exist.'
+                icon = 'times'
+
+    return manager_tills_overview(request, [{"color": color, "message": message, "icon": icon}])
 
 
 @admin_login_required

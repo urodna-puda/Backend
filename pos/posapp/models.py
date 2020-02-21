@@ -263,8 +263,17 @@ class Till(models.Model):
         else:
             return False
 
+    def close(self):
+        if self.state == Till.STOPPED:
+            self.state = Till.COUNTED
+            self.countedAt = datetime.now()
+            self.save()
+            return True
+        else:
+            return False
+
     def __str__(self):
-        return f"{self.tillType} type till of cashier(s) {self.cashier_names}"
+        return f"Till of cashier(s) {self.cashier_names}"
 
 
 class TillMoneyCount(models.Model):
@@ -278,6 +287,15 @@ class TillMoneyCount(models.Model):
         methods = self.till.tillType.paymentMethods.all()
         if self.paymentMethod not in methods:
             raise ValidationError(f'This payment method ({self.paymentMethod}) is not available in this till.')
+
+    @property
+    def expected(self):
+        val = 0
+        orders = self.till.order_set.all()
+        payments = PaymentInOrder.objects.filter(method=self.paymentMethod, order__in=orders)
+        for payment in payments:
+            val += payment.amount
+        return val
 
     def __str__(self):
         return f"Money count of {self.paymentMethod.currency.code} {self.amount} via {self.paymentMethod} in till {self.till}"
