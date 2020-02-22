@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from posapp.models import Tab, Product, User
+from posapp.models import Tab, Product, User, PaymentMethod
 from posapp.serializers import TabListSerializer
 
 
@@ -115,3 +115,31 @@ class UserToggles(APIView):
             'now': new_state,
             'message': f"The user now <span class=\"badge badge-{self.is_text if new_state else self.isnt_text}</span> {comment}.",
         }, status.HTTP_200_OK)
+
+
+class MethodToggleChange(APIView):
+    is_text = "success\">is"
+    isnt_text = "danger\">isn't"
+
+    def post(self, request, id, format=None):
+        if not request.user.is_admin:
+            return Response({
+                'status': 404,
+                'error': 'Only admins can access this view',
+            }, status.HTTP_403_FORBIDDEN)
+
+        try:
+            method = PaymentMethod.objects.get(id=id)
+            method.changeAllowed = not method.changeAllowed
+            method.save()
+            return Response({
+                'status': 200,
+                'now': method.changeAllowed,
+                'message': f"The method now <span class=\"badge badge-{self.is_text if method.changeAllowed else self.isnt_text}</span> allowed as change.",
+            }, status.HTTP_200_OK)
+
+        except PaymentMethod.DoesNotExist:
+            return Response({
+                'status': 404,
+                'error': 'Payment method with this id was not found',
+            }, status.HTTP_404_NOT_FOUND)
