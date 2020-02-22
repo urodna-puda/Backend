@@ -2,7 +2,6 @@ from datetime import datetime
 from uuid import uuid4
 
 from django.contrib.auth.models import AbstractUser
-from django.core.exceptions import ValidationError
 from django.db import models
 from django_countries.fields import CountryField
 from phonenumber_field.modelfields import PhoneNumberField
@@ -282,12 +281,6 @@ class TillMoneyCount(models.Model):
     till = models.ForeignKey(Till, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=15, decimal_places=3, default=0)
 
-    def clean(self):
-        super(TillMoneyCount, self).clean()
-        methods = self.till.tillType.paymentMethods.all()
-        if self.paymentMethod not in methods:
-            raise ValidationError(f'This payment method ({self.paymentMethod}) is not available in this till.')
-
     @property
     def expected(self):
         val = 0
@@ -297,8 +290,36 @@ class TillMoneyCount(models.Model):
             val += payment.amount
         return val
 
+    @property
+    def counted(self):
+        counted = self.amount
+        for edit in self.tilledit_set.all():
+            counted += edit.amount
+        return counted
+
+    def add_edit(self, amount, reason):
+        counted = self.counted
+        if -1 * amount > counted:
+            amount = -1 * counted
+        if amount == 0:
+            return None
+        edit = TillEdit()
+        edit.count = self
+        edit.amount = amount
+        edit.reason = reason
+        edit.save()
+        return edit
+
     def __str__(self):
         return f"Money count of {self.paymentMethod.currency.code} {self.amount} via {self.paymentMethod} in till {self.till}"
+
+
+class TillEdit(models.Model):
+    id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
+    count = models.ForeignKey(TillMoneyCount, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=15, decimal_places=3, default=0)
+    created = models.DateTimeField(auto_now_add=True)
+    reason = models.TextField()
 
 
 class Order(models.Model):

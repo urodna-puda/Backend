@@ -152,6 +152,38 @@
                     </div>
                 </div>
             </div>
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header border-0">
+                        <h2 class="card-title">
+                            <i class="fas fa-table"></i>
+                            Till edits
+                        </h2>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped table-hover table-valign-middle">
+                            <thead>
+                            <tr class="d-flex">
+                                <th class="col-sm-3 col-lg-2">Payment method</th>
+                                <th class="col-sm-3 col-lg-2">Amount</th>
+                                <th class="col-sm-3 col-lg-2">Date and time</th>
+                                <th class="col-sm-3 col-lg-6">Reason</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for edit in edits %}
+                                <tr class="d-flex">
+                                    <th class="col-sm-3 col-lg-2">{{ edit.count.paymentMethod.name }}</th>
+                                    <th class="col-sm-3 col-lg-2">{{ edit.amount }}</th>
+                                    <th class="col-sm-3 col-lg-2">{{ edit.created }}</th>
+                                    <th class="col-sm-3 col-lg-6">{{ edit.reason }}</th>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <!--VIRTUAL FORMS-->

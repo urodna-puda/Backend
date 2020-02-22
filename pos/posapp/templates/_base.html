@@ -41,11 +41,11 @@
             return await response.json(); // parses JSON response into native JavaScript objects
         }
 
-        jQuery.fn.visible = function() {
+        jQuery.fn.visible = function () {
             return this.css('visibility', 'visible');
         };
 
-        jQuery.fn.invisible = function() {
+        jQuery.fn.invisible = function () {
             return this.css('visibility', 'hidden');
         };
     </script>
@@ -72,6 +72,23 @@
                     </ol>
                 </div>
             </div>
+            {% for notification in notifications %}
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12">
+                        <div class="card bg-gradient-{{ notification.color }}">
+                            <div class="card-body">
+                                <i class="fas fa-{{ notification.icon }}"></i>
+                                {{ notification.message }}
+                                <div class="float-right">
+                                    <button type="button" class="btn btn-tool" data-card-widget="remove">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
         </div><!-- /.container-fluid -->
     </section>
 {% endblock %}

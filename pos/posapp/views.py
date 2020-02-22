@@ -7,7 +7,7 @@ from django.shortcuts import render, redirect
 
 # Create your views here.
 from posapp.forms import CreateUserForm
-from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions
+from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount
 from posapp.security import waiter_login_required, manager_login_required, admin_login_required
 
 
@@ -264,26 +264,30 @@ def manager_tills_till(request):
             id = uuid.UUID(request.POST["id"])
             try:
                 till = Till.objects.get(id=id)
-                if "save" in request.POST:
-                    pass
+                context["id"] = id
                 counts = till.tillmoneycount_set.all()
                 context["counts"] = []
+                context["edits"] = []
                 context["totals"] = {"expected": 0, "counted": 0, "variance": 0}
 
                 for count in counts:
                     expected = count.expected
-                    variance = count.amount - count.expected
+                    counted = count.counted
+                    variance = counted - expected
                     context["counts"].append({
                         "methodName": count.paymentMethod.name,
                         "expected": expected,
-                        "counted": count.amount,
+                        "counted": counted,
                         "variance": variance,
                         "varianceUp": variance > 0,
                         "varianceDown": variance < 0,
                     })
                     context["totals"]["expected"] += expected
-                    context["totals"]["counted"] += count.amount
+                    context["totals"]["counted"] += counted
                     context["totals"]["variance"] += variance
+
+                    for edit in count.tilledit_set.order_by(('created')).all():
+                        context["edits"].append(edit)
 
                 context["totals"]["varianceDown"] = context["totals"]["variance"] < 0
                 context["totals"]["varianceUp"] = context["totals"]["variance"] > 0
@@ -422,7 +426,51 @@ def manager_tills_till_close(request):
 @manager_login_required
 def manager_tills_till_edit(request):
     context = prepare_context(request)
-    return render(request, template_name="manager/tills/till/edit.html")
+    notifications = []
+    if request.method == "POST":
+        if "id" in request.POST:
+            id = uuid.UUID(request.POST["id"])
+            try:
+                till = Till.objects.filter(state=Till.COUNTED).get(id=id)
+                if "save" in request.POST:
+                    try:
+                        count_id = request.POST["count"]
+                        amount = float(request.POST["amount"])
+                        reason = request.POST["reason"]
+                        count = till.tillmoneycount_set.get(id=count_id)
+                        edit = count.add_edit(amount, reason)
+                        if not edit:
+                            notifications.append((
+                                'warning',
+                                'Zero edits can\'t be saved.',
+                                'info-circle',
+                            ))
+                        elif edit.amount > amount:
+                            notifications.append((
+                                'info',
+                                'The edit had to be changed so that total amount of money wouldn\'t be negative. '
+                                f'Actual saved amount is {edit.amount} and new counted amount is {count.counted}.',
+                                'info-circle',
+                            ))
+                        else:
+                            notifications.append(('success', 'The edit was saved.', 'check'))
+                    except TillMoneyCount.DoesNotExist:
+                        notifications.append((
+                            'warning',
+                            'The specified payment method does not exist in this till. Please try again.',
+                            'exclamation-triangle',
+                        ))
+                context["id"] = id
+                context["counts"] = till.tillmoneycount_set.all()
+            except Till.DoesNotExist:
+                notifications.append(('danger',
+                                      'The selected till is not available for edits. It either does not exist or is in a state that does not allow edits.',
+                                      'times'))
+
+            context["notifications"] = [{"color": color, "message": message, "icon": icon} for color, message, icon in
+                                        notifications]
+            return render(request, template_name="manager/tills/till/edit.html", context=context)
+    return manager_tills_overview(request, [('danger', 'Server error occurred, please try again.', 'times')])
 
 
 @admin_login_required
