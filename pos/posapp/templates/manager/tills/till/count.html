@@ -12,7 +12,7 @@
     <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
     <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager" %}">Manager</a></li>
     <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager/tills" %}">Tills</a></li>
-    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager/tills/till" %}">This till</a></li>
+    <li class="breadcrumb-item" aria-current="page"><button type="submit" class="btn btn-link p-0 m-0 align-baseline" form="thisTillShowForm">This till</button></li>
     <li class="breadcrumb-item active" aria-current="page">Count</li>
 {% endblock %}
 
@@ -165,6 +165,10 @@
         <input type="hidden" name="id" value="{{ id }}"/>
     </form>
     <form action="{% url "manager/tills/till/close" %}" method="post" id="closeForm" style="display:none">
+        {% csrf_token %}
+        <input type="hidden" name="id" value="{{ id }}"/>
+    </form>
+    <form action="{% url "manager/tills/till" %}" method="post" id="thisTillShowForm" style="display:none">
         {% csrf_token %}
         <input type="hidden" name="id" value="{{ id }}"/>
     </form>
