@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from posapp.models import Tab, Product, User, PaymentMethod
+from posapp.models import Tab, Product, User, PaymentMethod, Currency
 from posapp.serializers import TabListSerializer
 
 
@@ -115,6 +115,34 @@ class UserToggles(APIView):
             'now': new_state,
             'message': f"The user now <span class=\"badge badge-{self.is_text if new_state else self.isnt_text}</span> {comment}.",
         }, status.HTTP_200_OK)
+
+
+class CurrencyToggleEnabled(APIView):
+    is_text = "success\">is"
+    isnt_text = "danger\">isn't"
+
+    def post(self, request, id, format=None):
+        if not request.user.is_admin:
+            return Response({
+                'status': 404,
+                'error': 'Only admins can access this view',
+            }, status.HTTP_403_FORBIDDEN)
+
+        try:
+            currency = Currency.objects.get(id=id)
+            currency.enabled = not currency.enabled
+            currency.save()
+            return Response({
+                'status': 200,
+                'now': currency.enabled,
+                'message': f"The currency now <span class=\"badge badge-{self.is_text if currency.enabled else self.isnt_text}</span> enabled.",
+            }, status.HTTP_200_OK)
+
+        except Currency.DoesNotExist:
+            return Response({
+                'status': 404,
+                'error': 'Currency with this id was not found',
+            }, status.HTTP_404_NOT_FOUND)
 
 
 class MethodToggleChange(APIView):

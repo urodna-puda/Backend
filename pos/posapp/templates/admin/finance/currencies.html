@@ -72,11 +72,16 @@
                                     <td>{{ currency.symbol }}</td>
                                     <td>{{ currency.subunit }}</td>
                                     <td>
-                                        {% if currency.enabled %}
-                                            <i class="text-success fas fa-check-circle"></i>
-                                        {% else %}
-                                            <i class="text-danger fas fa-times-circle"></i>
-                                        {% endif %}
+                                        <button type="button" class="btn btn-tool toggle-manager"
+                                                onclick="toggleEnabled('{{ currency.id }}')">
+                                            {% if currency.enabled %}
+                                                <i class="text-success fas fa-check-circle"
+                                                   id="enabled-indicator-{{ currency.id }}"></i>
+                                            {% else %}
+                                                <i class="text-danger fas fa-times-circle"
+                                                   id="enabled-indicator-{{ currency.id }}"></i>
+                                            {% endif %}
+                                        </button>
                                     </td>
                                 </tr>
                             {% endfor %}
@@ -160,5 +165,35 @@
             window.location = "?page={{ page_number }}&page_length={{ page_length.value }}" + (search ? "&search=" + search : "");
             return false;
         });
+
+        function toggleEnabled(id) {
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+
+            postData("/api/1/currencies/" + id + "/toggleEnabled").then(result => {
+                if (result.status === 200) {
+                    if (result.now) {
+                        $("#enabled-indicator-" + id).removeClass().addClass("text-success fas fa-check-circle");
+                    } else {
+                        $("#enabled-indicator-" + id).removeClass().addClass("text-danger fas fa-times-circle");
+                    }
+                    $(document).Toasts('create', {
+                        body: result.message,
+                        title: 'Currency updated',
+                        icon: 'text-success fas fa-check fa-lg',
+                        autohide: true,
+                        delay: 5000,
+                    })
+                } else {
+                    $(document).Toasts('create', {
+                        body: result.error,
+                        title: 'Currency update failed',
+                        icon: 'text-danger fas fa-times fa-lg',
+                        autohide: true,
+                        delay: 5000,
+                    })
+                }
+            });
+        }
     </script>
 {% endblock %}
