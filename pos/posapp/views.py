@@ -263,7 +263,7 @@ def manager_tills_till(request):
         if "id" in request.POST:
             id = uuid.UUID(request.POST["id"])
             try:
-                till = Till.objects.get(id=id)
+                till = Till.objects.filter(state=Till.COUNTED).get(id=id)
                 context["id"] = id
                 counts = till.tillmoneycount_set.all()
                 context["counts"] = []
