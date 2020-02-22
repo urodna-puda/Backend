@@ -1,6 +1,6 @@
 from django import forms
 
-from posapp.models import User
+from posapp.models import User, PaymentMethod
 
 
 class CreateUserForm(forms.ModelForm):
@@ -20,4 +20,17 @@ class CreateUserForm(forms.ModelForm):
                 visible.field.widget.attrs['class'] = 'form-check-input'
 
 
+class CreatePaymentMethodForm(forms.ModelForm):
+    class Meta:
+        model = PaymentMethod
+        fields = ['name', 'currency', 'changeAllowed']
 
+    def __init__(self, *args, **kwargs):
+        super(CreatePaymentMethodForm, self).__init__(*args, **kwargs)
+        for visible in self.visible_fields():
+            if isinstance(visible.field.widget, forms.widgets.TextInput):
+                visible.field.widget.attrs['class'] = 'form-control'
+            elif isinstance(visible.field.widget, forms.widgets.Select):
+                visible.field.widget.attrs['class'] = 'form-control'
+            elif isinstance(visible.field.widget, forms.widgets.CheckboxInput):
+                visible.field.widget.attrs['class'] = 'form-check-input'
