@@ -1,0 +1,88 @@
+{% extends "_base.html" %}
+{% load generic %}
+
+{% block page_name %}
+    <i class="fas fa-edit"></i>
+    Edit till
+{% endblock %}
+
+{% block no_description %}{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager" %}">Manager</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager/tills" %}">Tills</a></li>
+    <li class="breadcrumb-item" aria-current="page"><button type="submit" class="btn btn-link p-0 m-0 align-baseline" form="thisTillShowForm">This till</button></li>
+    <li class="breadcrumb-item active" aria-current="page">Edit</li>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        {% for notification in notifications %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        <div class="row">
+            <div class="col-lg-8 col-sm-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-table"></i>
+                            Edit details
+                        </h2>
+                        <div class="card-tools">
+                            <button type="submit" class="btn btn-tool" name="show" data-toggle="tooltip"
+                                    data-position="top" title="Show till" form="showForm">
+                                <i class="fas fa-receipt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <form action="{% url "manager/tills/till/edit" %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="id" value="{{ id }}"/>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="count">Payment method</label>
+                                <select class="form-control" name="count" id="count">
+                                    {% for count in counts %}
+                                        <option value="{{ count.id }}">{{ count.paymentMethod.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="amount">Amount to add/remove</label>
+                                <input type="number" class="form-control" name="amount" id="amount" value="0"/>
+                            </div>
+                            <div class="form-group">
+                                <label for="reason">Reason for edit</label>
+                                <textarea name="reason" id="reason" class="form-control" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="container">
+                                <div class="float-right">
+                                    <button type="submit" name="save" class="btn btn-outline-primary">Save edit
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--VIRTUAL FORMS-->
+    <form action="{% url "manager/tills/till" %}" method="post" id="showForm" style="display: none;">
+        {% csrf_token %}
+        <input type="hidden" name="id" value="{{ id }}"/>
+    </form>
+    <form action="{% url "manager/tills/till" %}" method="post" id="thisTillShowForm" style="display:none">
+        {% csrf_token %}
+        <input type="hidden" name="id" value="{{ id }}"/>
+    </form>
+{% endblock %}

@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.http import HttpRequest
 from django_countries.fields import CountryField
 from phonenumber_field.modelfields import PhoneNumberField
 
@@ -21,8 +22,12 @@ class User(AbstractUser):
     def requires_admin_to_toggle(self):
         return self.is_manager or self.is_admin
 
+    @property
+    def name(self):
+        return f"{self.first_name} {self.last_name}"
+
     def __str__(self):
-        return f"{self.last_name}, {self.first_name} ({self.username})"
+        return f"{self.name} ({self.username})"
 
 
 class UnitGroup(models.Model):
@@ -177,30 +182,38 @@ class PaymentMethod(models.Model):
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
     name = models.CharField(max_length=1024, null=False)
     currency = models.ForeignKey(Currency, on_delete=models.PROTECT, limit_choices_to={"enabled": True})
+    changeAllowed = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
 
 
-class Deposit(models.Model):
+class TillPaymentOptions(models.Model):
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
     name = models.CharField(max_length=1024, null=False)
-    values = models.ManyToManyField(PaymentMethod, through="DepositValue")
+    methods = models.ManyToManyField(PaymentMethod, related_name="paymentOptions")
+    changeMethod = models.ForeignKey(PaymentMethod, related_name="optionsAsChange", on_delete=models.PROTECT,
+                                     limit_choices_to={"currency__enabled": True, "changeAllowed": True})
+    depositAmount = models.DecimalField(max_digits=15, decimal_places=3)
+    enabled = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name_plural = "Till payment options"
+
+    def create_till(self):
+        till = Till()
+        till.changeMethod = self.changeMethod
+        till.depositAmount = self.depositAmount
+        till.save()
+        for method in self.methods.all():
+            count = TillMoneyCount()
+            count.till = till
+            count.paymentMethod = method
+            count.save()
+        return till
 
     def __str__(self):
         return self.name
-
-
-class DepositValue(models.Model):
-    method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT)
-    deposit = models.ForeignKey(Deposit, on_delete=models.CASCADE)
-    amount = models.DecimalField(max_digits=15, decimal_places=3)
-
-    class Meta:
-        verbose_name_plural = "Deposit values"
-
-    def __str__(self):
-        return f"{self.method.currency.symbol}{self.amount} via {self.method} in deposit {self.deposit}"
 
 
 class Till(models.Model):
@@ -213,23 +226,102 @@ class Till(models.Model):
         (COUNTED, "Counted"),
     ]
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
-    cashiers = models.ManyToManyField(User, related_name="tills_owned", limit_choices_to={"pudaUser.is_cashier": True})
-    changePaymentMethod = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT, related_name="tillsAsChange")
-    paymentMethods = models.ManyToManyField(PaymentMethod)
+    cashiers = models.ManyToManyField(User, related_name="tills_owned", limit_choices_to={"is_waiter": True})
     openedAt = models.DateTimeField(editable=False, auto_now_add=True)
     stoppedAt = models.DateTimeField(null=True, blank=True)
     countedAt = models.DateTimeField(null=True, blank=True)
     countedBy = models.ForeignKey(User, on_delete=models.PROTECT, related_name="tills_counted",
-                                  limit_choices_to={"pudaUser.is_manager": True})
+                                  limit_choices_to={"is_manager": True}, null=True)
     state = models.CharField(max_length=1, choices=TILL_STATES, default=OPEN)
-    deposit = models.ForeignKey(Deposit, on_delete=models.PROTECT)
+    paymentMethods = models.ManyToManyField(PaymentMethod, through="TillMoneyCount", related_name="tillsEnabled")
+    changeMethod = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT, related_name="tillsAsChange")
+    depositAmount = models.DecimalField(max_digits=15, decimal_places=3)
 
     @property
     def cashier_names(self):
-        names = self.cashiers.first().username
-        for name in self.cashiers.all()[1:-1]:
-            names += f", {name}"
-        names += f" and {self.cashiers.last()}"
+        if self.cashiers:
+            namelist = [cashier.name for cashier in self.cashiers.all()]
+            names = namelist[0]
+            if len(namelist) > 1:
+                for name in namelist[1:-1]:
+                    names += f", {name}"
+                names += f" and {namelist[-1]}"
+            return names
+        else:
+            return "Nobody is assigned"
+
+    @property
+    def deposit(self):
+        return self.changeMethod.name + " " + str(self.depositAmount)
+
+    def stop(self):
+        if self.state == Till.OPEN:
+            self.state = Till.STOPPED
+            self.stoppedAt = datetime.now()
+            self.save()
+            return True
+        else:
+            return False
+
+    def close(self, request):
+        if self.state == Till.STOPPED:
+            self.state = Till.COUNTED
+            self.countedAt = datetime.now()
+            self.countedBy = request.user
+            self.save()
+            return True
+        else:
+            return False
+
+    def __str__(self):
+        return f"Till of cashier(s) {self.cashier_names}"
+
+
+class TillMoneyCount(models.Model):
+    id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
+    paymentMethod = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT)
+    till = models.ForeignKey(Till, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=15, decimal_places=3, default=0)
+
+    @property
+    def expected(self):
+        val = 0
+        orders = self.till.order_set.all()
+        payments = PaymentInOrder.objects.filter(method=self.paymentMethod, order__in=orders)
+        for payment in payments:
+            val += payment.amount
+        return val
+
+    @property
+    def counted(self):
+        counted = self.amount
+        for edit in self.tilledit_set.all():
+            counted += edit.amount
+        return counted
+
+    def add_edit(self, amount, reason):
+        counted = self.counted
+        if -1 * amount > counted:
+            amount = -1 * counted
+        if amount == 0:
+            return None
+        edit = TillEdit()
+        edit.count = self
+        edit.amount = amount
+        edit.reason = reason
+        edit.save()
+        return edit
+
+    def __str__(self):
+        return f"Money count of {self.paymentMethod.currency.code} {self.amount} via {self.paymentMethod} in till {self.till}"
+
+
+class TillEdit(models.Model):
+    id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
+    count = models.ForeignKey(TillMoneyCount, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=15, decimal_places=3, default=0)
+    created = models.DateTimeField(auto_now_add=True)
+    reason = models.TextField()
 
 
 class Order(models.Model):
