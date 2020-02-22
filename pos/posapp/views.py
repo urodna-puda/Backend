@@ -3,7 +3,7 @@ import uuid
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import HttpResponseRedirect
-from django.shortcuts import render, redirect
+from django.shortcuts import render as render_django, redirect
 
 # Create your views here.
 from posapp.forms import CreateUserForm
@@ -11,48 +11,91 @@ from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, Till
 from posapp.security import waiter_login_required, manager_login_required, admin_login_required
 
 
-def prepare_context(request):
-    return {
-        'page': request.get_full_path()[1:],
-        'waiter_role': request.user.is_waiter,
-        'manager_role': request.user.is_manager,
-        'admin_role': request.user.is_admin,
-    }
+def render(request, template_name, context, content_type=None, status=None, using=None):
+    return render_django(request, template_name, dict(context), content_type, status, using)
 
 
-def add_pagination_context(context, manager, page, page_length, key):
-    count = manager.count()
-    last_page = count // page_length
-    context[key] = {}
+class Notification:
+    PRIMARY = "primary"
+    SECONDARY = "secondary"
+    SUCCESS = "success"
+    WARNING = "warning"
+    DANGER = "danger"
+    DARK = "dark"
+    LIGHT = "light"
 
-    context[key]['data'] = manager[page * page_length:(page + 1) * page_length]
+    def __init__(self, color, message, icon):
+        self.color = color
+        self.message = message
+        self.icon = icon
 
-    context[key]['showing'] = {}
-    context[key]['showing']['from'] = page * page_length
-    context[key]['showing']['to'] = min((page + 1) * page_length - 1, count - 1)
-    context[key]['showing']['of'] = count
 
-    context[key]['pages'] = {}
-    context[key]['pages']['previous'] = page - 1
-    context[key]['pages']['showPrevious'] = context[key]['pages']['previous'] >= 0
-    context[key]['pages']['next'] = page + 1
-    context[key]['pages']['showNext'] = context[key]['pages']['next'] <= last_page
-    context[key]['pages']['last'] = last_page
+class Context:
+    def __init__(self, request):
+        self.page = request.get_full_path()[1:]
+        self.waiter_role = request.user.is_waiter
+        self.manager_role = request.user.is_manager
+        self.admin_role = request.user.is_admin
+        self.notifications = []
+        self.data = {}
 
-    links = []
-    if page < (last_page / 2):
-        first_link = max(0, page - 2)
-        start = first_link
-        end = min(last_page + 1, first_link + 5)
-    else:
-        last_link = min(last_page, page + 2) + 1
-        start = max(0, last_link - 5)
-        end = last_link
+    def add_notification(self, color: str, message: str, icon: str):
+        self.notifications.append(Notification(color, message, icon))
 
-    for i in range(start, end):
-        links.append({'page': i, 'active': i == page})
+    def add_pagination_context(self, manager, page, page_length, key):
+        count = manager.count()
+        last_page = count // page_length
+        self.data[key] = {}
 
-    context[key]['pages']['links'] = links
+        self.data[key]['data'] = manager[page * page_length:(page + 1) * page_length]
+
+        self.data[key]['showing'] = {}
+        self.data[key]['showing']['from'] = page * page_length
+        self.data[key]['showing']['to'] = min((page + 1) * page_length - 1, count - 1)
+        self.data[key]['showing']['of'] = count
+
+        self.data[key]['pages'] = {}
+        self.data[key]['pages']['previous'] = page - 1
+        self.data[key]['pages']['showPrevious'] = self.data[key]['pages']['previous'] >= 0
+        self.data[key]['pages']['next'] = page + 1
+        self.data[key]['pages']['showNext'] = self.data[key]['pages']['next'] <= last_page
+        self.data[key]['pages']['last'] = last_page
+
+        links = []
+        if page < (last_page / 2):
+            first_link = max(0, page - 2)
+            start = first_link
+            end = min(last_page + 1, first_link + 5)
+        else:
+            last_link = min(last_page, page + 2) + 1
+            start = max(0, last_link - 5)
+            end = last_link
+
+        for i in range(start, end):
+            links.append({'page': i, 'active': i == page})
+
+        self.data[key]['pages']['links'] = links
+
+    def __getitem__(self, item):
+        return self.data[item]
+
+    def __setitem__(self, key, value):
+        self.data[key] = value
+
+    def __len__(self):
+        return 5 + len(self.data)
+
+    def __contains__(self, item):
+        return item in self.data
+
+    def __iter__(self):
+        yield 'page', self.page
+        yield 'waiter_role', self.waiter_role
+        yield 'manager_role', self.manager_role
+        yield 'admin_role', self.manager_role
+        yield 'notifications', self.notifications
+        for key in self.data:
+            yield key, self.data[key]
 
 
 def generate_page_length_options(page_length):
@@ -81,7 +124,7 @@ def index(request):
 
 @waiter_login_required
 def waiter_tabs(request):
-    context = prepare_context(request)
+    context = Context(request)
     tabs = []
     tabs_list = Tab.objects.filter(state=Tab.OPEN)
     for tab in tabs_list:
@@ -153,19 +196,19 @@ def waiter_tabs(request):
 
 @waiter_login_required
 def waiter_orders(request):
-    context = prepare_context(request)
+    context = Context(request)
     return render(request, template_name="waiter/orders.html", context=context)
 
 
 @manager_login_required
 def manager_users_overview(request):
-    context = prepare_context(request)
+    context = Context(request)
     page_length = int(request.GET.get('page_length', 20))
     page = int(request.GET.get('page', 0))
 
     users = User.objects.filter(is_active=True).order_by("last_name", "first_name")
     context['me'] = request.user.username
-    add_pagination_context(context, users, page, page_length, 'users')
+    context.add_pagination_context(users, page, page_length, 'users')
 
     return render(request, template_name="manager/users/overview.html", context=context)
 
@@ -179,7 +222,7 @@ def check_dict(dict, keys):
 
 @manager_login_required
 def manager_users_create(request):
-    context = prepare_context(request)
+    context = Context(request)
     if request.method == 'GET':
         form = CreateUserForm()
     elif request.method == 'POST':
@@ -202,7 +245,7 @@ def manager_users_create(request):
 
 @manager_login_required
 def manager_tills_overview(request, result=None):
-    context = prepare_context(request)
+    context = Context(request)
     page_length = int(request.GET.get('page_length', 20))
     page_open = int(request.GET.get('page_open', 0))
     page_stopped = int(request.GET.get('page_closed', 0))
@@ -211,9 +254,9 @@ def manager_tills_overview(request, result=None):
     open_tills = Till.objects.filter(state=Till.OPEN)
     stopped_tills = Till.objects.filter(state=Till.STOPPED)
     counted_tills = Till.objects.filter(state=Till.COUNTED)
-    add_pagination_context(context, open_tills, page_open, page_length, 'open')
-    add_pagination_context(context, stopped_tills, page_stopped, page_length, 'stopped')
-    add_pagination_context(context, counted_tills, page_counted, page_length, 'counted')
+    context.add_pagination_context(open_tills, page_open, page_length, 'open')
+    context.add_pagination_context(stopped_tills, page_stopped, page_length, 'stopped')
+    context.add_pagination_context(counted_tills, page_counted, page_length, 'counted')
 
     context["page_open"] = page_open
     context["page_stopped"] = page_stopped
@@ -221,15 +264,15 @@ def manager_tills_overview(request, result=None):
     context["page_length"] = generate_page_length_options(page_length)
 
     if result:
-        context["notifications"] = [{"color": color, "message": message, "icon": icon} for color, message, icon in
-                                    result]
+        for color, message, icon in result:
+            context.add_notification(color, message, icon)
 
     return render(request, template_name="manager/tills/overview.html", context=context)
 
 
 @manager_login_required
 def manager_tills_assign(request):
-    context = prepare_context(request)
+    context = Context(request)
 
     if request.method == 'POST':
         if all(k in request.POST for k in ["users", "options"]):
@@ -242,13 +285,17 @@ def manager_tills_assign(request):
                 for username in usernames:
                     user = User.objects.get(username=username)
                     till.cashiers.add(user)
+                context.add_notification(Notification.SUCCESS, "The till was assigned successfully", "check")
             except User.DoesNotExist:
-                context["error"] = "One of the selected users does not exist"
+                context.add_notification(Notification.DANGER, "One of the selected users does not exist",
+                                         "exclamation-triangle")
             except TillPaymentOptions.DoesNotExist:
-                context["error"] = "The selected payment options config does not exist. " \
-                                   "It may have also been disabled by an administrator."
+                context.add_notification(Notification.DANGER,
+                                         "The selected payment options config does not exist. It may have also been "
+                                         "disabled by an administrator.",
+                                         "exclamation-triangle")
         else:
-            context["error"] = "Some required fields are missing"
+            context.add_notification(Notification.DANGER, "Some required fields are missing", "exclamation-triangle")
 
     context["users"] = User.objects.filter(is_waiter=True)
     context["options"] = TillPaymentOptions.objects.filter(enabled=True)
@@ -258,7 +305,7 @@ def manager_tills_assign(request):
 
 @manager_login_required
 def manager_tills_till(request):
-    context = prepare_context(request)
+    context = Context(request)
     if request.method == "POST":
         if "id" in request.POST:
             id = uuid.UUID(request.POST["id"])
@@ -315,31 +362,32 @@ def manager_tills_till_stop(request):
     if request.method == "GET":
         return redirect('manager/tills/overview')
     elif request.method == "POST":
+        notifications = []
         try:
             till = Till.objects.get(id=uuid.UUID(request.POST["id"]))
             if till.state == Till.OPEN:
                 if till.stop():
-                    color = 'success'
-                    message = 'The till was stopped successfully. It is now available for counting.'
-                    icon = 'check'
+                    notifications.append((Notification.SUCCESS,
+                                          'The till was stopped successfully. It is now available for counting.',
+                                          'check'))
                 else:
-                    color = 'danger'
-                    message = 'An error occured during stopping. Please try again.'
-                    icon = 'times'
+                    notifications.append((Notification.DANGER,
+                                          'An error occured during stopping. Please try again.',
+                                          'times'))
             else:
-                color = 'warning'
-                message = f'The till is in a state from which it cannot be closed: {till.state}'
-                icon = 'exclamation-triangle'
+                notifications.append((Notification.WARNING,
+                                      f'The till is in a state from which it cannot be closed: {till.state}',
+                                      'exclamation-triangle'))
         except Till.DoesNotExist:
-            color = 'danger'
-            message = 'The specified till does not exist.'
-            icon = 'times'
-        return manager_tills_overview(request, [(color, message, icon)])
+            notifications.append((Notification.DANGER,
+                                  'The specified till does not exist.',
+                                  'times'))
+        return manager_tills_overview(request, notifications)
 
 
 @manager_login_required
 def manager_tills_till_count(request):
-    context = prepare_context(request)
+    context = Context(request)
     if request.method == "GET":
         return redirect("manager/tills/overview")
     id = uuid.UUID(request.POST["id"])
@@ -390,9 +438,11 @@ def manager_tills_till_count(request):
         if context["totals"]["variance"] < 0:
             context["totals"]["danger"] = "Some money is (still) missing!"
     except Till.DoesNotExist:
-        context["error"] = "The specified till does not exist"
+        context.add_notification(Notification.DANGER, "The specified till does not exist", "exclamation-triangle")
     except KeyError:
-        context["error"] = "One of the counts required was missing in the request. Please fill all counts"
+        context.add_notification(Notification.DANGER,
+                                 "One of the counts required was missing in the request. Please fill all counts",
+                                 "exclamation-triangle")
 
     return render(request, template_name="manager/tills/till/count.html", context=context)
 
@@ -425,8 +475,7 @@ def manager_tills_till_close(request):
 
 @manager_login_required
 def manager_tills_till_edit(request):
-    context = prepare_context(request)
-    notifications = []
+    context = Context(request)
     if request.method == "POST":
         if "id" in request.POST:
             id = uuid.UUID(request.POST["id"])
@@ -440,49 +489,47 @@ def manager_tills_till_edit(request):
                         count = till.tillmoneycount_set.get(id=count_id)
                         edit = count.add_edit(amount, reason)
                         if not edit:
-                            notifications.append((
+                            context.add_notification(
                                 'warning',
                                 'Zero edits can\'t be saved.',
-                                'info-circle',
-                            ))
+                                'info-circle'
+                            )
                         elif edit.amount > amount:
-                            notifications.append((
+                            context.add_notification(
                                 'info',
                                 'The edit had to be changed so that total amount of money wouldn\'t be negative. '
                                 f'Actual saved amount is {edit.amount} and new counted amount is {count.counted}.',
-                                'info-circle',
-                            ))
+                                'info-circle'
+                            )
                         else:
-                            notifications.append(('success', 'The edit was saved.', 'check'))
+                            context.add_notification('success', 'The edit was saved.', 'check')
                     except TillMoneyCount.DoesNotExist:
-                        notifications.append((
+                        context.add_notification(
                             'warning',
                             'The specified payment method does not exist in this till. Please try again.',
-                            'exclamation-triangle',
-                        ))
+                            'exclamation-triangle'
+                        )
                 context["id"] = id
                 context["counts"] = till.tillmoneycount_set.all()
             except Till.DoesNotExist:
-                notifications.append(('danger',
-                                      'The selected till is not available for edits. It either does not exist or is in a state that does not allow edits.',
-                                      'times'))
+                context.add_notification('danger',
+                                         'The selected till is not available for edits. It either does not exist or is in a state that does not allow edits.',
+                                         'times')
 
-            context["notifications"] = [{"color": color, "message": message, "icon": icon} for color, message, icon in
-                                        notifications]
             return render(request, template_name="manager/tills/till/edit.html", context=context)
     return manager_tills_overview(request, [('danger', 'Server error occurred, please try again.', 'times')])
 
 
 @admin_login_required
 def admin_finance_currencies(request):
-    context = prepare_context(request)
+    context = Context(request)
     page_length = int(request.GET.get('page_length', 20))
     search = request.GET.get('search', '')
     page = int(request.GET.get('page', 0))
 
     currencies = Currency.objects.filter(
         Q(name__contains=search) | Q(code__contains=search) | Q(symbol__contains=search)).order_by('code')
-    add_pagination_context(context, currencies, page, page_length, 'currencies')
+    context.add_pagination_context(currencies, page, page_length, 'currencies')
 
     context["page_number"] = page
     context["page_length"] = generate_page_length_options(page_length)
@@ -493,4 +540,4 @@ def admin_finance_currencies(request):
 
 @admin_login_required
 def admin_finance_methods(request):
-    context = prepare_context(request)
+    context = Context(request)

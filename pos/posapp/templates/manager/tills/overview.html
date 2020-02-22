@@ -17,18 +17,6 @@
 
 {% block content %}
     <div class="container-fluid">
-        {% for message in notifications %}
-            <div class="row">
-                <div class="col-lg-12 col-sm-12">
-                    <div class="card bg-gradient-{{ message.color }}">
-                        <div class="card-body">
-                            <i class="fas fa-{{ message.icon }}"></i>
-                            {{ message.message }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        {% endfor %}
         <div class="row">
             <div class="col-lg-12 col-sm-12">
                 <div class="card">
