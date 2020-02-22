@@ -407,7 +407,7 @@ def manager_tills_till_close(request):
             try:
                 till = Till.objects.get(id=uuid.UUID(request.POST["id"]))
                 if till.state == Till.STOPPED:
-                    till.close()
+                    till.close(request)
                     color = "success"
                     message = "The till was closed successfully"
                     icon = "check"

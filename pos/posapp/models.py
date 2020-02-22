@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.http import HttpRequest
 from django_countries.fields import CountryField
 from phonenumber_field.modelfields import PhoneNumberField
 
@@ -262,10 +263,11 @@ class Till(models.Model):
         else:
             return False
 
-    def close(self):
+    def close(self, request):
         if self.state == Till.STOPPED:
             self.state = Till.COUNTED
             self.countedAt = datetime.now()
+            self.countedBy = request.user
             self.save()
             return True
         else:
