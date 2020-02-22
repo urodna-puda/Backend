@@ -1,0 +1,267 @@
+{% extends "_base.html" %}
+{% load generic %}
+
+{% block page_name %}
+    <i class="fas fa-money-check-alt"></i>
+    Payment methods
+{% endblock %}
+
+{% block no_description %}{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "admin" %}">Staff</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "admin/finance" %}">Finance</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Payment methods</li>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header border-0">
+                        <h2 class="card-title">
+                            <i class="fas fa-table"></i>
+                            Payment methods
+                        </h2>
+                        <div class="card-tools">
+                            <div class="container-fluid">
+                                <div class="row">
+                                    <div class="col-10">
+                                        <form id="searchForm">
+                                            <div class="input-group mb-3">
+                                                <input type="text" class="form-control" placeholder="Search"
+                                                       aria-label="Search"
+                                                       aria-describedby="search-addon-button" id="searchField"
+                                                       name="search"{% if search %} value="{{ search }}"{% endif %}>
+                                                <div class="input-group-append">
+                                                    <button class="btn btn-outline-secondary" type="submit"
+                                                            id="search-addon-button"><i
+                                                            class="fas fa-search"></i></button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="col-2">
+                                        <button type="button" class="btn btn-tool"
+                                                onclick="$('#createPaymentMethodModal').modal('show')"
+                                                data-toggle="tooltip" data-position="top" title="Create payment method">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped table-hover table-valign-middle">
+                            <thead>
+                            <tr>
+                                <th scope="col">Name</th>
+                                <th scope="col">Currency</th>
+                                <th scope="col">Change allowed</th>
+                                <th scope="col">Currency enabled</th>
+                                <th scope="col">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for method in methods.data %}
+                                <tr>
+                                    <td>{{ method.name }}</td>
+                                    <td>{{ method.currency.name }}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-tool toggle-manager"
+                                                onclick="toggleChange('{{ method.id }}')">
+                                            {% if method.changeAllowed %}
+                                                <i class="text-success fas fa-check-circle"
+                                                   id="change-indicator-{{ method.id }}"></i>
+                                            {% else %}
+                                                <i class="text-danger fas fa-times-circle"
+                                                   id="change-indicator-{{ method.id }}"></i>
+                                            {% endif %}
+                                        </button>
+                                    </td>
+                                    <td>
+                                        {% if method.currency.enabled %}
+                                            <i class="text-success fas fa-check-circle"
+                                               id="change-indicator-{{ method.id }}"></i>
+                                        {% else %}
+                                            <i class="text-danger fas fa-times-circle"
+                                               id="change-indicator-{{ method.id }}"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <form action="{% url "admin/finance/methods/delete" %}" method="post">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="id" value="{{ method.id }}"/>
+                                            <button type="submit" class="btn btn-tool" data-toggle="tooltip"
+                                                    data-position="top" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer border-top">
+                        <div class="row">
+                            <div class="col-6">
+                                Showing items {{ methods.showing.from|add_one }}
+                                through {{ methods.showing.to|add_one }} of {{ methods.showing.of }}.
+                                &nbsp;
+                                Items per page:
+                                <select onchange="window.location = '?page={{ page_number }}&page_length=' + this.options[this.selectedIndex].value{% if search %} + '&search={{ search }}'{% endif %};">
+                                    <option value="5" {% if page_length.len5 %}selected{% endif %}>5 items</option>
+                                    <option value="10" {% if page_length.len10 %}selected{% endif %}>10 items</option>
+                                    <option value="20" {% if page_length.len20 %}selected{% endif %}>20 items</option>
+                                    <option value="50" {% if page_length.len50 %}selected{% endif %}>50 items</option>
+                                    <option value="100" {% if page_length.len100 %}selected{% endif %}>100 items
+                                    </option>
+                                    <option value="200" {% if page_length.len200 %}selected{% endif %}>200 items
+                                    </option>
+                                    <option value="500" {% if page_length.len500 %}selected{% endif %}>500 items
+                                    </option>
+                                    {% if page_length.other %}
+                                        <option value="{{ page_length.value }}" selected>Other ({{ page_length.value }}
+                                            items)
+                                        </option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                            <div class="col-6 text-right">
+                                <div class="btn-group" role="group">
+                                    {% if methods.pages.showPrevious %}
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="window.location = '?page=0&page_length={{ page_length.value }}'{% if search %} +
+                                                    '&search={{ search }}{% endif %}'">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="window.location = '?page={{ methods.pages.previous }}&page_length={{ page_length.value }}'{% if search %} +
+                                                    '&search={{ search }}{% endif %}'">
+                                            <i class=" fas fa-angle-left"></i>
+                                        </button>
+                                    {% endif %}
+                                    {% for link in methods.pages.links %}
+                                        <button type="button"
+                                                class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
+                                                onclick="window.location = '?page={{ link.page }}&page_length={{ page_length.value }}'{% if search %} +
+                                                    '&search={{ search }}{% endif %}'">
+                                            {{ link.page|add_one }}
+                                        </button>
+                                    {% endfor %}
+                                    {% if methods.pages.showNext %}
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="window.location = '?page={{ methods.pages.next }}&page_length={{ page_length.value }}'{% if search %} +
+                                                    '&search={{ search }}{% endif %}'">
+                                            <i class="fas fa-angle-right"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="window.location = '?page={{ methods.pages.last }}&page_length={{ page_length.value }}'{% if search %} +
+                                                    '&search={{ search }}{% endif %}'">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" tab-index="-1" id="createPaymentMethodModal" aria-labelledby="createPaymentMethodModalTitle"
+         aria-hidden="true" role="dialog">
+        <div class="modal-dialog" role="dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createPaymentMethodModalTitle">Create payment method</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    {% if form.non_field_errors %}
+                        <div class="card bg-gradient-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+                    <form action="{% url "admin/finance/methods" %}" method="post" id="createMethodForm">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="{{ form.name.id_for_label }}">Method name</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="text-danger">{{ form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.currency.id_for_label }}">Currency</label>
+                            {{ form.currency }}
+                            {% if form.currency.errors %}
+                                <div class="text-danger">{{ form.currency.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group form-check">
+                            {{ form.changeAllowed }}
+                            <label class="form-check-label" for="{{ form.changeAllowed.id_for_label }}">Change
+                                allowed</label>
+                            {% if form.changeAllowed.errors %}
+                                <div class="text-danger">{{ form.changeAllowed.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary" form="createMethodForm">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script>
+        $('#searchForm').bind('submit', function () {
+            let search = $('#searchField').val();
+            window.location = "?page={{ page_number }}&page_length={{ page_length.value }}" + (search ? "&search=" + search : "");
+            return false;
+        });
+
+        function toggleChange(id) {
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+
+            postData("/api/1/methods/" + id + "/toggleChange").then(result => {
+                if (result.status === 200) {
+                    if (result.now) {
+                        $("#change-indicator-" + id).removeClass().addClass("text-success fas fa-check-circle");
+                    } else {
+                        $("#change-indicator-" + id).removeClass().addClass("text-danger fas fa-times-circle");
+                    }
+                    $(document).Toasts('create', {
+                        body: result.message,
+                        title: 'Method updated',
+                        icon: 'text-success fas fa-check fa-lg',
+                        autohide: true,
+                        delay: 5000,
+                    })
+                } else {
+                    $(document).Toasts('create', {
+                        body: result.error,
+                        title: 'Method update failed',
+                        icon: 'text-danger fas fa-times fa-lg',
+                        autohide: true,
+                        delay: 5000,
+                    })
+                }
+            });
+        }
+    </script>
+{% endblock %}

@@ -1,13 +1,14 @@
 import uuid
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Q, ProtectedError
 from django.http import HttpResponseRedirect
 from django.shortcuts import render as render_django, redirect
 
 # Create your views here.
-from posapp.forms import CreateUserForm
-from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount
+from posapp.forms import CreateUserForm, CreatePaymentMethodForm
+from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
+    PaymentMethod
 from posapp.security import waiter_login_required, manager_login_required, admin_login_required
 
 
@@ -539,5 +540,60 @@ def admin_finance_currencies(request):
 
 
 @admin_login_required
-def admin_finance_methods(request):
+def admin_finance_methods(request, extra_notifications=[]):
     context = Context(request)
+    for color, message, icon in extra_notifications:
+        context.add_notification(color, message, icon)
+
+    if request.method == 'GET':
+        form = CreatePaymentMethodForm()
+    elif request.method == 'POST':
+        method = PaymentMethod()
+        form = CreatePaymentMethodForm(request.POST, instance=method)
+        if form.is_valid():
+            form.save()
+            context.add_notification(Notification.SUCCESS, "Method created successfully", "check")
+        else:
+            context["showModal"] = True
+
+    else:
+        # TODO Replace with proper handler
+        assert False
+    context['form'] = form
+    page_length = int(request.GET.get('page_length', 20))
+    search = request.GET.get('search', '')
+    page = int(request.GET.get('page', 0))
+
+    methods = PaymentMethod.objects.filter(Q(name__contains=search) | Q(currency__name__contains=search)).filter(
+        currency__enabled=True)
+    context.add_pagination_context(methods, page, page_length, 'methods')
+
+    context["page_number"] = page
+    context["page_length"] = generate_page_length_options(page_length)
+    context["search"] = search
+    return render(request, "admin/finance/methods.html", context)
+
+
+@admin_login_required
+def admin_finance_methods_delete(request):
+    notifications = []
+    if request.method == "POST":
+        if "id" in request.POST:
+            try:
+                method = PaymentMethod.objects.get(id=uuid.UUID(request.POST["id"]))
+                method.delete()
+                notifications.append((
+                    Notification.SUCCESS,
+                    "The payment method was successfully deleted",
+                    "check",
+                ))
+            except PaymentMethod.DoesNotExist:
+                notifications.append(
+                    (Notification.WARNING, "The specified Payment method doesn't exist", 'exclamation-triangle'))
+            except ProtectedError:
+                notifications.append((
+                    Notification.DANGER,
+                    "The specified method can't be deleted as other records such as payments or tills depend on it. You can remove it from the deposits to prevent further use.",
+                    "exclamation-triangle",
+                ))
+    return admin_finance_methods(request, notifications)
