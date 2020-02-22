@@ -1,0 +1,17 @@
+{% extends "_base.html" %}
+{% load generic %}
+
+{% block page_name %}
+    <i class="fas fa-edit"></i>
+    Edit till
+{% endblock %}
+
+{% block no_description %}{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager" %}">Manager</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager/tills" %}">Tills</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager/tills/till" %}">This till</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Edit</li>
+{% endblock %}s

@@ -19,6 +19,7 @@ urlpatterns = [
     path('manager/tills/till/stop', views.manager_tills_till_stop, name='manager/tills/till/stop'),
     path('manager/tills/till/count', views.manager_tills_till_count, name='manager/tills/till/count'),
     path('manager/tills/till/close', views.manager_tills_till_close, name='manager/tills/till/close'),
+    path('manager/tills/till/edit', views.manager_tills_till_edit, name='manager/tills/till/edit'),
     path('admin', RedirectView.as_view(url="admin/finance"), name='admin'),
     path('admin/finance', RedirectView.as_view(url="finance/currencies"), name='admin/finance'),
     path('admin/finance/currencies', views.admin_finance_currencies, name='admin/finance/currencies'),

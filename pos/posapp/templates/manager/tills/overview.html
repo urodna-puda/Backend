@@ -276,7 +276,26 @@
                                     <td class="col-2">{{ till.stoppedAt }}</td>
                                     <td class="col-2">{{ till.countedAt }}</td>
                                     <td class="col-1">
-                                        <button type="button" class="btn btn-tool"><i class="far fa-edit"></i></button>
+                                        <form action="{% url "manager/tills/till" %}" method="post"
+                                              style="display:none;" id="showForm-{{ till.id }}">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="id" value="{{ till.id }}"/>
+                                        </form>
+                                        <form action="{% url "manager/tills/till/edit" %}" method="post"
+                                              style="display:none;" id="editForm-{{ till.id }}">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="id" value="{{ till.id }}"/>
+                                        </form>
+                                        <button type="submit" name="show" class="btn btn-tool"
+                                                form="showForm-{{ till.id }}" data-toggle="tooltip" data-position="top"
+                                                title="Show">
+                                            <i class="fas fa-receipt"></i>
+                                        </button>
+                                        <button type="submit" name="show" class="btn btn-tool"
+                                                form="editForm-{{ till.id }}" data-toggle="tooltip" data-position="top"
+                                                title="Edit">
+                                            <i class="far fa-edit"></i>
+                                        </button>
                                     </td>
                                 </tr>
                             {% endfor %}

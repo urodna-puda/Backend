@@ -221,7 +221,8 @@ def manager_tills_overview(request, result=None):
     context["page_length"] = generate_page_length_options(page_length)
 
     if result:
-        context["notifications"] = result
+        context["notifications"] = [{"color": color, "message": message, "icon": icon} for color, message, icon in
+                                    result]
 
     return render(request, template_name="manager/tills/overview.html", context=context)
 
@@ -258,7 +259,51 @@ def manager_tills_assign(request):
 @manager_login_required
 def manager_tills_till(request):
     context = prepare_context(request)
-    return render(request, template_name="manager/tills/till.html", context=context)
+    if request.method == "POST":
+        if "id" in request.POST:
+            id = uuid.UUID(request.POST["id"])
+            try:
+                till = Till.objects.get(id=id)
+                if "save" in request.POST:
+                    pass
+                counts = till.tillmoneycount_set.all()
+                context["counts"] = []
+                context["totals"] = {"expected": 0, "counted": 0, "variance": 0}
+
+                for count in counts:
+                    expected = count.expected
+                    variance = count.amount - count.expected
+                    context["counts"].append({
+                        "methodName": count.paymentMethod.name,
+                        "expected": expected,
+                        "counted": count.amount,
+                        "variance": variance,
+                        "varianceUp": variance > 0,
+                        "varianceDown": variance < 0,
+                    })
+                    context["totals"]["expected"] += expected
+                    context["totals"]["counted"] += count.amount
+                    context["totals"]["variance"] += variance
+
+                context["totals"]["varianceDown"] = context["totals"]["variance"] < 0
+                context["totals"]["varianceUp"] = context["totals"]["variance"] > 0
+
+                context["till"] = {
+                    "cashiers": [],
+                    "deposit": till.deposit,
+                    "openedAt": till.openedAt,
+                    "stoppedAt": till.stoppedAt,
+                    "countedAt": till.countedAt,
+                    "countedBy": till.countedBy,
+                }
+                for cashier in till.cashiers.all():
+                    context["till"]["cashiers"].append(cashier.name)
+
+                context["show_value"] = True
+            except Till.DoesNotExist:
+                pass
+            return render(request, template_name="manager/tills/till.html", context=context)
+    return manager_tills_overview(request, [('danger', 'Server error occurred, please try again.', 'times')])
 
 
 @manager_login_required
@@ -285,7 +330,7 @@ def manager_tills_till_stop(request):
             color = 'danger'
             message = 'The specified till does not exist.'
             icon = 'times'
-        return manager_tills_overview(request, [{"color": color, "message": message, "icon": icon}])
+        return manager_tills_overview(request, [(color, message, icon)])
 
 
 @manager_login_required
@@ -351,7 +396,7 @@ def manager_tills_till_count(request):
 @manager_login_required
 def manager_tills_till_close(request):
     color = 'danger'
-    message = 'Server error occured, please try again'
+    message = 'Server error occurred, please try again'
     icon = 'times'
     if request.method == "POST":
         if "id" in request.POST:
@@ -371,7 +416,13 @@ def manager_tills_till_close(request):
                 message = 'The specified till does not exist.'
                 icon = 'times'
 
-    return manager_tills_overview(request, [{"color": color, "message": message, "icon": icon}])
+    return manager_tills_overview(request, [(color, message, icon)])
+
+
+@manager_login_required
+def manager_tills_till_edit(request):
+    context = prepare_context(request)
+    return render(request, template_name="manager/tills/till/edit.html")
 
 
 @admin_login_required
