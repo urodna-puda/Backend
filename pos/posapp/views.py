@@ -527,14 +527,26 @@ def admin_finance_currencies(request):
     page_length = int(request.GET.get('page_length', 20))
     search = request.GET.get('search', '')
     page = int(request.GET.get('page', 0))
+    enabled_filter = request.GET.get('enabled', '')
 
     currencies = Currency.objects.filter(
         Q(name__contains=search) | Q(code__contains=search) | Q(symbol__contains=search)).order_by('code')
+    if enabled_filter:
+        if enabled_filter == "yes":
+            currencies = currencies.filter(enabled=True)
+        if enabled_filter == "no":
+            currencies = currencies.filter(enabled=False)
     context.add_pagination_context(currencies, page, page_length, 'currencies')
 
     context["page_number"] = page
     context["page_length"] = generate_page_length_options(page_length)
     context["search"] = search
+    context["enabledFilter"] = {
+        "yes": (enabled_filter == "yes"),
+        "none": (enabled_filter == ""),
+        "no": (enabled_filter == "no"),
+        "val": enabled_filter,
+    }
 
     return render(request, template_name="admin/finance/currencies.html", context=context)
 

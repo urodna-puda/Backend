@@ -28,9 +28,28 @@
                         <div class="card-tools">
                             <div class="container-fluid">
                                 <div class="row">
-                                    <div class="col-10">
+                                    <div class="col-3">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button type="button"
+                                                    class="btn btn-outline-success{% if enabledFilter.yes %} active{% endif %}"
+                                                    onclick="window.location = '?page={{ page_number }}&page_length={{ page_length.value }}&enabled=yes{% if search %}&search={{ search }}{% endif %}'">
+                                                <i class="fas fa-check-circle"></i>
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-outline-secondary{% if enabledFilter.none %} active{% endif %}"
+                                                    onclick="window.location = '?page={{ page_number }}&page_length={{ page_length.value }}&enabled={% if search %}&search={{ search }}{% endif %}'">
+                                                <i class="fas fa-slash"></i>
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-outline-danger{% if enabledFilter.no %} active{% endif %}"
+                                                    onclick="window.location = '?page={{ page_number }}&page_length={{ page_length.value }}&enabled=no{% if search %}&search={{ search }}{% endif %}'">
+                                                <i class="fas fa-times-circle"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-8">
                                         <form id="searchForm">
-                                            <div class="input-group mb-3">
+                                            <div class="input-group mb-3 imput-group-sm">
                                                 <input type="text" class="form-control" placeholder="Search"
                                                        aria-label="Search"
                                                        aria-describedby="search-addon-button" id="searchField"
@@ -43,7 +62,7 @@
                                             </div>
                                         </form>
                                     </div>
-                                    <div class="col-2">
+                                    <div class="col-1">
                                         <button type="button" class="btn btn-tool"
                                                 onclick="window.location='{% url "manager/users/create" %}'">
                                             <i class="fas fa-plus"></i>
@@ -95,7 +114,7 @@
                                 through {{ currencies.showing.to|add_one }} of {{ currencies.showing.of }}.
                                 &nbsp;
                                 Items per page:
-                                <select onchange="window.location = '?page={{ page_number }}&page_length=' + this.options[this.selectedIndex].value{% if search %} + '&search={{ search }}'{% endif %};">
+                                <select onchange="window.location = '?page={{ page_number }}&page_length=' + this.options[this.selectedIndex].value{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} + '&search={{ search }}'{% endif %};">
                                     <option value="5" {% if page_length.len5 %}selected{% endif %}>5 items</option>
                                     <option value="10" {% if page_length.len10 %}selected{% endif %}>10 items</option>
                                     <option value="20" {% if page_length.len20 %}selected{% endif %}>20 items</option>
@@ -117,33 +136,33 @@
                                 <div class="btn-group" role="group">
                                     {% if currencies.pages.showPrevious %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page=0&page_length={{ page_length.value }}'{% if search %} +
-                                                    '&search={{ search }}{% endif %}'">
+                                                onclick="window.location = '?page=0&page_length={{ page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
+                                                    '&search={{ search }}{% endif %}">
                                             <i class="fas fa-angle-double-left"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ currencies.pages.previous }}&page_length={{ page_length.value }}'{% if search %} +
-                                                    '&search={{ search }}{% endif %}'">
+                                                onclick="window.location = '?page={{ currencies.pages.previous }}&page_length={{ page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
+                                                    '&search={{ search }}{% endif %}">
                                             <i class=" fas fa-angle-left"></i>
                                         </button>
                                     {% endif %}
                                     {% for link in currencies.pages.links %}
                                         <button type="button"
                                                 class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
-                                                onclick="window.location = '?page={{ link.page }}&page_length={{ page_length.value }}'{% if search %} +
-                                                    '&search={{ search }}{% endif %}'">
+                                                onclick="window.location = '?page={{ link.page }}&page_length={{ page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
+                                                    '&search={{ search }}{% endif %}">
                                             {{ link.page|add_one }}
                                         </button>
                                     {% endfor %}
                                     {% if currencies.pages.showNext %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ currencies.pages.next }}&page_length={{ page_length.value }}'{% if search %} +
-                                                    '&search={{ search }}{% endif %}'">
+                                                onclick="window.location = '?page={{ currencies.pages.next }}&page_length={{ page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
+                                                    '&search={{ search }}{% endif %}">
                                             <i class="fas fa-angle-right"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ currencies.pages.last }}&page_length={{ page_length.value }}'{% if search %} +
-                                                    '&search={{ search }}{% endif %}'">
+                                                onclick="window.location = '?page={{ currencies.pages.last }}&page_length={{ page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
+                                                    '&search={{ search }}{% endif %}">
                                             <i class="fas fa-angle-double-right"></i>
                                         </button>
                                     {% endif %}
@@ -162,7 +181,7 @@
     <script>
         $('#searchForm').bind('submit', function () {
             let search = $('#searchField').val();
-            window.location = "?page={{ page_number }}&page_length={{ page_length.value }}" + (search ? "&search=" + search : "");
+            window.location = "?page={{ page_number }}&page_length={{ page_length.value }}{% if enabledFilter.val %}&enabled={{ enabledFilter.val }}{% endif %}" + (search ? "&search=" + search : "");
             return false;
         });
 
