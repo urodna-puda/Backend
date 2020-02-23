@@ -575,9 +575,13 @@ def admin_finance_methods(request, extra_notifications=[]):
     page_length = int(request.GET.get('page_length', 20))
     search = request.GET.get('search', '')
     page = int(request.GET.get('page', 0))
+    currency_filter = int(request.GET['currency']) if 'currency' in request.GET else None
 
     methods = PaymentMethod.objects.filter(Q(name__contains=search) | Q(currency__name__contains=search)).filter(
         currency__enabled=True)
+    if currency_filter:
+        methods = methods.filter(currency__pk=currency_filter)
+
     context.add_pagination_context(methods, page, page_length, 'methods')
 
     context["page_number"] = page

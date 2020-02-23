@@ -102,6 +102,11 @@
                                             {% endif %}
                                         </button>
                                     </td>
+                                    <td>
+                                        <a type="button" class="btn btn-tool" href="{% url "admin/finance/methods" %}?currency={{ currency.pk }}">
+                                            <i class="fas fa-money-check-alt"></i>
+                                        </a>
+                                    </td>
                                 </tr>
                             {% endfor %}
                             </tbody>
