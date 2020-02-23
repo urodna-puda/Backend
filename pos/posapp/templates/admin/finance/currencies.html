@@ -18,7 +18,7 @@
 {% block content %}
     <div class="container-fluid">
         <div class="row">
-            <div class="col-lg-8 col-sm-12">
+            <div class="col-12">
                 <div class="card">
                     <div class="card-header border-0">
                         <h2 class="card-title">
@@ -26,11 +26,30 @@
                             Currencies
                         </h2>
                         <div class="card-tools">
-                            <div class="container-fluid">
-                                <div class="row">
-                                    <div class="col-10">
-                                        <div class="input-group mb-3">
-                                            <form id="searchForm">
+                            <div class="container">
+                                <div class="row float-right">
+                                    <div class="col-4 float-right">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button type="button"
+                                                    class="btn btn-outline-success{% if enabledFilter.yes %} active{% endif %}"
+                                                    onclick="window.location = '?page={{ page_number }}&page_length={{ page_length.value }}&enabled=yes{% if search %}&search={{ search }}{% endif %}'">
+                                                <i class="fas fa-check-circle"></i>
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-outline-secondary{% if enabledFilter.none %} active{% endif %}"
+                                                    onclick="window.location = '?page={{ page_number }}&page_length={{ page_length.value }}&enabled={% if search %}&search={{ search }}{% endif %}'">
+                                                <i class="fas fa-slash"></i>
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-outline-danger{% if enabledFilter.no %} active{% endif %}"
+                                                    onclick="window.location = '?page={{ page_number }}&page_length={{ page_length.value }}&enabled=no{% if search %}&search={{ search }}{% endif %}'">
+                                                <i class="fas fa-times-circle"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-8 float-right">
+                                        <form id="searchForm">
+                                            <div class="input-group mb-3 imput-group-sm">
                                                 <input type="text" class="form-control" placeholder="Search"
                                                        aria-label="Search"
                                                        aria-describedby="search-addon-button" id="searchField"
@@ -40,14 +59,8 @@
                                                             id="search-addon-button"><i
                                                             class="fas fa-search"></i></button>
                                                 </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                    <div class="col-2">
-                                        <button type="button" class="btn btn-tool"
-                                                onclick="window.location='{% url "manager/users/create" %}'">
-                                            <i class="fas fa-plus"></i>
-                                        </button>
+                                            </div>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
@@ -72,11 +85,24 @@
                                     <td>{{ currency.symbol }}</td>
                                     <td>{{ currency.subunit }}</td>
                                     <td>
-                                        {% if currency.enabled %}
-                                            <i class="text-success fas fa-check-circle"></i>
-                                        {% else %}
-                                            <i class="text-danger fas fa-times-circle"></i>
-                                        {% endif %}
+                                        <button type="button" class="btn btn-tool toggle-manager"
+                                                onclick="toggleEnabled('{{ currency.id }}')">
+                                            {% if currency.enabled %}
+                                                <i class="text-success fas fa-check-circle"
+                                                   id="enabled-indicator-{{ currency.id }}"></i>
+                                            {% else %}
+                                                <i class="text-danger fas fa-times-circle"
+                                                   id="enabled-indicator-{{ currency.id }}"></i>
+                                            {% endif %}
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-tool"
+                                                onclick="window.location = '{% url "admin/finance/methods" %}?currency={{ currency.pk }}'"
+                                                data-toggle="tooltip" data-position="top"
+                                                title="Payment methods using this currency">
+                                            <i class="fas fa-money-check-alt"></i>
+                                        </button>
                                     </td>
                                 </tr>
                             {% endfor %}
@@ -90,7 +116,7 @@
                                 through {{ currencies.showing.to|add_one }} of {{ currencies.showing.of }}.
                                 &nbsp;
                                 Items per page:
-                                <select onchange="window.location = '?page={{ page_number }}&page_length=' + this.options[this.selectedIndex].value{% if search %} + '&search={{ search }}'{% endif %};">
+                                <select onchange="window.location = '?page={{ page_number }}&page_length=' + this.options[this.selectedIndex].value{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} + '&search={{ search }}'{% endif %};">
                                     <option value="5" {% if page_length.len5 %}selected{% endif %}>5 items</option>
                                     <option value="10" {% if page_length.len10 %}selected{% endif %}>10 items</option>
                                     <option value="20" {% if page_length.len20 %}selected{% endif %}>20 items</option>
@@ -112,33 +138,33 @@
                                 <div class="btn-group" role="group">
                                     {% if currencies.pages.showPrevious %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page=0&page_length={{ page_length.value }}'{% if search %} +
-                                                    '&search={{ search }}{% endif %}'">
+                                                onclick="window.location = '?page=0&page_length={{ page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
+                                                    '&search={{ search }}{% endif %}">
                                             <i class="fas fa-angle-double-left"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ currencies.pages.previous }}&page_length={{ page_length.value }}'{% if search %} +
-                                                    '&search={{ search }}{% endif %}'">
+                                                onclick="window.location = '?page={{ currencies.pages.previous }}&page_length={{ page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
+                                                    '&search={{ search }}{% endif %}">
                                             <i class=" fas fa-angle-left"></i>
                                         </button>
                                     {% endif %}
                                     {% for link in currencies.pages.links %}
                                         <button type="button"
                                                 class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
-                                                onclick="window.location = '?page={{ link.page }}&page_length={{ page_length.value }}'{% if search %} +
-                                                    '&search={{ search }}{% endif %}'">
+                                                onclick="window.location = '?page={{ link.page }}&page_length={{ page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
+                                                    '&search={{ search }}{% endif %}">
                                             {{ link.page|add_one }}
                                         </button>
                                     {% endfor %}
                                     {% if currencies.pages.showNext %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ currencies.pages.next }}&page_length={{ page_length.value }}'{% if search %} +
-                                                    '&search={{ search }}{% endif %}'">
+                                                onclick="window.location = '?page={{ currencies.pages.next }}&page_length={{ page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
+                                                    '&search={{ search }}{% endif %}">
                                             <i class="fas fa-angle-right"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ currencies.pages.last }}&page_length={{ page_length.value }}'{% if search %} +
-                                                    '&search={{ search }}{% endif %}'">
+                                                onclick="window.location = '?page={{ currencies.pages.last }}&page_length={{ page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
+                                                    '&search={{ search }}{% endif %}">
                                             <i class="fas fa-angle-double-right"></i>
                                         </button>
                                     {% endif %}
@@ -157,8 +183,38 @@
     <script>
         $('#searchForm').bind('submit', function () {
             let search = $('#searchField').val();
-            window.location = "?page={{ page_number }}&page_length={{ page_length.value }}" + (search ? "&search=" + search : "");
+            window.location = "?page={{ page_number }}&page_length={{ page_length.value }}{% if enabledFilter.val %}&enabled={{ enabledFilter.val }}{% endif %}" + (search ? "&search=" + search : "");
             return false;
         });
+
+        function toggleEnabled(id) {
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+
+            postData("/api/1/currencies/" + id + "/toggleEnabled").then(result => {
+                if (result.status === 200) {
+                    if (result.now) {
+                        $("#enabled-indicator-" + id).removeClass().addClass("text-success fas fa-check-circle");
+                    } else {
+                        $("#enabled-indicator-" + id).removeClass().addClass("text-danger fas fa-times-circle");
+                    }
+                    $(document).Toasts('create', {
+                        body: result.message,
+                        title: 'Currency updated',
+                        icon: 'text-success fas fa-check fa-lg',
+                        autohide: true,
+                        delay: 5000,
+                    })
+                } else {
+                    $(document).Toasts('create', {
+                        body: result.error,
+                        title: 'Currency update failed',
+                        icon: 'text-danger fas fa-times fa-lg',
+                        autohide: true,
+                        delay: 5000,
+                    })
+                }
+            });
+        }
     </script>
 {% endblock %}
