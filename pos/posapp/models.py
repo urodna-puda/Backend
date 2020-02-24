@@ -289,8 +289,7 @@ class TillMoneyCount(models.Model):
     @property
     def expected(self):
         val = 0
-        orders = self.till.order_set.all()
-        payments = PaymentInOrder.objects.filter(method=self.paymentMethod, order__in=orders)
+        payments = self.paymentintab_set.all()
         for payment in payments:
             val += payment.amount
         return val
