@@ -285,7 +285,14 @@ def manager_tills_assign(request):
                 till = options.create_till()
                 for username in usernames:
                     user = User.objects.get(username=username)
-                    till.cashiers.add(user)
+                    if user.current_till:
+                        context.add_notification(Notification.WARNING,
+                                                 f"The user {user} was excluded from this Till as there is another Till already assigned",
+                                                 "exclamation-triangle")
+                    else:
+                        user.current_till = till
+                        user.save()
+                        till.cashiers.add(user)
                 context.add_notification(Notification.SUCCESS, "The till was assigned successfully", "check")
             except User.DoesNotExist:
                 context.add_notification(Notification.DANGER, "One of the selected users does not exist",
@@ -298,7 +305,7 @@ def manager_tills_assign(request):
         else:
             context.add_notification(Notification.DANGER, "Some required fields are missing", "exclamation-triangle")
 
-    context["users"] = User.objects.filter(is_waiter=True)
+    context["users"] = User.objects.filter(is_waiter=True, current_till=None)
     context["options"] = TillPaymentOptions.objects.filter(enabled=True)
 
     return render(request, template_name="manager/tills/assign.html", context=context)
