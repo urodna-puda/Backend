@@ -324,31 +324,8 @@ class TillEdit(models.Model):
     reason = models.TextField()
 
 
-class Order(models.Model):
-    CREATED = 'C'
-    PAID = 'P'
-    ORDER_STATES = [
-        (CREATED, "Created"),
-        (PAID, "Paid"),
-    ]
+class PaymentInTab(models.Model):
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
-    tab = models.OneToOneField(Tab, on_delete=models.PROTECT, related_name="order")
-    state = models.CharField(max_length=1, choices=ORDER_STATES, default=CREATED)
-    createdAt = models.DateTimeField(auto_now_add=True)
-    payments = models.ManyToManyField(PaymentMethod, through="PaymentInOrder")
-    till = models.ForeignKey(Till, on_delete=models.PROTECT)
-
-    def __str__(self):
-        return f"Order of tab {self.tab}"
-
-
-class PaymentInOrder(models.Model):
-    method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT)
-    order = models.ForeignKey(Order, on_delete=models.PROTECT)
+    tab = models.ForeignKey(Tab, on_delete=models.CASCADE, related_name="payments")
+    method = models.ForeignKey(TillMoneyCount, on_delete=models.PROTECT)
     amount = models.DecimalField(max_digits=15, decimal_places=3)
-
-    class Meta:
-        verbose_name_plural = "Payments in orders"
-
-    def __str__(self):
-        return f"Payment of {self.method.currency.symbol}{self.amount} via {self.method} for {self.order}"
