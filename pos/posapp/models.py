@@ -259,6 +259,9 @@ class Till(models.Model):
             self.state = Till.STOPPED
             self.stoppedAt = datetime.now()
             self.save()
+            for cashier in self.cashiers.all():
+                cashier.current_till = None
+                cashier.save()
             return True
         else:
             return False
