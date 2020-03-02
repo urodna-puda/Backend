@@ -1,9 +1,9 @@
+import decimal
 from datetime import datetime
 from uuid import uuid4
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.http import HttpRequest
 from django_countries.fields import CountryField
 from phonenumber_field.modelfields import PhoneNumberField
 
@@ -110,6 +110,17 @@ class Tab(models.Model):
             sum += product.price
         return sum
 
+    @property
+    def paid(self):
+        sum = 0
+        for payment in self.payments.all():
+            sum += payment.converted_value
+        return sum
+
+    @property
+    def variance(self):
+        return round(float(self.total) - self.paid, 3)
+
     def order_product(self, product, count, note, state):
         for i in range(count):
             new = ProductInTab()
@@ -132,6 +143,19 @@ class Tab(models.Model):
                 new.preparingAt = time
 
             new.save()
+
+    def mark_paid(self, by: User):
+        variance = self.variance
+        if variance < 0:
+            change_payment = PaymentInTab()
+            change_payment.tab = self
+            change_payment.method = TillMoneyCount.objects.get(till=by.current_till,
+                                                               paymentMethod=by.current_till.changeMethod)
+            change_payment.amount = -variance
+            change_payment.save()
+        self.state = self.PAID
+        self.closedAt = datetime.now()
+        self.save()
 
 
 class ProductInTab(models.Model):
@@ -331,3 +355,7 @@ class PaymentInTab(models.Model):
     tab = models.ForeignKey(Tab, on_delete=models.CASCADE, related_name="payments")
     method = models.ForeignKey(TillMoneyCount, on_delete=models.PROTECT)
     amount = models.DecimalField(max_digits=15, decimal_places=3)
+
+    @property
+    def converted_value(self):
+        return round(float(self.amount) * self.method.paymentMethod.currency.ratio, 3)

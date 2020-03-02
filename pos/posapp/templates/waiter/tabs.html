@@ -40,8 +40,7 @@
                                 <i class="fas fa-plus" data-toggle="tooltip" data-placement="top"
                                    title="Order"></i>
                             </button>
-                            <button type="button" class="btn btn-tool" data-toggle="modal" data-target="#payModal"
-                                    data-tab-id="{{ tab.id }}" data-tab-name="{{ tab.name }}">
+                            <button type="submit" class="btn btn-tool" form="payTab{{ tab.id }}Form">
                                 <i class="fas fa-coins" data-toggle="tooltip" data-placement="top"
                                    title="Pay"></i>
                             </button>
@@ -149,17 +148,19 @@
                         <div class="form-group">
                             <label>Order in state:</label>
                             <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                                <label class="btn btn-warning">
+                                <label class="btn btn-outline-warning">
                                     <input type="radio" name="orderState" id="orderStateO" autocomplete="off"> Waiting
                                 </label>
-                                <label class="btn btn-secondary active">
-                                    <input type="radio" name="orderState" id="orderStateP" autocomplete="off" checked> In
+                                <label class="btn btn-outline-secondary active">
+                                    <input type="radio" name="orderState" id="orderStateP" autocomplete="off" checked>
+                                    In
                                     preparation
                                 </label>
-                                <label class="btn btn-info">
-                                    <input type="radio" name="orderState" id="orderStateT" autocomplete="off"> To be served
+                                <label class="btn btn-outline-info">
+                                    <input type="radio" name="orderState" id="orderStateT" autocomplete="off"> To be
+                                    served
                                 </label>
-                                <label class="btn btn-success">
+                                <label class="btn btn-outline-success">
                                     <input type="radio" name="orderState" id="orderStateS" autocomplete="off"> Finished
                                 </label>
                             </div>
@@ -173,6 +174,13 @@
             </div>
         </div>
     </div>
+    <!--VIRTUAL FORMS-->
+    {% for tab in tabs %}
+        <form id="payTab{{ tab.id }}Form" action="{% url "waiter/tabs/tab" %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="id" value="{{ tab.id }}"/>
+        </form>
+    {% endfor %}
 {% endblock %}
 
 {% block javascript %}
