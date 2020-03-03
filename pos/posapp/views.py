@@ -8,7 +8,7 @@ from django.shortcuts import render as render_django, redirect
 # Create your views here.
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
-    PaymentMethod, UnitGroup
+    PaymentMethod, UnitGroup, Unit
 from posapp.security import waiter_login_required, manager_login_required, admin_login_required
 
 
@@ -631,6 +631,20 @@ def admin_units_overview(request):
             group.name = request.POST['newUnitGroupName']
             group.symbol = request.POST['newUnitGroupSymbol']
             group.save()
+            context.add_notification(Notification.SUCCESS, "The unit group was created successfully", "check")
+        if check_dict(request.POST, ['groupId', 'newUnitName', 'newUnitSymbol', 'newUnitRatio']):
+            group_id = uuid.UUID(request.POST['groupId'])
+            try:
+                unit = Unit()
+                unit.name = request.POST['newUnitName']
+                unit.symbol = request.POST['newUnitSymbol']
+                unit.ratio = float(request.POST['newUnitRatio'])
+                unit.group = UnitGroup.objects.get(id=group_id)
+                unit.save()
+                context.add_notification(Notification.SUCCESS, "The unit was created successfully", "check")
+            except UnitGroup.DoesNotExist:
+                context.add_notification(Notification.DANGER, "Creation failed: Unit Group does not exist!",
+                                         "exclamation-triangle")
 
     context['groups'] = UnitGroup.objects.all()
 
