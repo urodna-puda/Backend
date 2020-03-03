@@ -111,6 +111,24 @@
                     </li>
                 </ul>
             </li>
+            <li class="nav-item has-treeview {% isopen page "admin/units" %}">
+                <a href="{% url "admin/units" %}" class="nav-link {% isactive page "admin/units" %}">
+                    <i class="nav-icon fas fa-balance-scale"></i>
+                    <p>
+                        Units
+                        <i class="right fas fa-angle-left"></i>
+                    </p>
+                </a>
+                <ul class="nav nav-treeview">
+                    <li class="nav-item">
+                        <a href="{% url "admin/units/overview" %}"
+                           class="nav-link {% isactive page "admin/units/overview" %}">
+                            <i class="nav-icon fas fa-table"></i>
+                            <p>Overview</p>
+                        </a>
+                    </li>
+                </ul>
+            </li>
         {% endif %}
     </ul>
 {% endblock %}

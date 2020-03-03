@@ -8,7 +8,7 @@ from django.shortcuts import render as render_django, redirect
 # Create your views here.
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
-    PaymentMethod
+    PaymentMethod, UnitGroup, Unit
 from posapp.security import waiter_login_required, manager_login_required, admin_login_required
 
 
@@ -620,3 +620,51 @@ def admin_finance_methods_delete(request):
                     "exclamation-triangle",
                 ))
     return admin_finance_methods(request, notifications)
+
+
+@admin_login_required
+def admin_units_overview(request):
+    context = Context(request)
+    if request.method == "POST":
+        if check_dict(request.POST, ['newUnitGroupName', 'newUnitGroupSymbol']):
+            group = UnitGroup()
+            group.name = request.POST['newUnitGroupName']
+            group.symbol = request.POST['newUnitGroupSymbol']
+            group.save()
+            context.add_notification(Notification.SUCCESS, "The unit group was created successfully", "check")
+        if check_dict(request.POST, ['groupId', 'newUnitName', 'newUnitSymbol', 'newUnitRatio']):
+            group_id = uuid.UUID(request.POST['groupId'])
+            try:
+                unit = Unit()
+                unit.name = request.POST['newUnitName']
+                unit.symbol = request.POST['newUnitSymbol']
+                unit.ratio = float(request.POST['newUnitRatio'])
+                unit.group = UnitGroup.objects.get(id=group_id)
+                unit.save()
+                context.add_notification(Notification.SUCCESS, "The unit was created successfully", "check")
+            except UnitGroup.DoesNotExist:
+                context.add_notification(Notification.DANGER, "Creation failed: Unit Group does not exist!",
+                                         "exclamation-triangle")
+
+        if 'deleteUnitId' in request.POST:
+            try:
+                unit = Unit.objects.get(id=uuid.UUID(request.POST['deleteUnitId']))
+                unit.delete()
+                context.add_notification(Notification.SUCCESS, "The unit was deleted successfully", "check")
+            except Unit.DoesNotExist:
+                context.add_notification(Notification.DANGER, "Deletion failed: Unit does not exist!",
+                                         "exclamation-triangle")
+        if 'deleteUnitGroupId' in request.POST:
+            try:
+                group = UnitGroup.objects.get(id=uuid.UUID(request.POST['deleteUnitGroupId']))
+                group.delete()
+                context.add_notification(Notification.SUCCESS, "The unit group was deleted successfully", "check")
+            except UnitGroup.DoesNotExist:
+                context.add_notification(Notification.DANGER, "Deletion failed: Unit Group does not exist!",
+                                         "exclamation-triangle")
+            except ProtectedError:
+                context.add_notification(Notification.WARNING, "Deletion failed: an Item depends on this Unit Group!",
+                                         "exclamation-triangle")
+    context['groups'] = UnitGroup.objects.all()
+
+    return render(request, template_name='admin/units/overview.html', context=context)
