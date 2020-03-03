@@ -8,7 +8,7 @@ from django.shortcuts import render as render_django, redirect
 # Create your views here.
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
-    PaymentMethod
+    PaymentMethod, UnitGroup
 from posapp.security import waiter_login_required, manager_login_required, admin_login_required
 
 
@@ -620,3 +620,18 @@ def admin_finance_methods_delete(request):
                     "exclamation-triangle",
                 ))
     return admin_finance_methods(request, notifications)
+
+
+@admin_login_required
+def admin_units_overview(request):
+    context = Context(request)
+    if request.method == "POST":
+        if check_dict(request.POST, ['newUnitGroupName', 'newUnitGroupSymbol']):
+            group = UnitGroup()
+            group.name = request.POST['newUnitGroupName']
+            group.symbol = request.POST['newUnitGroupSymbol']
+            group.save()
+
+    context['groups'] = UnitGroup.objects.all()
+
+    return render(request, template_name='admin/units/overview.html', context=context)

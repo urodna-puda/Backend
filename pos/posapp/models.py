@@ -3,7 +3,6 @@ from uuid import uuid4
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.http import HttpRequest
 from django_countries.fields import CountryField
 from phonenumber_field.modelfields import PhoneNumberField
 
@@ -34,6 +33,10 @@ class UnitGroup(models.Model):
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
     name = models.CharField(max_length=256, null=False)
     symbol = models.CharField(max_length=16, null=False)
+
+    @property
+    def units(self):
+        return self.unit_set.all()
 
     def __str__(self):
         return self.name
