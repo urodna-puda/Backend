@@ -126,8 +126,9 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                     <form action="{% url "admin/units/overview" %}" method="post">
+                        {% csrf_token %}
                         <input type="hidden" name="deleteUnitGroupId" id="deleteUnitGroupModalGroupId"/>
-                        <button type="button" class="btn btn-danger"><i class="fas fa-trash"></i>&nbsp;Delete</button>
+                        <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i>&nbsp;Delete</button>
                     </form>
                 </div>
             </div>

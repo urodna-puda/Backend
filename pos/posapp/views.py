@@ -646,6 +646,25 @@ def admin_units_overview(request):
                 context.add_notification(Notification.DANGER, "Creation failed: Unit Group does not exist!",
                                          "exclamation-triangle")
 
+        if 'deleteUnitId' in request.POST:
+            try:
+                unit = Unit.objects.get(id=uuid.UUID(request.POST['deleteUnitId']))
+                unit.delete()
+                context.add_notification(Notification.SUCCESS, "The unit was deleted successfully", "check")
+            except Unit.DoesNotExist:
+                context.add_notification(Notification.DANGER, "Deletion failed: Unit does not exist!",
+                                         "exclamation-triangle")
+        if 'deleteUnitGroupId' in request.POST:
+            try:
+                group = UnitGroup.objects.get(id=uuid.UUID(request.POST['deleteUnitGroupId']))
+                group.delete()
+                context.add_notification(Notification.SUCCESS, "The unit group was deleted successfully", "check")
+            except UnitGroup.DoesNotExist:
+                context.add_notification(Notification.DANGER, "Deletion failed: Unit Group does not exist!",
+                                         "exclamation-triangle")
+            except ProtectedError:
+                context.add_notification(Notification.WARNING, "Deletion failed: an Item depends on this Unit Group!",
+                                         "exclamation-triangle")
     context['groups'] = UnitGroup.objects.all()
 
     return render(request, template_name='admin/units/overview.html', context=context)

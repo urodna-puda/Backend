@@ -44,7 +44,7 @@ class UnitGroup(models.Model):
 
 class Unit(models.Model):
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
-    group = models.ForeignKey(UnitGroup, on_delete=models.PROTECT)
+    group = models.ForeignKey(UnitGroup, on_delete=models.CASCADE)
     name = models.CharField(max_length=256, null=False)
     symbol = models.CharField(max_length=16, null=False)
     ratio = models.FloatField()
