@@ -125,12 +125,17 @@ def index(request):
 
 
 def prepare_tab_dict(tab):
+    variance = tab.variance
     out = {
         'name': tab.name,
         'id': tab.id,
         'total': tab.total,
         'paid': tab.paid,
-        'variance': tab.variance,
+        'variance': abs(variance),
+        'showVariance': variance != 0,
+        'varianceLabel': 'To pay' if variance > 0 else 'To change',
+        'showFinaliseAuto': variance == 0,
+        'showFinaliseChange': variance < 0,
         'products': []
     }
 
@@ -240,7 +245,7 @@ def waiter_tabs_tab(request):
                             context.add_notification(Notification.WARNING,
                                                      "Invalid request: Payment method does not exist",
                                                      "exclamation-triangle")
-                    elif check_dict(request.POST, ["paymentId", "delete"]):
+                    if check_dict(request.POST, ["paymentId", "delete"]):
                         try:
                             payment_id = uuid.UUID(request.POST["paymentId"])
                             payment = PaymentInTab.objects.get(id=payment_id, tab=tab)
@@ -252,8 +257,16 @@ def waiter_tabs_tab(request):
                             context.add_notification(Notification.WARNING,
                                                      "The specified payment can't be deleted as it does not exist.",
                                                      "exclamation-triangle")
+                    if check_dict(request.POST, ["close"]):
+                        change_payment = tab.mark_paid(request.user)
+                        context.add_notification(Notification.SUCCESS, "The Tab was marked as paid.", "check")
+                        if change_payment:
+                            context.add_notification(Notification.SECONDARY,
+                                                     f"The remaining variance of {change_payment.amount} was returned via {change_payment.method.paymentMethod.name}",
+                                                     "info-circle")
                     context["tab"] = prepare_tab_dict(tab)
                     context["payments"] = tab.payments.all()
+                    context["change_method_name"] = current_till.changeMethod.name
                 except Tab.DoesNotExist:
                     context.add_notification(Notification.DANGER,
                                              "Invalid request: specified Tab does not exist. Go back to previous page and try it again.",

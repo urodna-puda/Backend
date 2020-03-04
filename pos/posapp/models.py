@@ -146,16 +146,18 @@ class Tab(models.Model):
 
     def mark_paid(self, by: User):
         variance = self.variance
+        change_payment = None
         if variance < 0:
             change_payment = PaymentInTab()
             change_payment.tab = self
             change_payment.method = TillMoneyCount.objects.get(till=by.current_till,
                                                                paymentMethod=by.current_till.changeMethod)
-            change_payment.amount = -variance
+            change_payment.amount = variance
             change_payment.save()
         self.state = self.PAID
         self.closedAt = datetime.now()
         self.save()
+        return change_payment
 
 
 class ProductInTab(models.Model):
