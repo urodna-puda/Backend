@@ -31,9 +31,9 @@
                 </a>
             </li>
         {% endif %}
-        {% if manager_role %}
+        {% if manager_role or admin_role %}
             <li class="nav-header">Manager tasks</li>
-            <li class="nav-item has-treeview {% isopen page "manager/waiters" %}">
+            <li class="nav-item has-treeview {% isopen page "manager/users" %}">
                 <a href="{% url "manager/users" %}" class="nav-link {% isactive page "manager/users" %}">
                     <i class="nav-icon fas fa-users-cog"></i>
                     <p>
@@ -58,31 +58,33 @@
                     </li>
                 </ul>
             </li>
-            <li class="nav-item has-treeview {% isopen page "manager/tills" %}">
-                <a href="{% url "manager/tills" %}" class="nav-link {% isactive page "manager/tills" %}">
-                    <i class="nav-icon fas fa-cash-register"></i>
-                    <p>
-                        Tills
-                        <i class="right fas fa-angle-left"></i>
-                    </p>
-                </a>
-                <ul class="nav nav-treeview">
-                    <li class="nav-item">
-                        <a href="{% url "manager/tills/overview" %}"
-                           class="nav-link {% isactive page "manager/tills/overview" %}">
-                            <i class="nav-icon fas fa-table"></i>
-                            <p>Overview</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{% url "manager/tills/assign" %}"
-                           class="nav-link {% isactive page "manager/tills/assign" %}">
-                            <i class="nav-icon fas fa-plus-square"></i>
-                            <p>Create</p>
-                        </a>
-                    </li>
-                </ul>
-            </li>
+            {% if manager_role %}
+                <li class="nav-item has-treeview {% isopen page "manager/tills" %}">
+                    <a href="{% url "manager/tills" %}" class="nav-link {% isactive page "manager/tills" %}">
+                        <i class="nav-icon fas fa-cash-register"></i>
+                        <p>
+                            Tills
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="{% url "manager/tills/overview" %}"
+                               class="nav-link {% isactive page "manager/tills/overview" %}">
+                                <i class="nav-icon fas fa-table"></i>
+                                <p>Overview</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{% url "manager/tills/assign" %}"
+                               class="nav-link {% isactive page "manager/tills/assign" %}">
+                                <i class="nav-icon fas fa-plus-square"></i>
+                                <p>Create</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            {% endif %}
         {% endif %}
         {% if admin_role %}
             <li class="nav-header">Staff tasks</li>
