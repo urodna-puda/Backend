@@ -1,5 +1,7 @@
 import decimal
 import uuid
+
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, ProtectedError
 from django.http import HttpResponseRedirect
@@ -327,8 +329,8 @@ def manager_users_create(request):
         form = CreateUserForm(request.POST, instance=user)
         if form.is_valid():
             form.save()
-            return HttpResponseRedirect(f'/manager/users/overview?created={form.cleaned_data["username"]}',
-                                        permanent=False)
+            messages.success(request, f"The user {form.cleaned_data['username']} was created successfully")
+            return redirect("manager/users/overview")
         else:
             print("form is not valid")
 
