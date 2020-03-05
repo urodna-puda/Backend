@@ -603,6 +603,7 @@ def admin_finance_methods(request):
         if form.is_valid():
             form.save()
             messages.success(request, "Method created successfully")
+            form = CreatePaymentMethodForm()
         else:
             context["showModal"] = True
 
