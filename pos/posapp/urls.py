@@ -26,4 +26,6 @@ urlpatterns = [
     path('admin/finance/currencies', views.admin_finance_currencies, name='admin/finance/currencies'),
     path('admin/finance/methods', views.admin_finance_methods, name='admin/finance/methods'),
     path('admin/finance/methods/delete', views.admin_finance_methods_delete, name='admin/finance/methods/delete'),
+    path('admin/units', RedirectView.as_view(url="admin/units/overview"), name='admin/units'),
+    path('admin/units/overview', views.admin_units_overview, name='admin/units/overview'),
 ]
