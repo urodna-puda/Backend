@@ -1,8 +1,9 @@
 import decimal
 import uuid
+
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, ProtectedError
-from django.http import HttpResponseRedirect
 from django.shortcuts import render as render_django, redirect
 
 # Create your views here.
@@ -16,21 +17,6 @@ def render(request, template_name, context, content_type=None, status=None, usin
     return render_django(request, template_name, dict(context), content_type, status, using)
 
 
-class Notification:
-    PRIMARY = "primary"
-    SECONDARY = "secondary"
-    SUCCESS = "success"
-    WARNING = "warning"
-    DANGER = "danger"
-    DARK = "dark"
-    LIGHT = "light"
-
-    def __init__(self, color, message, icon):
-        self.color = color
-        self.message = message
-        self.icon = icon
-
-
 class Context:
     def __init__(self, request):
         self.page = request.get_full_path()[1:]
@@ -39,9 +25,6 @@ class Context:
         self.admin_role = request.user.is_admin
         self.notifications = []
         self.data = {}
-
-    def add_notification(self, color: str, message: str, icon: str):
-        self.notifications.append(Notification(color, message, icon))
 
     def add_pagination_context(self, manager, page, page_length, key):
         count = manager.count()
@@ -232,9 +215,7 @@ def waiter_tabs_tab(request):
                                 context["last_used_method"] = money_count_id
                                 amount = decimal.Decimal(request.POST["amount"])
                                 if amount < 0:
-                                    context.add_notification(Notification.WARNING,
-                                                             "Payment amount must be greater than zero.",
-                                                             "exclamation-triangle")
+                                    messages.warning(request, "Payment amount must be greater than zero.")
                                 else:
                                     money_count = request.user.current_till.tillmoneycount_set.get(id=money_count_id)
                                     payment = PaymentInTab()
@@ -242,51 +223,38 @@ def waiter_tabs_tab(request):
                                     payment.method = money_count
                                     payment.amount = amount
                                     payment.save()
-                                    context.add_notification(Notification.SUCCESS,
-                                                             "Payment created successfully",
-                                                             "check")
+                                    messages.success(request, "Payment created successfully")
                             except TillMoneyCount.DoesNotExist:
-                                context.add_notification(Notification.WARNING,
-                                                         "Invalid request: Payment method does not exist",
-                                                         "exclamation-triangle")
+                                messages.warning(request, "Invalid request: Payment method does not exist")
                         if check_dict(request.POST, ["paymentId", "delete"]):
                             try:
                                 payment_id = uuid.UUID(request.POST["paymentId"])
                                 payment = PaymentInTab.objects.get(id=payment_id, tab=tab)
                                 payment.delete()
-                                context.add_notification(Notification.SUCCESS,
-                                                         "Payment was deleted successfully",
-                                                         "check")
+                                messages.success(request, "Payment was deleted successfully")
                             except PaymentInTab.DoesNotExist:
-                                context.add_notification(Notification.WARNING,
-                                                         "The specified payment can't be deleted as it does not exist.",
-                                                         "exclamation-triangle")
+                                messages.warning(request,
+                                                 "The specified payment can't be deleted as it does not exist.")
                         if check_dict(request.POST, ["close"]):
                             change_payment = tab.mark_paid(request.user)
-                            context.add_notification(Notification.SUCCESS, "The Tab was marked as paid.", "check")
+                            messages.success(request, "The Tab was marked as paid.")
                             if change_payment:
-                                context.add_notification(Notification.SECONDARY,
-                                                         f"The remaining variance of {change_payment.amount} was returned via {change_payment.method.paymentMethod.name}",
-                                                         "info-circle")
+                                messages.info(request, f"The remaining variance of {change_payment.amount} was "
+                                                       f"returned via {change_payment.method.paymentMethod.name}")
                     context["tab"] = prepare_tab_dict(tab)
                     context["payments"] = tab.payments.all()
                     context["change_method_name"] = current_till.changeMethod.name
                 except Tab.DoesNotExist:
-                    context.add_notification(Notification.DANGER,
-                                             "Invalid request: specified Tab does not exist. Go back to previous page and try it again.",
-                                             "times-circle")
+                    messages.error(request, "Invalid request: specified Tab does not exist. "
+                                            "Go back to previous page and try it again.")
             else:
-                context.add_notification(Notification.DANGER,
-                                         "You don't have a till assigned. If you want to accept payment, ask a manager to assign you a till.",
-                                         "exclamation-triangle")
+                messages.error(request,
+                               "You don't have a till assigned. If you want to accept payment, "
+                               "ask a manager to assign you a till.")
         else:
-            context.add_notification(Notification.DANGER,
-                                     "Invalid request: Tab ID is missing. Go back to previous page and try it again.",
-                                     "times-circle")
+            messages.error(request, "Invalid request: Tab ID is missing. Go back to previous page and try it again.")
     else:
-        context.add_notification(Notification.DANGER,
-                                 "Invalid request. Go back to previous page and try it again.",
-                                 "times-circle")
+        messages.error(request, "Invalid request. Go back to previous page and try it again.")
     return render(request, template_name="waiter/tabs/tab.html", context=context)
 
 
@@ -309,9 +277,9 @@ def manager_users_overview(request):
     return render(request, template_name="manager/users/overview.html", context=context)
 
 
-def check_dict(dict, keys):
+def check_dict(dictionary, keys):
     for key in keys:
-        if key not in dict:
+        if key not in dictionary:
             return False
     return True
 
@@ -327,8 +295,8 @@ def manager_users_create(request):
         form = CreateUserForm(request.POST, instance=user)
         if form.is_valid():
             form.save()
-            return HttpResponseRedirect(f'/manager/users/overview?created={form.cleaned_data["username"]}',
-                                        permanent=False)
+            messages.success(request, f"The user {form.cleaned_data['username']} was created successfully")
+            return redirect("manager/users/overview")
         else:
             print("form is not valid")
 
@@ -340,7 +308,7 @@ def manager_users_create(request):
 
 
 @manager_login_required
-def manager_tills_overview(request, result=None):
+def manager_tills_overview(request):
     context = Context(request)
     page_length = int(request.GET.get('page_length', 20))
     page_open = int(request.GET.get('page_open', 0))
@@ -359,17 +327,12 @@ def manager_tills_overview(request, result=None):
     context["page_counted"] = page_counted
     context["page_length"] = generate_page_length_options(page_length)
 
-    if result:
-        for color, message, icon in result:
-            context.add_notification(color, message, icon)
-
     return render(request, template_name="manager/tills/overview.html", context=context)
 
 
 @manager_login_required
 def manager_tills_assign(request):
     context = Context(request)
-
     if request.method == 'POST':
         if all(k in request.POST for k in ["users", "options"]):
             usernames = request.POST.getlist("users")
@@ -381,24 +344,21 @@ def manager_tills_assign(request):
                 for username in usernames:
                     user = User.objects.get(username=username)
                     if user.current_till:
-                        context.add_notification(Notification.WARNING,
-                                                 f"The user {user} was excluded from this Till as there is another Till already assigned",
-                                                 "exclamation-triangle")
+                        messages.warning(request,
+                                         f"The user {user} was excluded from this Till "
+                                         f"as they already have another Till assigned.")
                     else:
                         user.current_till = till
                         user.save()
                         till.cashiers.add(user)
-                context.add_notification(Notification.SUCCESS, "The till was assigned successfully", "check")
+                messages.success(request, "The till was assigned successfully")
             except User.DoesNotExist:
-                context.add_notification(Notification.DANGER, "One of the selected users does not exist",
-                                         "exclamation-triangle")
+                messages.error(request, "One of the selected users does not exist")
             except TillPaymentOptions.DoesNotExist:
-                context.add_notification(Notification.DANGER,
-                                         "The selected payment options config does not exist. It may have also been "
-                                         "disabled by an administrator.",
-                                         "exclamation-triangle")
+                messages.error(request, "The selected payment options config does not exist. It may have also been "
+                                        "disabled by an administrator.")
         else:
-            context.add_notification(Notification.DANGER, "Some required fields are missing", "exclamation-triangle")
+            messages.error(request, "Some required fields are missing")
 
     context["users"] = User.objects.filter(is_waiter=True, current_till=None)
     context["options"] = TillPaymentOptions.objects.filter(enabled=True)
@@ -436,7 +396,7 @@ def manager_tills_till(request):
                     context["totals"]["counted"] += counted
                     context["totals"]["variance"] += variance
 
-                    for edit in count.tilledit_set.order_by(('created')).all():
+                    for edit in count.tilledit_set.order_by('created').all():
                         context["edits"].append(edit)
 
                 context["totals"]["varianceDown"] = context["totals"]["variance"] < 0
@@ -457,7 +417,8 @@ def manager_tills_till(request):
             except Till.DoesNotExist:
                 pass
             return render(request, template_name="manager/tills/till.html", context=context)
-    return manager_tills_overview(request, [('danger', 'Server error occurred, please try again.', 'times')])
+    messages.error(request, 'Server error occurred, please try again.')
+    return redirect("manager/tills/overview")
 
 
 @manager_login_required
@@ -465,27 +426,18 @@ def manager_tills_till_stop(request):
     if request.method == "GET":
         return redirect('manager/tills/overview')
     elif request.method == "POST":
-        notifications = []
         try:
             till = Till.objects.get(id=uuid.UUID(request.POST["id"]))
             if till.state == Till.OPEN:
                 if till.stop():
-                    notifications.append((Notification.SUCCESS,
-                                          'The till was stopped successfully. It is now available for counting.',
-                                          'check'))
+                    messages.success(request, 'The till was stopped successfully. It is now available for counting.')
                 else:
-                    notifications.append((Notification.DANGER,
-                                          'An error occured during stopping. Please try again.',
-                                          'times'))
+                    messages.error(request, 'An error occured during stopping. Please try again.')
             else:
-                notifications.append((Notification.WARNING,
-                                      f'The till is in a state from which it cannot be closed: {till.state}',
-                                      'exclamation-triangle'))
+                messages.warning(request, f'The till is in a state from which it cannot be closed: {till.state}')
         except Till.DoesNotExist:
-            notifications.append((Notification.DANGER,
-                                  'The specified till does not exist.',
-                                  'times'))
-        return manager_tills_overview(request, notifications)
+            messages.error(request, 'The specified till does not exist.')
+    return redirect("manager/tills/overview")
 
 
 @manager_login_required
@@ -541,39 +493,33 @@ def manager_tills_till_count(request):
         if context["totals"]["variance"] < 0:
             context["totals"]["danger"] = "Some money is (still) missing!"
     except Till.DoesNotExist:
-        context.add_notification(Notification.DANGER, "The specified till does not exist", "exclamation-triangle")
+        messages.error(request, "The specified till does not exist")
     except KeyError:
-        context.add_notification(Notification.DANGER,
-                                 "One of the counts required was missing in the request. Please fill all counts",
-                                 "exclamation-triangle")
+        messages.error(request, "One of the counts required was missing in the request. Please fill all counts")
 
     return render(request, template_name="manager/tills/till/count.html", context=context)
 
 
 @manager_login_required
 def manager_tills_till_close(request):
-    color = 'danger'
+    level = messages.ERROR
     message = 'Server error occurred, please try again'
-    icon = 'times'
     if request.method == "POST":
         if "id" in request.POST:
             try:
                 till = Till.objects.get(id=uuid.UUID(request.POST["id"]))
                 if till.state == Till.STOPPED:
                     till.close(request)
-                    color = "success"
+                    level = messages.SUCCESS
                     message = "The till was closed successfully"
-                    icon = "check"
                 else:
-                    color = 'warning'
+                    level = messages.WARNING
                     message = f'The till is in a state from which it cannot be closed: {till.state}'
-                    icon = 'exclamation-triangle'
             except Till.DoesNotExist:
-                color = 'danger'
+                level = messages.ERROR
                 message = 'The specified till does not exist.'
-                icon = 'times'
-
-    return manager_tills_overview(request, [(color, message, icon)])
+    messages.add_message(request, level, message)
+    return redirect("manager/tills/overview")
 
 
 @manager_login_required
@@ -592,35 +538,27 @@ def manager_tills_till_edit(request):
                         count = till.tillmoneycount_set.get(id=count_id)
                         edit = count.add_edit(amount, reason)
                         if not edit:
-                            context.add_notification(
-                                'warning',
-                                'Zero edits can\'t be saved.',
-                                'info-circle'
-                            )
+                            messages.warning(request, 'Zero edits can\'t be saved.')
                         elif edit.amount > amount:
-                            context.add_notification(
-                                'info',
-                                'The edit had to be changed so that total amount of money wouldn\'t be negative. '
-                                f'Actual saved amount is {edit.amount} and new counted amount is {count.counted}.',
-                                'info-circle'
-                            )
+                            messages.info(request, f"The edit had to be changed so that total amount of money "
+                                                   f"wouldn't be negative. Actual saved amount is {edit.amount} "
+                                                   f"and new counted amount is {count.counted}.")
                         else:
-                            context.add_notification('success', 'The edit was saved.', 'check')
+                            messages.success(request, 'The edit was saved.')
                     except TillMoneyCount.DoesNotExist:
-                        context.add_notification(
-                            'warning',
-                            'The specified payment method does not exist in this till. Please try again.',
-                            'exclamation-triangle'
-                        )
+                        messages.warning(request,
+                                         'The specified payment method does not exist in this till. Please try again.'
+                                         )
                 context["id"] = id
                 context["counts"] = till.tillmoneycount_set.all()
             except Till.DoesNotExist:
-                context.add_notification('danger',
-                                         'The selected till is not available for edits. It either does not exist or is in a state that does not allow edits.',
-                                         'times')
+                messages.error(request,
+                               'The selected till is not available for edits. It either does not exist or '
+                               'is in a state that does not allow edits.')
 
             return render(request, template_name="manager/tills/till/edit.html", context=context)
-    return manager_tills_overview(request, [('danger', 'Server error occurred, please try again.', 'times')])
+    messages.error(request, 'Server error occurred, please try again.')
+    return redirect("manager/tills/overview")
 
 
 @admin_login_required
@@ -654,10 +592,8 @@ def admin_finance_currencies(request):
 
 
 @admin_login_required
-def admin_finance_methods(request, extra_notifications=[]):
+def admin_finance_methods(request):
     context = Context(request)
-    for color, message, icon in extra_notifications:
-        context.add_notification(color, message, icon)
 
     if request.method == 'GET':
         form = CreatePaymentMethodForm()
@@ -666,7 +602,7 @@ def admin_finance_methods(request, extra_notifications=[]):
         form = CreatePaymentMethodForm(request.POST, instance=method)
         if form.is_valid():
             form.save()
-            context.add_notification(Notification.SUCCESS, "Method created successfully", "check")
+            messages.success(request, "Method created successfully")
         else:
             context["showModal"] = True
 
@@ -694,27 +630,19 @@ def admin_finance_methods(request, extra_notifications=[]):
 
 @admin_login_required
 def admin_finance_methods_delete(request):
-    notifications = []
     if request.method == "POST":
         if "id" in request.POST:
             try:
                 method = PaymentMethod.objects.get(id=uuid.UUID(request.POST["id"]))
                 method.delete()
-                notifications.append((
-                    Notification.SUCCESS,
-                    "The payment method was successfully deleted",
-                    "check",
-                ))
+                messages.success(request, "The payment method was successfully deleted")
             except PaymentMethod.DoesNotExist:
-                notifications.append(
-                    (Notification.WARNING, "The specified Payment method doesn't exist", 'exclamation-triangle'))
+                messages.warning(request, "The specified Payment method doesn't exist")
             except ProtectedError:
-                notifications.append((
-                    Notification.DANGER,
-                    "The specified method can't be deleted as other records such as payments or tills depend on it. You can remove it from the deposits to prevent further use.",
-                    "exclamation-triangle",
-                ))
-    return admin_finance_methods(request, notifications)
+                messages.error(request, "The specified method can't be deleted as other records such as "
+                                        "payments or tills depend on it. You can remove it from the deposits "
+                                        "to prevent further use.")
+    return redirect("admin/finance/methods")
 
 
 @admin_login_required
@@ -726,7 +654,7 @@ def admin_units_overview(request):
             group.name = request.POST['newUnitGroupName']
             group.symbol = request.POST['newUnitGroupSymbol']
             group.save()
-            context.add_notification(Notification.SUCCESS, "The unit group was created successfully", "check")
+            messages.success(request, "The unit group was created successfully")
         if check_dict(request.POST, ['groupId', 'newUnitName', 'newUnitSymbol', 'newUnitRatio']):
             group_id = uuid.UUID(request.POST['groupId'])
             try:
@@ -736,30 +664,26 @@ def admin_units_overview(request):
                 unit.ratio = float(request.POST['newUnitRatio'])
                 unit.group = UnitGroup.objects.get(id=group_id)
                 unit.save()
-                context.add_notification(Notification.SUCCESS, "The unit was created successfully", "check")
+                messages.success(request, "The unit was created successfully")
             except UnitGroup.DoesNotExist:
-                context.add_notification(Notification.DANGER, "Creation failed: Unit Group does not exist!",
-                                         "exclamation-triangle")
+                messages.error(request, "Creation failed: Unit Group does not exist!")
 
         if 'deleteUnitId' in request.POST:
             try:
                 unit = Unit.objects.get(id=uuid.UUID(request.POST['deleteUnitId']))
                 unit.delete()
-                context.add_notification(Notification.SUCCESS, "The unit was deleted successfully", "check")
+                messages.success(request, "The unit was deleted successfully")
             except Unit.DoesNotExist:
-                context.add_notification(Notification.DANGER, "Deletion failed: Unit does not exist!",
-                                         "exclamation-triangle")
+                messages.error(request, "Deletion failed: Unit does not exist!")
         if 'deleteUnitGroupId' in request.POST:
             try:
                 group = UnitGroup.objects.get(id=uuid.UUID(request.POST['deleteUnitGroupId']))
                 group.delete()
-                context.add_notification(Notification.SUCCESS, "The unit group was deleted successfully", "check")
+                messages.success(request, "The unit group was deleted successfully")
             except UnitGroup.DoesNotExist:
-                context.add_notification(Notification.DANGER, "Deletion failed: Unit Group does not exist!",
-                                         "exclamation-triangle")
+                messages.error(request, "Deletion failed: Unit Group does not exist!")
             except ProtectedError:
-                context.add_notification(Notification.WARNING, "Deletion failed: an Item depends on this Unit Group!",
-                                         "exclamation-triangle")
+                messages.warning(request, "Deletion failed: an Item depends on this Unit Group!")
     context['groups'] = UnitGroup.objects.all()
 
     return render(request, template_name='admin/units/overview.html', context=context)
