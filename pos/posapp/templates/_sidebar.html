@@ -111,6 +111,16 @@
                             <p>Payment methods</p>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="{% url "admin/finance/deposits" %}"
+                           class="nav-link {% isactive page "admin/finance/deposits" %}">
+                            <span class="fa-layers fa-fw">
+                                <i class="fas fa-cash-register"></i>
+                                <i class="text-light fas fa-cog" data-fa-transform="shrink-6 down-4.2 right-4"></i>
+                            </span>
+                            <p>Deposits</p>
+                        </a>
+                    </li>
                 </ul>
             </li>
             <li class="nav-item has-treeview {% isopen page "admin/units" %}">
