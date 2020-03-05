@@ -1,5 +1,9 @@
 {% extends "adminlte/base.html" %}
 
+{% block extra_head %}
+    <script src="https://kit.fontawesome.com/7635efe91d.js" crossorigin="anonymous"></script>
+{% endblock %}
+
 {% block javascript %}
     {{ block.super }}
     <script>
@@ -63,18 +67,25 @@
     <section class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1>{% block page_name %}{% endblock %}</h1>
+                <div class="col-6">
+                    <h1>
+                        {% block page_name %}{% endblock %}
+                    </h1>
                 </div>
-                <div class="col-sm-6">
+                <div class="col-6">
                     <ol class="breadcrumb float-sm-right">
                         {% block breadcrumbs %}{% endblock %}
                     </ol>
                 </div>
+                <div class="col-12 float-right">
+                    <div class="header-actions">
+                        {% block page_actions %}{% endblock %}
+                    </div>
+                </div>
             </div>
             {% for notification in notifications %}
                 <div class="row">
-                    <div class="col-lg-12 col-sm-12">
+                    <div class="col-12">
                         <div class="card bg-gradient-{{ notification.color }}">
                             <div class="card-body">
                                 <i class="fas fa-{{ notification.icon }}"></i>

@@ -207,6 +207,9 @@ def waiter_tabs(request):
             'id': product.id,
             'name': product.name,
         })
+
+    if request.user.is_manager:
+        context['paid_tabs'] = Tab.objects.filter(state=Tab.PAID)
     return render(request, template_name="waiter/tabs.html", context=context)
 
 
@@ -222,48 +225,50 @@ def waiter_tabs_tab(request):
                 context["money_counts"] = current_till.tillmoneycount_set.all()
                 try:
                     tab = Tab.objects.get(id=id)
-                    if check_dict(request.POST, ["moneyCountId", "amount"]):
-                        try:
-                            money_count_id = uuid.UUID(request.POST["moneyCountId"])
-                            context["last_used_method"] = money_count_id
-                            amount = decimal.Decimal(request.POST["amount"])
-                            if amount < 0:
+                    context["tab_open"] = tab.state == Tab.OPEN
+                    if context["tab_open"]:
+                        if check_dict(request.POST, ["moneyCountId", "amount"]):
+                            try:
+                                money_count_id = uuid.UUID(request.POST["moneyCountId"])
+                                context["last_used_method"] = money_count_id
+                                amount = decimal.Decimal(request.POST["amount"])
+                                if amount < 0:
+                                    context.add_notification(Notification.WARNING,
+                                                             "Payment amount must be greater than zero.",
+                                                             "exclamation-triangle")
+                                else:
+                                    money_count = request.user.current_till.tillmoneycount_set.get(id=money_count_id)
+                                    payment = PaymentInTab()
+                                    payment.tab = tab
+                                    payment.method = money_count
+                                    payment.amount = amount
+                                    payment.save()
+                                    context.add_notification(Notification.SUCCESS,
+                                                             "Payment created successfully",
+                                                             "check")
+                            except TillMoneyCount.DoesNotExist:
                                 context.add_notification(Notification.WARNING,
-                                                         "Payment amount must be greater than zero.",
+                                                         "Invalid request: Payment method does not exist",
                                                          "exclamation-triangle")
-                            else:
-                                money_count = request.user.current_till.tillmoneycount_set.get(id=money_count_id)
-                                payment = PaymentInTab()
-                                payment.tab = tab
-                                payment.method = money_count
-                                payment.amount = amount
-                                payment.save()
+                        if check_dict(request.POST, ["paymentId", "delete"]):
+                            try:
+                                payment_id = uuid.UUID(request.POST["paymentId"])
+                                payment = PaymentInTab.objects.get(id=payment_id, tab=tab)
+                                payment.delete()
                                 context.add_notification(Notification.SUCCESS,
-                                                         "Payment created successfully",
+                                                         "Payment was deleted successfully",
                                                          "check")
-                        except TillMoneyCount.DoesNotExist:
-                            context.add_notification(Notification.WARNING,
-                                                     "Invalid request: Payment method does not exist",
-                                                     "exclamation-triangle")
-                    if check_dict(request.POST, ["paymentId", "delete"]):
-                        try:
-                            payment_id = uuid.UUID(request.POST["paymentId"])
-                            payment = PaymentInTab.objects.get(id=payment_id, tab=tab)
-                            payment.delete()
-                            context.add_notification(Notification.SUCCESS,
-                                                     "Payment was deleted successfully",
-                                                     "check")
-                        except PaymentInTab.DoesNotExist:
-                            context.add_notification(Notification.WARNING,
-                                                     "The specified payment can't be deleted as it does not exist.",
-                                                     "exclamation-triangle")
-                    if check_dict(request.POST, ["close"]):
-                        change_payment = tab.mark_paid(request.user)
-                        context.add_notification(Notification.SUCCESS, "The Tab was marked as paid.", "check")
-                        if change_payment:
-                            context.add_notification(Notification.SECONDARY,
-                                                     f"The remaining variance of {change_payment.amount} was returned via {change_payment.method.paymentMethod.name}",
-                                                     "info-circle")
+                            except PaymentInTab.DoesNotExist:
+                                context.add_notification(Notification.WARNING,
+                                                         "The specified payment can't be deleted as it does not exist.",
+                                                         "exclamation-triangle")
+                        if check_dict(request.POST, ["close"]):
+                            change_payment = tab.mark_paid(request.user)
+                            context.add_notification(Notification.SUCCESS, "The Tab was marked as paid.", "check")
+                            if change_payment:
+                                context.add_notification(Notification.SECONDARY,
+                                                         f"The remaining variance of {change_payment.amount} was returned via {change_payment.method.paymentMethod.name}",
+                                                         "info-circle")
                     context["tab"] = prepare_tab_dict(tab)
                     context["payments"] = tab.payments.all()
                     context["change_method_name"] = current_till.changeMethod.name

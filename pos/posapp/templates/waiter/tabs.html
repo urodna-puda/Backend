@@ -14,26 +14,69 @@
     <li class="breadcrumb-item active" aria-current="page">Tabs</li>
 {% endblock %}
 
+{% block page_actions %}
+    <button type="button" class="btn btn-success float-right" data-toggle="modal"
+            data-target="#newTabModal">
+        <i class="fas fa-plus"></i>
+        Add
+    </button>
+{% endblock %}
+
 {% block content %}
     <div class="container-fluid">
-        <div class="row">
-            <div class="col-6"></div>
-            <div class="col-6">
-                <div class="float-right">
-                    <div class="card-tools">
-                        <button type="button" class="btn btn-success" data-toggle="modal" data-target="#newTabModal">
-                            <i class="fas fa-plus"></i>
-                            Add
-                        </button>
+        {% if manager_role %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="card collapsed-card">
+                        <div class="card-header border-0">
+                            <h2 class="card-title">Finished Tabs</h2>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-striped table-hover table-valign-middle">
+                                <thead>
+                                <tr>
+                                    <th scope="col">Tab name</th>
+                                    <th scope="col">Opened at</th>
+                                    <th scope="col">Closed at</th>
+                                    <th scope="col">Total price</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for tab in paid_tabs %}
+                                    <tr>
+                                        <td>{{ tab.name }}</td>
+                                        <td>{{ tab.openedAt }}</td>
+                                        <td>{{ tab.closedAt }}</td>
+                                        <td>{{ tab.total }}</td>
+                                        <td>
+                                            <form action="{% url "waiter/tabs/tab" %}" method="post">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="id" value="{{ tab.id }}"/>
+                                                <button type="submit" class="btn btn-tool" data-toggle="tooltip"
+                                                        data-position="top" title="Show details">
+                                                    <i class="fas fa-receipt"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        {% endif %}
         <div class="card-columns">
             {% for tab in tabs %}
                 <div class="card card-default bg-light">
-                    <h5 class="card-header">
-                        {{ tab.name }}
+                    <div class="card-header">
+                        <h2 class="card-title">{{ tab.name }}</h2>
                         <div class="card-tools">
                             <button type="button" class="btn btn-tool" data-toggle="modal" data-target="#orderModal"
                                     data-tab-id="{{ tab.id }}" data-tab-name="{{ tab.name }}">
@@ -45,42 +88,44 @@
                                    title="Pay"></i>
                             </button>
                         </div>
-                    </h5>
-                    <ul class="list-group list-group-flush">
-                        {% for product in tab.products %}
-                            {% for variant in product.variants %}
-                                <li class="list-group-item">
-                                    <div class="row">
-                                        <div class="col-6">{{ product.name }}</div>
-                                        <div class="col-6">
-                                            <div class="float-right">
-                                                {% if variant.showServed %}
-                                                    <span class="badge badge-success" data-toggle="tooltip"
-                                                          data-placement="top"
-                                                          title="Finished">{{ variant.servedCount }}</span>
-                                                {% endif %}
-                                                {% if variant.showToServe %}
-                                                    <span class="badge badge-info" data-toggle="tooltip"
-                                                          data-placement="top"
-                                                          title="To be served">{{ variant.toServeCount }}</span>
-                                                {% endif %}
-                                                {% if variant.showPreparing %}
-                                                    <span class="badge badge-secondary" data-toggle="tooltip"
-                                                          data-placement="top"
-                                                          title="In preparation">{{ variant.preparingCount }}</span>
-                                                {% endif %}
-                                                {% if variant.showOrdered %}
-                                                    <span class="badge badge-warning" data-toggle="tooltip"
-                                                          data-placement="top"
-                                                          title="Waiting">{{ variant.orderedCount }}</span>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </li>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped table-hover table-valign-middle">
+                            {% for product in tab.products %}
+                                {% for variant in product.variants %}
+                                    <tr>
+                                        <td>
+                                            {{ product.name }}<br>
+                                            <span class="text-xs text-muted">{{ variant.note }}</span>
+                                        </td>
+                                        <td class="text-right">
+
+                                            {% if variant.showOrdered %}
+                                                <span class="badge badge-warning" data-toggle="tooltip"
+                                                      data-placement="top"
+                                                      title="Waiting">{{ variant.orderedCount }}</span>
+                                            {% endif %}
+                                            {% if variant.showPreparing %}
+                                                <span class="badge badge-secondary" data-toggle="tooltip"
+                                                      data-placement="top"
+                                                      title="In preparation">{{ variant.preparingCount }}</span>
+                                            {% endif %}
+                                            {% if variant.showToServe %}
+                                                <span class="badge badge-info" data-toggle="tooltip"
+                                                      data-placement="top"
+                                                      title="To be served">{{ variant.toServeCount }}</span>
+                                            {% endif %}
+                                            {% if variant.showServed %}
+                                                <span class="badge badge-success" data-toggle="tooltip"
+                                                      data-placement="top"
+                                                      title="Finished">{{ variant.servedCount }}</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
                             {% endfor %}
-                        {% endfor %}
-                    </ul>
+                        </table>
+                    </div>
                     <div class="card-footer">
                         <div class="row">
                             <h5 class="col-6">Total</h5>

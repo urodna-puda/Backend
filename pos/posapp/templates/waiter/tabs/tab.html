@@ -18,7 +18,7 @@
 {% block content %}
     <div class="container-fluid">
         <div class="row">
-            <div class="col-12 col-md-7">
+            <div class="col-12{% if tab_open %} col-md-7{% endif %}">
                 <div class="card">
                     <div class="card-header">
                         <h2 class="card-title">
@@ -26,171 +26,188 @@
                             Items
                         </h2>
                     </div>
-                    <div class="card-body">
-                        <ul class="list-group list-group-flush">
+                    <div class="card-body p-0">
+                        <table class="table table-striped table-hover table-valign-middle border-top-0">
                             {% for product in tab.products %}
                                 {% for variant in product.variants %}
-                                    <li class="list-group-item">
-                                        <div class="row">
-                                            <div class="col-4">{{ product.name }}</div>
-                                            <div class="col-4">
-                                                <div class="text-center">
-                                                    {% if variant.showServed %}
-                                                        <span class="badge badge-success" data-toggle="tooltip"
-                                                              data-placement="top"
-                                                              title="Finished">{{ variant.servedCount }}</span>
-                                                    {% endif %}
-                                                    {% if variant.showToServe %}
-                                                        <span class="badge badge-info" data-toggle="tooltip"
-                                                              data-placement="top"
-                                                              title="To be served">{{ variant.toServeCount }}</span>
-                                                    {% endif %}
-                                                    {% if variant.showPreparing %}
-                                                        <span class="badge badge-secondary" data-toggle="tooltip"
-                                                              data-placement="top"
-                                                              title="In preparation">{{ variant.preparingCount }}</span>
-                                                    {% endif %}
-                                                    {% if variant.showOrdered %}
-                                                        <span class="badge badge-warning" data-toggle="tooltip"
-                                                              data-placement="top"
-                                                              title="Waiting">{{ variant.orderedCount }}</span>
-                                                    {% endif %}
-                                                </div>
-                                            </div>
-                                            <div class="col-4 text-right">{{ variant.total }}</div>
-                                        </div>
-                                    </li>
+                                    <tr>
+                                        <td>{{ product.name }}</td>
+                                        <td class="text-center">
+                                            {% if variant.showOrdered %}
+                                                <span class="badge badge-warning" data-toggle="tooltip"
+                                                      data-placement="top"
+                                                      title="Waiting">{{ variant.orderedCount }}</span>
+                                            {% endif %}
+                                            {% if variant.showPreparing %}
+                                                <span class="badge badge-secondary" data-toggle="tooltip"
+                                                      data-placement="top"
+                                                      title="In preparation">{{ variant.preparingCount }}</span>
+                                            {% endif %}
+                                            {% if variant.showToServe %}
+                                                <span class="badge badge-info" data-toggle="tooltip"
+                                                      data-placement="top"
+                                                      title="To be served">{{ variant.toServeCount }}</span>
+                                            {% endif %}
+                                            {% if variant.showServed %}
+                                                <span class="badge badge-success" data-toggle="tooltip"
+                                                      data-placement="top"
+                                                      title="Finished">{{ variant.servedCount }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-right">{{ variant.total }}</td>
+                                    </tr>
                                 {% endfor %}
                             {% endfor %}
+                            <tr>
+                                <td>&nbsp;</td>
+                                <td>&nbsp;</td>
+                                <td>&nbsp;</td>
+                            </tr>
                             {% for payment in payments %}
-                                <li class="list-group-item">
-                                    <div class="row">
-                                        <div class="col-6">{{ payment.method.paymentMethod.name }}</div>
-                                        <div class="col-6 text-right">
-                                            {{ payment.amount }}&nbsp;
+                                <tr>
+                                    <td>{{ payment.method.paymentMethod.name }}</td>
+                                    <td></td>
+                                    <td class="text-right">
+                                        {{ payment.amount }}&nbsp;
+                                        {% if tab_open %}
                                             <button type="submit" form="deletePayment{{ payment.id }}Form"
                                                     class="btn btn-tool" name="delete">
                                                 <i class="fas fa-trash"></i>
                                             </button>
-                                        </div>
-                                    </div>
-                                </li>
+                                        {% endif %}
+                                    </td>
+                                </tr>
                             {% endfor %}
-                        </ul>
+                        </table>
                     </div>
                     <div class="card-footer">
-                        <div class="row">
-                            <h5 class="col-6">Spent</h5>
-                            <div class="col-6">
-                                <h5 class="float-right">{{ tab.total }}</h5>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <h5 class="col-6">Paid</h5>
-                            <div class="col-6">
-                                <h5 class="float-right">{{ tab.paid }}</h5>
-                            </div>
-                        </div>
-                        {% if tab.showVariance %}
+                        {% if tab_open %}
                             <div class="row">
-                                <h5 class="col-6"> {{ tab.varianceLabel }}</h5>
+                                <h5 class="col-6">Spent</h5>
                                 <div class="col-6">
-                                    <h5 class="float-right">{{ tab.variance }}</h5>
+                                    <h5 class="float-right">{{ tab.total }}</h5>
                                 </div>
                             </div>
-                        {% endif %}
-                        {% if tab.showFinaliseAuto %}
-                            <div class="row float-right">
-                                <button class="btn btn-primary" type="submit" form="finaliseForm">
-                                    <i class="fas fa-flag-checkered"></i>&nbsp;
-                                    Finish
-                                </button>
+                            <div class="row">
+                                <h5 class="col-6">Paid</h5>
+                                <div class="col-6">
+                                    <h5 class="float-right">{{ tab.paid }}</h5>
+                                </div>
                             </div>
-                        {% endif %}
-                        {% if tab.showFinaliseChange %}
-                            <div class="row float-right">
-                                <button class="btn btn-warning" type="button" data-toggle="modal" data-target="#confirmChangeModal">
-                                    <i class="fas fa-coins"></i>&nbsp;
-                                    Finish
-                                </button>
+                            {% if tab.showVariance %}
+                                <div class="row">
+                                    <h5 class="col-6"> {{ tab.varianceLabel }}</h5>
+                                    <div class="col-6">
+                                        <h5 class="float-right">{{ tab.variance }}</h5>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            {% if tab.showFinaliseAuto %}
+                                <div class="row float-right">
+                                    <button class="btn btn-primary" type="submit" form="finaliseForm">
+                                        <i class="fas fa-flag-checkered"></i>&nbsp;
+                                        Finish
+                                    </button>
+                                </div>
+                            {% endif %}
+                            {% if tab.showFinaliseChange %}
+                                <div class="row float-right">
+                                    <button class="btn btn-warning" type="button" data-toggle="modal"
+                                            data-target="#confirmChangeModal">
+                                        <i class="fas fa-coins"></i>&nbsp;
+                                        Finish
+                                    </button>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="row">
+                                <h5 class="col-6">Total</h5>
+                                <div class="col-6">
+                                    <h5 class="float-right">{{ tab.total }}</h5>
+                                </div>
                             </div>
                         {% endif %}
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-md-5">
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">
-                            <i class="fas fa-coins"></i>
-                            Payment
-                        </h2>
+            {% if tab_open %}
+                <div class="col-12 col-md-5">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">
+                                <i class="fas fa-coins"></i>
+                                Payment
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" action="{% url "waiter/tabs/tab" %}" id="paymentForm">
+                                {% csrf_token %}
+                                <input type="hidden" name="id" value="{{ id }}"/>
+                                <div class="form-group">
+                                    <label for="moneyCount">Payment method</label>
+                                    <select id="moneyCount" name="moneyCountId" class="form-control" required>
+                                        {% for count in money_counts %}
+                                            <option value="{{ count.id }}"
+                                                    {% ifequal count.id last_used_method %} selected{% endifequal %}>
+                                                {{ count.paymentMethod.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="paymentAmount">Amount paid</label>
+                                    <input type="number" id="paymentAmount" name="amount" class="form-control"
+                                           required min="0" step="0.01"/>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit" form="paymentForm" class="btn btn-primary float-right">
+                                <i class="fas fa-check"></i>&nbsp;
+                                Pay
+                            </button>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <form method="post" action="{% url "waiter/tabs/tab" %}" id="paymentForm">
-                            {% csrf_token %}
-                            <input type="hidden" name="id" value="{{ id }}"/>
-                            <div class="form-group">
-                                <label for="moneyCount">Payment method</label>
-                                <select id="moneyCount" name="moneyCountId" class="form-control" required>
-                                    {% for count in money_counts %}
-                                        <option value="{{ count.id }}"
-                                                {% ifequal count.id last_used_method %} selected{% endifequal %}>
-                                            {{ count.paymentMethod.name }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="paymentAmount">Amount paid</label>
-                                <input type="number" id="paymentAmount" name="amount" class="form-control"
-                                       required min="0" step="0.01"/>
-                            </div>
-                        </form>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {% if tab_open %}
+        <!--MODALS-->
+        <div class="modal fade" id="confirmChangeModal" tabindex="-1" role="dialog"
+             aria-labelledby="confirmChangeModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmChangeModalLabel">Confirm change</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
                     </div>
-                    <div class="card-footer">
-                        <button type="submit" form="paymentForm" class="btn btn-primary float-right">
-                            <i class="fas fa-check"></i>&nbsp;
-                            Pay
+                    <div class="modal-body">
+                        The overpayment of {{ tab.variance }} will be returned via {{ change_method_name }}.
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary" form="finaliseForm">
+                            <i class="fas fa-flag-checkered"></i>&nbsp;Finalise
                         </button>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    <!--MODALS-->
-    <div class="modal fade" id="confirmChangeModal" tabindex="-1" role="dialog" aria-labelledby="confirmChangeModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="confirmChangeModalLabel">Confirm change</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    The overpayment of {{ tab.variance }} will be returned via {{ change_method_name }}.
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary" form="finaliseForm">
-                        <i class="fas fa-flag-checkered"></i>&nbsp;Finalise
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!--FAKE FORMS-->
-    {% for payment in payments %}
-        <form action="{% url "waiter/tabs/tab" %}" method="post" id="deletePayment{{ payment.id }}Form">
+        <!--FAKE FORMS-->
+        {% for payment in payments %}
+            <form action="{% url "waiter/tabs/tab" %}" method="post" id="deletePayment{{ payment.id }}Form">
+                {% csrf_token %}
+                <input type="hidden" name="id" value="{{ id }}"/>
+                <input type="hidden" name="paymentId" value="{{ payment.id }}"/>
+            </form>
+        {% endfor %}
+        <form action="{% url "waiter/tabs/tab" %}" method="post" id="finaliseForm">
             {% csrf_token %}
             <input type="hidden" name="id" value="{{ id }}"/>
-            <input type="hidden" name="paymentId" value="{{ payment.id }}"/>
+            <input type="hidden" name="close" value="true"/>
         </form>
-    {% endfor %}
-    <form action="{% url "waiter/tabs/tab" %}" method="post" id="finaliseForm">
-        {% csrf_token %}
-        <input type="hidden" name="id" value="{{ id }}"/>
-        <input type="hidden" name="close" value="true"/>
-    </form>
+    {% endif %}
 {% endblock %}
