@@ -1,4 +1,3 @@
-import decimal
 from datetime import datetime
 from uuid import uuid4
 
@@ -241,6 +240,19 @@ class TillPaymentOptions(models.Model):
             count.paymentMethod = method
             count.save()
         return till
+
+    @property
+    def method_names(self):
+        if self.methods:
+            namelist = [method.name for method in self.methods.all()]
+            names = namelist[0]
+            if len(namelist) > 1:
+                for name in namelist[1:-1]:
+                    names += f", {name}"
+                names += f" and {namelist[-1]}"
+            return names
+        else:
+            return "No payment method is assigned."
 
     def __str__(self):
         return self.name
