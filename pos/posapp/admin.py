@@ -157,21 +157,6 @@ class TillAdmin(admin.ModelAdmin):
     inlines = [TillMoneyCountsInline]
 
 
-class OrderPaymentInline(admin.TabularInline):
-    verbose_name = "Payment in order"
-    verbose_name_plural = "Payments in order"
-    model = PaymentInOrder
-    extra = 2
-
-
-class OrderAdmin(admin.ModelAdmin):
-    list_display = ['tab', 'state']
-    search_fields = ['tab']
-    list_filter = ['state']
-    ordering = ['createdAt']
-    inlines = [OrderPaymentInline]
-
-
 class PaymentInOrderAdmin(admin.ModelAdmin):
     list_display = ['order', 'method', 'amount']
     search_fields = ['order']
@@ -191,5 +176,4 @@ admin.site.register(Currency, CurrencyAdmin)
 admin.site.register(PaymentMethod, PaymentMethodAdmin)
 admin.site.register(TillPaymentOptions, TillPaymentOptionsAdmin)
 admin.site.register(Till, TillAdmin)
-admin.site.register(Order, OrderAdmin)
 # admin.site.register(PaymentInOrder, PaymentInOrderAdmin)

@@ -7,6 +7,7 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('waiter', RedirectView.as_view(url='waiter/tabs'), name='waiter'),
     path('waiter/tabs', views.waiter_tabs, name='waiter/tabs'),
+    path('waiter/tabs/tab', views.waiter_tabs_tab, name='waiter/tabs/tab'),
     path('waiter/orders', views.waiter_orders, name='waiter/orders'),
     path('manager', RedirectView.as_view(url="manager/users"), name='manager'),
     path('manager/users', RedirectView.as_view(url="users/overview"), name='manager/users'),

@@ -1,5 +1,5 @@
+import decimal
 import uuid
-
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, ProtectedError
 from django.http import HttpResponseRedirect
@@ -8,7 +8,7 @@ from django.shortcuts import render as render_django, redirect
 # Create your views here.
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
-    PaymentMethod, UnitGroup, Unit
+    PaymentInTab, PaymentMethod, UnitGroup, Unit
 from posapp.security import waiter_login_required, manager_login_required, admin_login_required
 
 
@@ -123,67 +123,81 @@ def index(request):
     return redirect("waiter/tabs")
 
 
+def prepare_tab_dict(tab):
+    variance = tab.variance
+    out = {
+        'name': tab.name,
+        'id': tab.id,
+        'total': tab.total,
+        'paid': tab.paid,
+        'variance': abs(variance),
+        'showVariance': variance != 0,
+        'varianceLabel': 'To pay' if variance > 0 else 'To change',
+        'showFinaliseAuto': variance == 0,
+        'showFinaliseChange': variance < 0,
+        'products': []
+    }
+
+    products_list = ProductInTab.objects.filter(tab=tab)
+    products = {}
+    for product in products_list:
+        if product.product.id not in products:
+            products[product.product.id] = {
+                'id': product.product.id,
+                'name': product.product.name,
+                'variants': {},
+            }
+
+        if product.note not in products[product.product.id]['variants']:
+            products[product.product.id]['variants'][product.note] = {
+                'note': product.note,
+                'orderedCount': 0,
+                'preparingCount': 0,
+                'toServeCount': 0,
+                'servedCount': 0,
+                'showOrdered': False,
+                'showPreparing': False,
+                'showToServe': False,
+                'showServed': False,
+                'total': 0,
+            }
+
+        if product.state == ProductInTab.ORDERED:
+            products[product.product.id]['variants'][product.note]['orderedCount'] += 1
+            products[product.product.id]['variants'][product.note]['showOrdered'] = True
+        elif product.state == ProductInTab.PREPARING:
+            products[product.product.id]['variants'][product.note]['preparingCount'] += 1
+            products[product.product.id]['variants'][product.note]['showPreparing'] = True
+        elif product.state == ProductInTab.TO_SERVE:
+            products[product.product.id]['variants'][product.note]['toServeCount'] += 1
+            products[product.product.id]['variants'][product.note]['showToServe'] = True
+        elif product.state == ProductInTab.SERVED:
+            products[product.product.id]['variants'][product.note]['servedCount'] += 1
+            products[product.product.id]['variants'][product.note]['showServed'] = True
+
+        products[product.product.id]['variants'][product.note]['total'] += product.price
+
+    for product in products:
+        variants = []
+        for variant in products[product]['variants']:
+            variants.append(products[product]['variants'][variant])
+
+        out['products'].append({
+            'id': products[product]['id'],
+            'name': products[product]['name'],
+            'variants': variants,
+        })
+
+    return out
+
+
 @waiter_login_required
 def waiter_tabs(request):
     context = Context(request)
     tabs = []
     tabs_list = Tab.objects.filter(state=Tab.OPEN)
     for tab in tabs_list:
-        out = {
-            'name': tab.name,
-            'id': tab.id,
-            'total': tab.total,
-            'products': []
-        }
-
-        products_list = ProductInTab.objects.filter(tab=tab)
-        products = {}
-        for product in products_list:
-            if product.product.id not in products:
-                products[product.product.id] = {
-                    'id': product.product.id,
-                    'name': product.product.name,
-                    'variants': {},
-                }
-
-            if product.note not in products[product.product.id]['variants']:
-                products[product.product.id]['variants'][product.note] = {
-                    'note': product.note,
-                    'orderedCount': 0,
-                    'preparingCount': 0,
-                    'toServeCount': 0,
-                    'servedCount': 0,
-                    'showOrdered': False,
-                    'showPreparing': False,
-                    'showToServe': False,
-                    'showServed': False,
-                }
-
-            if product.state == ProductInTab.ORDERED:
-                products[product.product.id]['variants'][product.note]['orderedCount'] += 1
-                products[product.product.id]['variants'][product.note]['showOrdered'] = True
-            elif product.state == ProductInTab.PREPARING:
-                products[product.product.id]['variants'][product.note]['preparingCount'] += 1
-                products[product.product.id]['variants'][product.note]['showPreparing'] = True
-            elif product.state == ProductInTab.TO_SERVE:
-                products[product.product.id]['variants'][product.note]['toServeCount'] += 1
-                products[product.product.id]['variants'][product.note]['showToServe'] = True
-            elif product.state == ProductInTab.SERVED:
-                products[product.product.id]['variants'][product.note]['servedCount'] += 1
-                products[product.product.id]['variants'][product.note]['showServed'] = True
-
-        for product in products:
-            variants = []
-            for variant in products[product]['variants']:
-                variants.append(products[product]['variants'][variant])
-
-            out['products'].append({
-                'id': products[product]['id'],
-                'name': products[product]['name'],
-                'variants': variants,
-            })
-
-        tabs.append(out)
+        tabs.append(prepare_tab_dict(tab))
 
     context['tabs'] = tabs
     context['products'] = []
@@ -192,7 +206,88 @@ def waiter_tabs(request):
             'id': product.id,
             'name': product.name,
         })
+
+    if request.user.is_manager:
+        context['paid_tabs'] = Tab.objects.filter(state=Tab.PAID)
     return render(request, template_name="waiter/tabs.html", context=context)
+
+
+@waiter_login_required
+def waiter_tabs_tab(request):
+    context = Context(request)
+    if request.method == "POST":
+        if "id" in request.POST:
+            id = uuid.UUID(request.POST["id"])
+            context["id"] = id
+            current_till = request.user.current_till
+            if current_till:
+                context["money_counts"] = current_till.tillmoneycount_set.all()
+                try:
+                    tab = Tab.objects.get(id=id)
+                    context["tab_open"] = tab.state == Tab.OPEN
+                    if context["tab_open"]:
+                        if check_dict(request.POST, ["moneyCountId", "amount"]):
+                            try:
+                                money_count_id = uuid.UUID(request.POST["moneyCountId"])
+                                context["last_used_method"] = money_count_id
+                                amount = decimal.Decimal(request.POST["amount"])
+                                if amount < 0:
+                                    context.add_notification(Notification.WARNING,
+                                                             "Payment amount must be greater than zero.",
+                                                             "exclamation-triangle")
+                                else:
+                                    money_count = request.user.current_till.tillmoneycount_set.get(id=money_count_id)
+                                    payment = PaymentInTab()
+                                    payment.tab = tab
+                                    payment.method = money_count
+                                    payment.amount = amount
+                                    payment.save()
+                                    context.add_notification(Notification.SUCCESS,
+                                                             "Payment created successfully",
+                                                             "check")
+                            except TillMoneyCount.DoesNotExist:
+                                context.add_notification(Notification.WARNING,
+                                                         "Invalid request: Payment method does not exist",
+                                                         "exclamation-triangle")
+                        if check_dict(request.POST, ["paymentId", "delete"]):
+                            try:
+                                payment_id = uuid.UUID(request.POST["paymentId"])
+                                payment = PaymentInTab.objects.get(id=payment_id, tab=tab)
+                                payment.delete()
+                                context.add_notification(Notification.SUCCESS,
+                                                         "Payment was deleted successfully",
+                                                         "check")
+                            except PaymentInTab.DoesNotExist:
+                                context.add_notification(Notification.WARNING,
+                                                         "The specified payment can't be deleted as it does not exist.",
+                                                         "exclamation-triangle")
+                        if check_dict(request.POST, ["close"]):
+                            change_payment = tab.mark_paid(request.user)
+                            context.add_notification(Notification.SUCCESS, "The Tab was marked as paid.", "check")
+                            if change_payment:
+                                context.add_notification(Notification.SECONDARY,
+                                                         f"The remaining variance of {change_payment.amount} was returned via {change_payment.method.paymentMethod.name}",
+                                                         "info-circle")
+                    context["tab"] = prepare_tab_dict(tab)
+                    context["payments"] = tab.payments.all()
+                    context["change_method_name"] = current_till.changeMethod.name
+                except Tab.DoesNotExist:
+                    context.add_notification(Notification.DANGER,
+                                             "Invalid request: specified Tab does not exist. Go back to previous page and try it again.",
+                                             "times-circle")
+            else:
+                context.add_notification(Notification.DANGER,
+                                         "You don't have a till assigned. If you want to accept payment, ask a manager to assign you a till.",
+                                         "exclamation-triangle")
+        else:
+            context.add_notification(Notification.DANGER,
+                                     "Invalid request: Tab ID is missing. Go back to previous page and try it again.",
+                                     "times-circle")
+    else:
+        context.add_notification(Notification.DANGER,
+                                 "Invalid request. Go back to previous page and try it again.",
+                                 "times-circle")
+    return render(request, template_name="waiter/tabs/tab.html", context=context)
 
 
 @waiter_login_required

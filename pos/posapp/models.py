@@ -1,3 +1,4 @@
+import decimal
 from datetime import datetime
 from uuid import uuid4
 
@@ -113,6 +114,17 @@ class Tab(models.Model):
             sum += product.price
         return sum
 
+    @property
+    def paid(self):
+        sum = 0
+        for payment in self.payments.all():
+            sum += payment.converted_value
+        return sum
+
+    @property
+    def variance(self):
+        return round(float(self.total) - self.paid, 3)
+
     def order_product(self, product, count, note, state):
         for i in range(count):
             new = ProductInTab()
@@ -135,6 +147,21 @@ class Tab(models.Model):
                 new.preparingAt = time
 
             new.save()
+
+    def mark_paid(self, by: User):
+        variance = self.variance
+        change_payment = None
+        if variance < 0:
+            change_payment = PaymentInTab()
+            change_payment.tab = self
+            change_payment.method = TillMoneyCount.objects.get(till=by.current_till,
+                                                               paymentMethod=by.current_till.changeMethod)
+            change_payment.amount = variance
+            change_payment.save()
+        self.state = self.PAID
+        self.closedAt = datetime.now()
+        self.save()
+        return change_payment
 
 
 class ProductInTab(models.Model):
@@ -292,8 +319,7 @@ class TillMoneyCount(models.Model):
     @property
     def expected(self):
         val = 0
-        orders = self.till.order_set.all()
-        payments = PaymentInOrder.objects.filter(method=self.paymentMethod, order__in=orders)
+        payments = self.paymentintab_set.all()
         for payment in payments:
             val += payment.amount
         return val
@@ -330,31 +356,12 @@ class TillEdit(models.Model):
     reason = models.TextField()
 
 
-class Order(models.Model):
-    CREATED = 'C'
-    PAID = 'P'
-    ORDER_STATES = [
-        (CREATED, "Created"),
-        (PAID, "Paid"),
-    ]
+class PaymentInTab(models.Model):
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
-    tab = models.OneToOneField(Tab, on_delete=models.PROTECT, related_name="order")
-    state = models.CharField(max_length=1, choices=ORDER_STATES, default=CREATED)
-    createdAt = models.DateTimeField(auto_now_add=True)
-    payments = models.ManyToManyField(PaymentMethod, through="PaymentInOrder")
-    till = models.ForeignKey(Till, on_delete=models.PROTECT)
-
-    def __str__(self):
-        return f"Order of tab {self.tab}"
-
-
-class PaymentInOrder(models.Model):
-    method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT)
-    order = models.ForeignKey(Order, on_delete=models.PROTECT)
+    tab = models.ForeignKey(Tab, on_delete=models.CASCADE, related_name="payments")
+    method = models.ForeignKey(TillMoneyCount, on_delete=models.PROTECT)
     amount = models.DecimalField(max_digits=15, decimal_places=3)
 
-    class Meta:
-        verbose_name_plural = "Payments in orders"
-
-    def __str__(self):
-        return f"Payment of {self.method.currency.symbol}{self.amount} via {self.method} for {self.order}"
+    @property
+    def converted_value(self):
+        return round(float(self.amount) * self.method.paymentMethod.currency.ratio, 3)
