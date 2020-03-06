@@ -1,10 +1,10 @@
 {% extends "adminlte/base.html" %}
 
-{% block extra_head %}
-    <script src="https://kit.fontawesome.com/7635efe91d.js" crossorigin="anonymous"></script>
-{% endblock %}
-
 {% block javascript %}
+    <script type="text/javascript">
+        window.FontAwesomeConfig = { autoReplaceSvg: false }
+    </script>
+    <script src="https://kit.fontawesome.com/7635efe91d.js" crossorigin="anonymous"></script>
     {{ block.super }}
     <script>
         $(function () {
