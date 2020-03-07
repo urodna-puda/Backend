@@ -8,4 +8,5 @@ urlpatterns = [
     path('users/<str:username>/toggle/<str:role>', apiviews.UserToggles.as_view()),
     path('currencies/<int:id>/toggleEnabled', apiviews.CurrencyToggleEnabled.as_view()),
     path('methods/<uuid:id>/toggleChange', apiviews.MethodToggleChange.as_view()),
+    path('products/<uuid:id>/toggleEnabled', apiviews.ProductToggleEnabled.as_view()),
 ]
