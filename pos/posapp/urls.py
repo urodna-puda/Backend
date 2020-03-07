@@ -28,4 +28,7 @@ urlpatterns = [
     path('admin/finance/methods/delete', views.admin_finance_methods_delete, name='admin/finance/methods/delete'),
     path('admin/units', RedirectView.as_view(url="admin/units/overview"), name='admin/units'),
     path('admin/units/overview', views.admin_units_overview, name='admin/units/overview'),
+    path('admin/menu', RedirectView.as_view(url="admin/menu/products"), name='admin/menu'),
+    path('admin/menu/products', views.admin_menu_products, name='admin/menu/products'),
+    path('admin/menu/products/product', views.admin_menu_products_product, name='admin/menu/products/product'),
 ]
