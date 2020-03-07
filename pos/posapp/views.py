@@ -688,3 +688,36 @@ def admin_units_overview(request):
     context['groups'] = UnitGroup.objects.all()
 
     return render(request, template_name='admin/units/overview.html', context=context)
+
+
+def admin_menu_products(request):
+    context = Context(request)
+    page_length = int(request.GET.get('page_length', 20))
+    search = request.GET.get('search', '')
+    page = int(request.GET.get('page', 0))
+    enabled_filter = request.GET.get('enabled', '')
+
+    products = Product.objects.filter(name__contains=search).order_by('name')
+    if enabled_filter:
+        if enabled_filter == "yes":
+            products = products.filter(enabled=True)
+        if enabled_filter == "no":
+            products = products.filter(enabled=False)
+    context.add_pagination_context(products, page, page_length, 'products')
+
+    context["page_number"] = page
+    context["page_length"] = generate_page_length_options(page_length)
+    context["search"] = search
+    context["enabledFilter"] = {
+        "yes": (enabled_filter == "yes"),
+        "none": (enabled_filter == ""),
+        "no": (enabled_filter == "no"),
+        "val": enabled_filter,
+    }
+
+    return render(request, 'admin/menu/products/index.html', context)
+
+
+def admin_menu_products_product(request):
+    context = Context(request)
+    return render(request, 'admin/menu/products/product.html', context)
