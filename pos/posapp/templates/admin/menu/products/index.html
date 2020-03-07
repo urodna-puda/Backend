@@ -28,7 +28,7 @@
                         <div class="card-tools">
                             <div class="container">
                                 <div class="row float-right">
-                                    <div class="col-4 float-right">
+                                    <div class="col-3 float-right">
                                         <div class="btn-group btn-group-sm" role="group">
                                             <button type="button"
                                                     class="btn btn-outline-success{% if enabledFilter.yes %} active{% endif %}"
@@ -50,17 +50,22 @@
                                     <div class="col-8 float-right">
                                         <form id="searchForm">
                                             <div class="input-group mb-3 imput-group-sm">
-                                                <input type="text" class="form-control" placeholder="Search"
+                                                <input type="text" class="form-control border-right-0 border-secondary" placeholder="Search"
                                                        aria-label="Search"
                                                        aria-describedby="search-addon-button" id="searchField"
                                                        name="search"{% if search %} value="{{ search }}"{% endif %}>
                                                 <div class="input-group-append">
-                                                    <button class="btn btn-outline-secondary" type="submit"
+                                                    <button class="btn btn-outline-secondary border-left-0" type="submit"
                                                             id="search-addon-button"><i
                                                             class="fas fa-search"></i></button>
                                                 </div>
                                             </div>
                                         </form>
+                                    </div>
+                                    <div class="col-1 float-right">
+                                        <a href="{% url "admin/menu/products/product" %}" class="btn btn-tool" data-toggle="tooltip" data-position="top" title="Add">
+                                            <i class="fas fa-plus"></i>
+                                        </a>
                                     </div>
                                 </div>
                             </div>
