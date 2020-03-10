@@ -762,7 +762,8 @@ class Admin:
                         product = Product.objects.get(id=id)
                         if "formSelector" in request.POST:
                             product_changed = request.POST["formSelector"] == "product"
-                            product_form = CreateEditProductForm(request.POST if product_changed else None, instance=product)
+                            product_form = CreateEditProductForm(request.POST if product_changed else None,
+                                                                 instance=product)
                             if product_changed and product_form.is_valid():
                                 product_form.save()
                                 messages.success(request, "Product successfully updated")
@@ -794,3 +795,16 @@ class Admin:
                     except Product.DoesNotExist:
                         context["show_does_not_exist"] = True
                     return render(request, 'admin/menu/products/product.html', context)
+
+                class Delete(views.View):
+                    def get(self, request, id, *args, **kwargs):
+                        try:
+                            product = Product.objects.get(id=id)
+                            product.delete()
+                            messages.success(request, f"Product {product.name} was deleted.")
+                            return redirect("admin/menu/products")
+                        except Product.DoesNotExist:
+                            return redirect("admin/menu/products/product", id=id)
+                        except ProtectedError:
+                            messages.error(request, "This Product can't be deleted as it was already ordered")
+                            return redirect("admin/menu/products/product", id=id)

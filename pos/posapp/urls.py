@@ -32,4 +32,6 @@ urlpatterns = [
     path('admin/menu/products', views.Admin.Menu.Products.as_view(), name='admin/menu/products'),
     path('admin/menu/products/<uuid:id>', views.Admin.Menu.Products.Product.as_view(),
          name='admin/menu/products/product'),
+    path('admin/menu/products/<uuid:id>/delete', views.Admin.Menu.Products.Product.Delete.as_view(),
+         name='admin/menu/products/product/delete'),
 ]
