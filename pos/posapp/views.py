@@ -79,7 +79,7 @@ class Context:
         yield 'page', self.page
         yield 'waiter_role', self.waiter_role
         yield 'manager_role', self.manager_role
-        yield 'admin_role', self.manager_role
+        yield 'admin_role', self.admin_role
         yield 'notifications', self.notifications
         for key in self.data:
             yield key, self.data[key]
