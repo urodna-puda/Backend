@@ -110,20 +110,31 @@
                                 through {{ methods.showing.to|add_one }} of {{ methods.showing.of }}.
                                 &nbsp;
                                 Items per page:
-                                <select onchange="window.location = '?page={{ page_number }}&page_length=' + this.options[this.selectedIndex].value{% if search %} + '&search={{ search }}'{% endif %};">
-                                    <option value="5" {% if page_length.len5 %}selected{% endif %}>5 items</option>
-                                    <option value="10" {% if page_length.len10 %}selected{% endif %}>10 items</option>
-                                    <option value="20" {% if page_length.len20 %}selected{% endif %}>20 items</option>
-                                    <option value="50" {% if page_length.len50 %}selected{% endif %}>50 items</option>
-                                    <option value="100" {% if page_length.len100 %}selected{% endif %}>100 items
+                                <select onchange="window.location = '?page={{ methods.pages.page }}&page_length=' + this.options[this.selectedIndex].value{% if search %} + '&search={{ search }}'{% endif %};">
+                                    <option value="5" {% if methods.pages.page_length.len5 %}selected{% endif %}>
+                                        5 items
                                     </option>
-                                    <option value="200" {% if page_length.len200 %}selected{% endif %}>200 items
+                                    <option value="10" {% if methods.pages.page_length.len10 %}selected{% endif %}>
+                                        10 items
                                     </option>
-                                    <option value="500" {% if page_length.len500 %}selected{% endif %}>500 items
+                                    <option value="20" {% if methods.pages.page_length.len20 %}selected{% endif %}>
+                                        20 items
                                     </option>
-                                    {% if page_length.other %}
-                                        <option value="{{ page_length.value }}" selected>Other ({{ page_length.value }}
-                                            items)
+                                    <option value="50" {% if methods.pages.page_length.len50 %}selected{% endif %}>
+                                        50 items
+                                    </option>
+                                    <option value="100" {% if methods.pages.page_length.len100 %}selected{% endif %}>
+                                        100 items
+                                    </option>
+                                    <option value="200" {% if methods.pages.page_length.len200 %}selected{% endif %}>
+                                        200 items
+                                    </option>
+                                    <option value="500" {% if methods.pages.page_length.len500 %}selected{% endif %}>
+                                        500 items
+                                    </option>
+                                    {% if methods.pages.page_length.other %}
+                                        <option value="{{ methods.pages.page_length.value }}" selected>
+                                            Other ({{ methods.pages.page_length.value }} items)
                                         </option>
                                     {% endif %}
                                 </select>
@@ -132,12 +143,12 @@
                                 <div class="btn-group" role="group">
                                     {% if methods.pages.showPrevious %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page=0&page_length={{ page_length.value }}'{% if search %} +
+                                                onclick="window.location = '?page=0&page_length={{ methods.pages.page_length.value }}'{% if search %} +
                                                     '&search={{ search }}{% endif %}'">
                                             <i class="fas fa-angle-double-left"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ methods.pages.previous }}&page_length={{ page_length.value }}'{% if search %} +
+                                                onclick="window.location = '?page={{ methods.pages.previous }}&page_length={{ methods.pages.page_length.value }}'{% if search %} +
                                                     '&search={{ search }}{% endif %}'">
                                             <i class=" fas fa-angle-left"></i>
                                         </button>
@@ -145,19 +156,19 @@
                                     {% for link in methods.pages.links %}
                                         <button type="button"
                                                 class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
-                                                onclick="window.location = '?page={{ link.page }}&page_length={{ page_length.value }}'{% if search %} +
+                                                onclick="window.location = '?page={{ link.page }}&page_length={{ methods.pages.page_length.value }}'{% if search %} +
                                                     '&search={{ search }}{% endif %}'">
                                             {{ link.page|add_one }}
                                         </button>
                                     {% endfor %}
                                     {% if methods.pages.showNext %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ methods.pages.next }}&page_length={{ page_length.value }}'{% if search %} +
+                                                onclick="window.location = '?page={{ methods.pages.next }}&page_length={{ methods.pages.page_length.value }}'{% if search %} +
                                                     '&search={{ search }}{% endif %}'">
                                             <i class="fas fa-angle-right"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ methods.pages.last }}&page_length={{ page_length.value }}'{% if search %} +
+                                                onclick="window.location = '?page={{ methods.pages.last }}&page_length={{ methods.pages.page_length.value }}'{% if search %} +
                                                     '&search={{ search }}{% endif %}'">
                                             <i class="fas fa-angle-double-right"></i>
                                         </button>
@@ -227,7 +238,7 @@
     <script>
         $('#searchForm').bind('submit', function () {
             let search = $('#searchField').val();
-            window.location = "?page={{ page_number }}&page_length={{ page_length.value }}" + (search ? "&search=" + search : "");
+            window.location = "?page={{ page_number }}&page_length={{ methods.pages.page_length.value }}" + (search ? "&search=" + search : "");
             return false;
         });
 

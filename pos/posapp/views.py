@@ -26,8 +26,11 @@ class Context:
         self.request = request
         self.template_name = template_name
 
-    def add_pagination_context(self, manager, page, page_length, key):
+    def add_pagination_context(self, manager, key, page_get_name="page", page_length_get_name="page_length"):
         count = manager.count()
+        page_length = int(self.request.GET.get(page_length_get_name, 20))
+        page = int(self.request.GET.get(page_get_name, 0))
+
         last_page = count // page_length
         self.data[key] = {}
 
@@ -44,6 +47,8 @@ class Context:
         self.data[key]['pages']['next'] = page + 1
         self.data[key]['pages']['showNext'] = self.data[key]['pages']['next'] <= last_page
         self.data[key]['pages']['last'] = last_page
+        self.data[key]['pages']['page'] = page
+        self.data[key]['pages']['page_length'] = generate_page_length_options(page_length)
 
         links = []
         if page < (last_page / 2):
@@ -285,12 +290,10 @@ class Manager:
     class Users(ManagerLoginRequiredMixin, views.View):
         def get(self, request):
             context = Context(request, "manager/users/index.html")
-            page_length = int(request.GET.get('page_length', 20))
-            page = int(request.GET.get('page', 0))
 
             users = User.objects.filter(is_active=True).order_by("last_name", "first_name")
             context['me'] = request.user.username
-            context.add_pagination_context(users, page, page_length, 'users')
+            context.add_pagination_context(users, 'users')
 
             return context.render()
 
@@ -315,22 +318,13 @@ class Manager:
     class Tills(ManagerLoginRequiredMixin, views.View):
         def get(self, request):
             context = Context(request, "manager/tills/index.html")
-            page_length = int(request.GET.get('page_length', 20))
-            page_open = int(request.GET.get('page_open', 0))
-            page_stopped = int(request.GET.get('page_closed', 0))
-            page_counted = int(request.GET.get('page_counted', 0))
 
             open_tills = Till.objects.filter(state=Till.OPEN)
             stopped_tills = Till.objects.filter(state=Till.STOPPED)
             counted_tills = Till.objects.filter(state=Till.COUNTED)
-            context.add_pagination_context(open_tills, page_open, page_length, 'open')
-            context.add_pagination_context(stopped_tills, page_stopped, page_length, 'stopped')
-            context.add_pagination_context(counted_tills, page_counted, page_length, 'counted')
-
-            context["page_open"] = page_open
-            context["page_stopped"] = page_stopped
-            context["page_counted"] = page_counted
-            context["page_length"] = generate_page_length_options(page_length)
+            context.add_pagination_context(open_tills, 'open', page_get_name="page_open")
+            context.add_pagination_context(stopped_tills, 'stopped', page_get_name="page_stopped")
+            context.add_pagination_context(counted_tills, 'counted', page_get_name="page_counted")
 
             return context.render()
 
@@ -576,7 +570,6 @@ class Admin:
                 context = Context(request, "admin/finance/currencies.html")
                 page_length = int(request.GET.get('page_length', 20))
                 search = request.GET.get('search', '')
-                page = int(request.GET.get('page', 0))
                 enabled_filter = request.GET.get('enabled', '')
 
                 currencies = Currency.objects.filter(
@@ -586,10 +579,8 @@ class Admin:
                         currencies = currencies.filter(enabled=True)
                     if enabled_filter == "no":
                         currencies = currencies.filter(enabled=False)
-                context.add_pagination_context(currencies, page, page_length, 'currencies')
+                context.add_pagination_context(currencies, 'currencies')
 
-                context["page_number"] = page
-                context["page_length"] = generate_page_length_options(page_length)
                 context["search"] = search
                 context["enabledFilter"] = {
                     "yes": (enabled_filter == "yes"),
@@ -606,9 +597,7 @@ class Admin:
 
                 form = form or CreatePaymentMethodForm()
                 context['form'] = form
-                page_length = int(request.GET.get('page_length', 20))
                 search = request.GET.get('search', '')
-                page = int(request.GET.get('page', 0))
                 currency_filter = int(request.GET['currency']) if 'currency' in request.GET else None
 
                 methods = PaymentMethod.objects.filter(
@@ -617,10 +606,8 @@ class Admin:
                 if currency_filter:
                     methods = methods.filter(currency__pk=currency_filter)
 
-                context.add_pagination_context(methods, page, page_length, 'methods')
+                context.add_pagination_context(methods, 'methods')
 
-                context["page_number"] = page
-                context["page_length"] = generate_page_length_options(page_length)
                 context["search"] = search
 
                 context["showModal"] = show_modal
@@ -709,9 +696,7 @@ class Admin:
         class Products(AdminLoginRequiredMixin, views.View):
             def fill_data(self, request):
                 context = Context(request, 'admin/menu/products/index.html')
-                page_length = int(request.GET.get('page_length', 20))
                 search = request.GET.get('search', '')
-                page = int(request.GET.get('page', 0))
                 enabled_filter = request.GET.get('enabled', '')
 
                 products = Product.objects.filter(name__contains=search).order_by('name')
@@ -720,10 +705,8 @@ class Admin:
                         products = products.filter(enabled=True)
                     if enabled_filter == "no":
                         products = products.filter(enabled=False)
-                context.add_pagination_context(products, page, page_length, 'products')
+                context.add_pagination_context(products, 'products')
 
-                context["page_number"] = page
-                context["page_length"] = generate_page_length_options(page_length)
                 context["search"] = search
                 context["enabledFilter"] = {
                     "yes": (enabled_filter == "yes"),

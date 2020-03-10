@@ -72,20 +72,31 @@
                                 of {{ open.showing.of }}.
                                 &nbsp;
                                 Items per page:
-                                <select onchange="window.location = '?page_open={{ page_open }}&page_stopped={{ page_stopped }}&page_counted={{ page_counted }}&page_length=' + this.options[this.selectedIndex].value;">
-                                    <option value="5" {% if page_length.len5 %}selected{% endif %}>5 items</option>
-                                    <option value="10" {% if page_length.len10 %}selected{% endif %}>10 items</option>
-                                    <option value="20" {% if page_length.len20 %}selected{% endif %}>20 items</option>
-                                    <option value="50" {% if page_length.len50 %}selected{% endif %}>50 items</option>
-                                    <option value="100" {% if page_length.len100 %}selected{% endif %}>100 items
+                                <select onchange="window.location = '?page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_counted={{ counted.pages.page }}&page_length=' + this.options[this.selectedIndex].value;">
+                                    <option value="5" {% if open.pages.page_length.len5 %}selected{% endif %}>
+                                        5 items
                                     </option>
-                                    <option value="200" {% if page_length.len200 %}selected{% endif %}>200 items
+                                    <option value="10" {% if open.pages.page_length.len10 %}selected{% endif %}>
+                                        10 items
                                     </option>
-                                    <option value="500" {% if page_length.len500 %}selected{% endif %}>500 items
+                                    <option value="20" {% if open.pages.page_length.len20 %}selected{% endif %}>
+                                        20 items
                                     </option>
-                                    {% if page_length.other %}
-                                        <option value="{{ page_length.value }}" selected>Other ({{ page_length.value }}
-                                            items)
+                                    <option value="50" {% if open.pages.page_length.len50 %}selected{% endif %}>
+                                        50 items
+                                    </option>
+                                    <option value="100" {% if open.pages.page_length.len100 %}selected{% endif %}>
+                                        100 items
+                                    </option>
+                                    <option value="200" {% if open.pages.page_length.len200 %}selected{% endif %}>
+                                        200 items
+                                    </option>
+                                    <option value="500" {% if open.pages.page_length.len500 %}selected{% endif %}>
+                                        500 items
+                                    </option>
+                                    {% if open.pages.page_length.other %}
+                                        <option value="{{ open.pages.page_length.value }}" selected>
+                                            Other ({{ open.pages.page_length.value }} items)
                                         </option>
                                     {% endif %}
                                 </select>
@@ -94,28 +105,28 @@
                                 <div class="btn-group" role="group">
                                     {% if open.pages.showPrevious %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_open=0&page_stopped={{ page_closed }}&page_counted={{ page_counted }}'">
+                                                onclick="window.location = '?page_open=0&page_stopped={{ stopped.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ open.pages.page_length.value }}'">
                                             <i class="fas fa-angle-double-left"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_open={{ open.pages.previous }}&page_stopped={{ page_closed }}&page_counted={{ page_counted }}'">
+                                                onclick="window.location = '?page_open={{ open.pages.previous }}&page_stopped={{ stopped.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ open.pages.page_length.value }}'">
                                             <i class=" fas fa-angle-left"></i>
                                         </button>
                                     {% endif %}
                                     {% for link in open.pages.links %}
                                         <button type="button"
                                                 class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
-                                                onclick="window.location = '?page_open={{ link.page }}&page_stopped={{ page_closed }}&page_counted={{ page_counted }}'">
+                                                onclick="window.location = '?page_open={{ link.page }}&page_stopped={{ stopped.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ open.pages.page_length.value }}'">
                                             {{ link.page|add_one }}
                                         </button>
                                     {% endfor %}
                                     {% if open.pages.showNext %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_open={{ open.pages.next }}&page_stopped={{ page_closed }}&page_counted={{ page_counted }}'">
+                                                onclick="window.location = '?page_open={{ open.pages.next }}&page_stopped={{ stopped.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ open.pages.page_length.value }}'">
                                             <i class="fas fa-angle-right"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_open={{ open.pages.last }}&page_stopped={{ page_closed }}&page_counted={{ page_counted }}'">
+                                                onclick="window.location = '?page_open={{ open.pages.last }}&page_stopped={{ page_closed }}&page_counted={{ page_counted }}&page_length={{ open.pages.page_length.value }}'">
                                             <i class="fas fa-angle-double-right"></i>
                                         </button>
                                     {% endif %}
@@ -177,20 +188,31 @@
                                 of {{ stopped.showing.of }}.
                                 &nbsp;
                                 Items per page:
-                                <select onchange="window.location = '?page_open={{ page_open }}&page_stopped={{ page_stopped }}&page_counted={{ page_counted }}&page_length=' + this.options[this.selectedIndex].value;">
-                                    <option value="5" {% if page_length.len5 %}selected{% endif %}>5 items</option>
-                                    <option value="10" {% if page_length.len10 %}selected{% endif %}>10 items</option>
-                                    <option value="20" {% if page_length.len20 %}selected{% endif %}>20 items</option>
-                                    <option value="50" {% if page_length.len50 %}selected{% endif %}>50 items</option>
-                                    <option value="100" {% if page_length.len100 %}selected{% endif %}>100 items
+                                <select onchange="window.location = '?page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_counted={{ counted.pages.page }}&page_length=' + this.options[this.selectedIndex].value;">
+                                    <option value="5" {% if stopped.pages.page_length.len5 %}selected{% endif %}>
+                                        5 items
                                     </option>
-                                    <option value="200" {% if page_length.len200 %}selected{% endif %}>200 items
+                                    <option value="10" {% if stopped.pages.page_length.len10 %}selected{% endif %}>
+                                        10 items
                                     </option>
-                                    <option value="500" {% if page_length.len500 %}selected{% endif %}>500 items
+                                    <option value="20" {% if stopped.pages.page_length.len20 %}selected{% endif %}>
+                                        20 items
                                     </option>
-                                    {% if page_length.other %}
-                                        <option value="{{ page_length.value }}" selected>Other ({{ page_length.value }}
-                                            items)
+                                    <option value="50" {% if stopped.pages.page_length.len50 %}selected{% endif %}>
+                                        50 items
+                                    </option>
+                                    <option value="100" {% if stopped.pages.page_length.len100 %}selected{% endif %}>
+                                        100 items
+                                    </option>
+                                    <option value="200" {% if stopped.pages.page_length.len200 %}selected{% endif %}>
+                                        200 items
+                                    </option>
+                                    <option value="500" {% if stopped.pages.page_length.len500 %}selected{% endif %}>
+                                        500 items
+                                    </option>
+                                    {% if stopped.pages.page_length.other %}
+                                        <option value="{{ stopped.pages.page_length.value }}" selected>
+                                            Other ({{ stopped.pages.page_length.value }} items)
                                         </option>
                                     {% endif %}
                                 </select>
@@ -199,28 +221,28 @@
                                 <div class="btn-group" role="group">
                                     {% if stopped.pages.showPrevious %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_stopped=0&page_open={{ page_open }}&page_counted={{ page_counted }}'">
+                                                onclick="window.location = '?page_stopped=0&page_open={{ open.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ stopped.pages.page_length.value }}'">
                                             <i class="fas fa-angle-double-left"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_stopped={{ stopped.pages.previous }}&page_open={{ page_open }}&page_counted={{ page_counted }}'">
+                                                onclick="window.location = '?page_stopped={{ stopped.pages.previous }}&page_open={{ open.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ stopped.pages.page_length.value }}'">
                                             <i class=" fas fa-angle-left"></i>
                                         </button>
                                     {% endif %}
                                     {% for link in stopped.pages.links %}
                                         <button type="button"
                                                 class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
-                                                onclick="window.location = '?page_stopped={{ link.page }}&page_open={{ page_open }}&page_counted={{ page_counted }}'">
+                                                onclick="window.location = '?page_stopped={{ link.page }}&page_open={{ open.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ stopped.pages.page_length.value }}'">
                                             {{ link.page|add_one }}
                                         </button>
                                     {% endfor %}
                                     {% if stopped.pages.showNext %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_stopped={{ stopped.pages.next }}&page_open={{ page_open }}&page_counted={{ page_counted }}'">
+                                                onclick="window.location = '?page_stopped={{ stopped.pages.next }}&page_open={{ open.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ stopped.pages.page_length.value }}'">
                                             <i class="fas fa-angle-right"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_stopped={{ stopped.pages.last }}&page_open={{ page_open }}&page_counted={{ page_counted }}'">
+                                                onclick="window.location = '?page_stopped={{ stopped.pages.last }}&page_open={{ open.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ stopped.pages.page_length.value }}'">
                                             <i class="fas fa-angle-double-right"></i>
                                         </button>
                                     {% endif %}
@@ -283,20 +305,31 @@
                                 of {{ counted.showing.of }}.
                                 &nbsp;
                                 Items per page:
-                                <select onchange="window.location = '?page_open={{ page_open }}&page_stopped={{ page_stopped }}&page_counted={{ page_counted }}&page_length=' + this.options[this.selectedIndex].value;">
-                                    <option value="5" {% if page_length.len5 %}selected{% endif %}>5 items</option>
-                                    <option value="10" {% if page_length.len10 %}selected{% endif %}>10 items</option>
-                                    <option value="20" {% if page_length.len20 %}selected{% endif %}>20 items</option>
-                                    <option value="50" {% if page_length.len50 %}selected{% endif %}>50 items</option>
-                                    <option value="100" {% if page_length.len100 %}selected{% endif %}>100 items
+                                <select onchange="window.location = '?page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_counted={{ counted.pages.page }}&page_length=' + this.options[this.selectedIndex].value;">
+                                    <option value="5" {% if counted.pages.page_length.len5 %}selected{% endif %}>
+                                        5 items
                                     </option>
-                                    <option value="200" {% if page_length.len200 %}selected{% endif %}>200 items
+                                    <option value="10" {% if counted.pages.page_length.len10 %}selected{% endif %}>
+                                        10 items
                                     </option>
-                                    <option value="500" {% if page_length.len500 %}selected{% endif %}>500 items
+                                    <option value="20" {% if counted.pages.page_length.len20 %}selected{% endif %}>
+                                        20 items
                                     </option>
-                                    {% if page_length.other %}
-                                        <option value="{{ page_length.value }}" selected>Other ({{ page_length.value }}
-                                            items)
+                                    <option value="50" {% if counted.pages.page_length.len50 %}selected{% endif %}>
+                                        50 items
+                                    </option>
+                                    <option value="100" {% if counted.pages.page_length.len100 %}selected{% endif %}>
+                                        100 items
+                                    </option>
+                                    <option value="200" {% if counted.pages.page_length.len200 %}selected{% endif %}>
+                                        200 items
+                                    </option>
+                                    <option value="500" {% if counted.pages.page_length.len500 %}selected{% endif %}>
+                                        500 items
+                                    </option>
+                                    {% if counted.pages.page_length.other %}
+                                        <option value="{{ counted.pages.page_length.value }}" selected>
+                                            Other ({{ counted.pages.page_length.value }} items)
                                         </option>
                                     {% endif %}
                                 </select>
@@ -305,28 +338,28 @@
                                 <div class="btn-group" role="group">
                                     {% if counted.pages.showPrevious %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_counted=0&page_open={{ page_open }}&page_stopped={{ page_stopped }}'">
+                                                onclick="window.location = '?page_counted=0&page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_length={{ counted.pages.page_length.value }}'">
                                             <i class="fas fa-angle-double-left"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_counted={{ counted.pages.previous }}&page_open={{ page_open }}&page_stopped={{ page_stopped }}'">
+                                                onclick="window.location = '?page_counted={{ counted.pages.previous }}&page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_length={{ counted.pages.page_length.value }}'">
                                             <i class=" fas fa-angle-left"></i>
                                         </button>
                                     {% endif %}
                                     {% for link in counted.pages.links %}
                                         <button type="button"
                                                 class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
-                                                onclick="window.location = '?page_counted={{ link.page }}&page_open={{ page_open }}&page_stopped={{ page_stopped }}'">
+                                                onclick="window.location = '?page_counted={{ link.page }}&page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_length={{ counted.pages.page_length.value }}'">
                                             {{ link.page|add_one }}
                                         </button>
                                     {% endfor %}
                                     {% if counted.pages.showNext %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_counted={{ counted.pages.next }}&page_open={{ page_open }}&page_stopped={{ page_stopped }}'">
+                                                onclick="window.location = '?page_counted={{ counted.pages.next }}&page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_length={{ counted.pages.page_length.value }}'">
                                             <i class="fas fa-angle-right"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_counted={{ counted.pages.last }}&page_open={{ page_open }}&page_stopped={{ page_stopped }}'">
+                                                onclick="window.location = '?page_counted={{ counted.pages.last }}&page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_length={{ counted.pages.page_length.value }}'">
                                             <i class="fas fa-angle-double-right"></i>
                                         </button>
                                     {% endif %}
