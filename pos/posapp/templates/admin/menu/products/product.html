@@ -1,0 +1,132 @@
+{% extends "_base.html" %}
+
+{% block page_name %}
+    <i class="fas fa-utensils"></i>&nbsp;
+    Product details
+{% endblock %}
+
+{% block no_description %}{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "admin" %}">Staff</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "admin/menu" %}">Menu</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "admin/menu/products" %}">Products</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Product</li>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        {% if show_form %}
+            <div class="row">
+                <div class="col-12 col-md-6">
+                    <div class="card card-default">
+                        <div class="card-header">
+                            <h2 class="card-title">Product details</h2>
+                        </div>
+                        <div class="card-body">
+                            {% if form.non_field_errors %}
+                                <div class="alert alert-warning alert-dismissible fade show">
+                                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">
+                                        &times;
+                                    </button>
+                                    {{ form.non_field_errors }}
+                                </div>
+                            {% endif %}
+                            <form action="{% url "admin/menu/products/product" id %}" method="post"
+                                  id="updateProductForm">
+                                {% csrf_token %}
+                                <input type="hidden" name="formSelector" value="product"/>
+                                <div class="form-group">
+                                    <label for="{{ form.name.id_for_label }}">Name</label>
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                        <div class="text-danger">{{ form.name.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="form-group">
+                                    <label for="{{ form.price.id_for_label }}">Price</label>
+                                    {{ form.price }}
+                                    {% if form.price.errors %}
+                                        <div class="text-danger">{{ form.price.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="form-group form-check">
+                                    {{ form.enabled }}
+                                    <label class="form-check-label"
+                                           for="{{ form.enabled.id_for_label }}">Enabled</label>
+                                    {% if form.enabled.errors %}
+                                        <div class="text-danger">{{ form.enabled.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </form>
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary float-right" form="updateProductForm">Update
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="card">
+                        <div class="card-header border-0">
+                            <h2 class="card-title">Recipe</h2>
+                        </div>
+                        <div class="card-body p-0">
+                            {% if items_formset.non_field_errors %}
+                                <div class="alert alert-warning alert-dismissible fade show">
+                                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">
+                                        &times;
+                                    </button>
+                                    {{ items_formset.non_field_errors }}
+                                </div>
+                            {% endif %}
+                            <form action="{% url "admin/menu/products/product" id %}" method="post" id="itemsForm">
+                                {% csrf_token %}
+                                <input type="hidden" name="formSelector" value="items"/>
+                                {{ items_formset.management_form }}
+                                <table class="table table-striped table-hover table-valign-middle">
+                                    <thead>
+                                    <tr>
+                                        <th scope="col">Item</th>
+                                        <th scope="col">Amount</th>
+                                        <th scope="col">Delete</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for form in items_formset %}
+                                        {{ form.id }}
+                                        <tr>
+                                            <td>{{ form.item }}</td>
+                                            <td>
+                                                {{ form.amount }}
+                                                {% if form.amount.errors %}
+                                                    <div class="text-danger">{{ form.amount.errors }}</div>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ form.DELETE }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </form>
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary float-right" form="itemsForm">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        {% if show_does_not_exist %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="alert alert-danger">
+                        The Product with id {{ id }} does not exist. Please return to the previous page and try it
+                        again.
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

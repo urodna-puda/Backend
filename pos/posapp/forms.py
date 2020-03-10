@@ -1,6 +1,6 @@
 from django import forms
 
-from posapp.models import User, PaymentMethod, Product
+from posapp.models import User, PaymentMethod, Product, ItemInProduct
 
 
 class CreateUserForm(forms.ModelForm):
@@ -50,3 +50,6 @@ class CreateEditProductForm(forms.ModelForm):
                 visible.field.widget.attrs['class'] = 'form-control'
             elif isinstance(visible.field.widget, forms.widgets.CheckboxInput):
                 visible.field.widget.attrs['class'] = 'form-check-input'
+
+
+ItemsInProductFormSet = forms.modelformset_factory(ItemInProduct, fields=['item', 'amount'], extra=2, can_delete=True)

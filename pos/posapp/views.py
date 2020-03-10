@@ -8,9 +8,9 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q, ProtectedError
 from django.shortcuts import render as render_django, redirect
 
-from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm
+from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
-    PaymentInTab, PaymentMethod, UnitGroup, Unit
+    PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct
 from posapp.security import waiter_login_required, manager_login_required, admin_login_required
 
 
@@ -739,5 +739,58 @@ class Admin:
                     context["create_product_form"] = form
 
                     return render(request, "admin/menu/products/index.html", context)
-    context = Context(request)
-    return render(request, 'admin/menu/products/product.html', context)
+
+            class Product(views.View):
+                def get(self, request, id, *args, **kwargs):
+                    context = Context(request)
+                    context["id"] = id
+                    try:
+                        product = Product.objects.get(id=id)
+                        form = CreateEditProductForm(instance=product)
+                        items_formset = ItemsInProductFormSet(queryset=ItemInProduct.objects.filter(product=product))
+                        context["form"] = form
+                        context["items_formset"] = items_formset
+                        context["show_form"] = True
+                    except Product.DoesNotExist:
+                        context["show_does_not_exist"] = True
+                    return render(request, 'admin/menu/products/product.html', context)
+
+                def post(self, request, id, *args, **kwargs):
+                    context = Context(request)
+                    context["id"] = id
+                    try:
+                        product = Product.objects.get(id=id)
+                        if "formSelector" in request.POST:
+                            product_changed = request.POST["formSelector"] == "product"
+                            product_form = CreateEditProductForm(request.POST if product_changed else None, instance=product)
+                            if product_changed and product_form.is_valid():
+                                product_form.save()
+                                messages.success(request, "Product successfully updated")
+                                product_form = CreateEditProductForm(instance=product)
+
+                            items_changed = request.POST["formSelector"] == "items"
+                            items_formset = ItemsInProductFormSet(
+                                request.POST if items_changed else None,
+                                queryset=ItemInProduct.objects.filter(
+                                    product=product
+                                )
+                            )
+                            if items_changed and items_formset.is_valid():
+                                items_formset.save(commit=False)
+                                for form in items_formset.forms:
+                                    form.instance.product = product
+                                items_formset.save()
+                                items_formset = ItemsInProductFormSet(
+                                    queryset=ItemInProduct.objects.filter(
+                                        product=product
+                                    )
+                                )
+
+                            context["form"] = product_form
+                            context["items_formset"] = items_formset
+                            context["show_form"] = True
+                        else:
+                            messages.error(request, "Something went wrong, please retry your last action")
+                    except Product.DoesNotExist:
+                        context["show_does_not_exist"] = True
+                    return render(request, 'admin/menu/products/product.html', context)
