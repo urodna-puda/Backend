@@ -27,10 +27,10 @@
                                 Money in till
                             </h2>
                             <div class="card-tools">
-                                <button type="submit" class="btn btn-tool" form="editForm" data-toggle="tooltip"
-                                        data-position="top" title="Edit">
+                                <a href="{% url "manager/tills/till/edit" id %}" class="btn btn-tool"
+                                   data-toggle="tooltip" data-position="top" title="Edit">
                                     <i class="fas fa-edit"></i>
-                                </button>
+                                </a>
                             </div>
                         </div>
                         <div class="card-body p-0">
@@ -187,8 +187,4 @@
         </div>
     </div>
     <!--VIRTUAL FORMS-->
-    <form action="{% url "manager/tills/till/edit" %}" method="post" id="editForm" style="display: none;">
-        {% csrf_token %}
-        <input type="hidden" name="id" value="{{ id }}"/>
-    </form>
 {% endblock %}

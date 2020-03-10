@@ -34,7 +34,7 @@
         {% if manager_role or admin_role %}
             <li class="nav-header">Manager tasks</li>
             <li class="nav-item has-treeview {% isopen page "manager/users" %}">
-                <a href="{% url "manager/users" %}" class="nav-link {% isactive page "manager/users" %}">
+                <a href="{% url "manager/users" %}" class="nav-link {% isactive page "manager/users"%}">
                     <i class="nav-icon fas fa-users-cog"></i>
                     <p>
                         Users
@@ -43,8 +43,8 @@
                 </a>
                 <ul class="nav nav-treeview">
                     <li class="nav-item">
-                        <a href="{% url "manager/users/overview" %}"
-                           class="nav-link {% isactive page "manager/users/overview" %}">
+                        <a href="{% url "manager/users" %}"
+                           class="nav-link {% isactive page "manager/users" "True" %}">
                             <i class="nav-icon fas fa-users"></i>
                             <p>Overview</p>
                         </a>
@@ -69,8 +69,8 @@
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="{% url "manager/tills/overview" %}"
-                               class="nav-link {% isactive page "manager/tills/overview" %}">
+                            <a href="{% url "manager/tills" %}"
+                               class="nav-link {% isactive page "manager/tills" "True" %}">
                                 <i class="nav-icon fas fa-table"></i>
                                 <p>Overview</p>
                             </a>
@@ -113,23 +113,11 @@
                     </li>
                 </ul>
             </li>
-            <li class="nav-item has-treeview {% isopen page "admin/units" %}">
+            <li class="nav-item">
                 <a href="{% url "admin/units" %}" class="nav-link {% isactive page "admin/units" %}">
                     <i class="nav-icon fas fa-balance-scale"></i>
-                    <p>
-                        Units
-                        <i class="right fas fa-angle-left"></i>
-                    </p>
+                    <p>Units</p>
                 </a>
-                <ul class="nav nav-treeview">
-                    <li class="nav-item">
-                        <a href="{% url "admin/units/overview" %}"
-                           class="nav-link {% isactive page "admin/units/overview" %}">
-                            <i class="nav-icon fas fa-table"></i>
-                            <p>Overview</p>
-                        </a>
-                    </li>
-                </ul>
             </li>
             <li class="nav-item has-treeview {% isopen page "admin/menu" %}">
                 <a href="{% url "admin/menu" %}" class="nav-link {% isactive page "admin/menu" %}">
