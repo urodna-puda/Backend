@@ -13,7 +13,7 @@ from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProd
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
     PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct
 from posapp.security import manager_login_required, admin_login_required
-from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin
+from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, AdminLoginRequiredMixin
 
 
 def render(request, template_name, context, content_type=None, status=None, using=None):
@@ -699,7 +699,7 @@ def admin_units_overview(request):
 
 class Admin:
     class Menu:
-        class Products(views.View):
+        class Products(AdminLoginRequiredMixin, views.View):
             def fill_data(self, request):
                 context = Context(request)
                 page_length = int(request.GET.get('page_length', 20))
@@ -746,7 +746,7 @@ class Admin:
 
                     return render(request, "admin/menu/products/index.html", context)
 
-            class Product(views.View):
+            class Product(AdminLoginRequiredMixin, views.View):
                 def get(self, request, id, *args, **kwargs):
                     context = Context(request)
                     context["id"] = id
@@ -802,7 +802,7 @@ class Admin:
                         context["show_does_not_exist"] = True
                     return render(request, 'admin/menu/products/product.html', context)
 
-                class Delete(views.View):
+                class Delete(AdminLoginRequiredMixin, views.View):
                     def get(self, request, id, *args, **kwargs):
                         try:
                             product = Product.objects.get(id=id)
