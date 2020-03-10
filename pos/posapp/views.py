@@ -10,7 +10,7 @@ from django.shortcuts import render as render_django, redirect
 
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
-    PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct
+    PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item
 from posapp.security import waiter_login_required, manager_login_required, admin_login_required
 
 
@@ -808,3 +808,20 @@ class Admin:
                         except ProtectedError:
                             messages.error(request, "This Product can't be deleted as it was already ordered")
                             return redirect("admin/menu/products/product", id=id)
+
+        class Items(views.View):
+            def get(self, request):
+                context = Context(request)
+                items = Item.objects.all()
+                context.add_pagination_context(items, 0, 20, "items")
+                return render(request, 'admin/menu/items.html', context)
+
+            class Item(views.View):
+                def get(self, request, id):
+                    messages.info(request, "That link leads nowhere, you better be safe.")
+                    return redirect("admin/menu/items")
+
+                class Delete(views.View):
+                    def get(self, request, id):
+                        pass
+
