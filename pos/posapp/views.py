@@ -568,136 +568,141 @@ class Manager:
                     return render(request, template_name="manager/tills/till/edit.html", context=context)
 
 
-@admin_login_required
-def admin_finance_currencies(request):
-    context = Context(request)
-    page_length = int(request.GET.get('page_length', 20))
-    search = request.GET.get('search', '')
-    page = int(request.GET.get('page', 0))
-    enabled_filter = request.GET.get('enabled', '')
-
-    currencies = Currency.objects.filter(
-        Q(name__contains=search) | Q(code__contains=search) | Q(symbol__contains=search)).order_by('code')
-    if enabled_filter:
-        if enabled_filter == "yes":
-            currencies = currencies.filter(enabled=True)
-        if enabled_filter == "no":
-            currencies = currencies.filter(enabled=False)
-    context.add_pagination_context(currencies, page, page_length, 'currencies')
-
-    context["page_number"] = page
-    context["page_length"] = generate_page_length_options(page_length)
-    context["search"] = search
-    context["enabledFilter"] = {
-        "yes": (enabled_filter == "yes"),
-        "none": (enabled_filter == ""),
-        "no": (enabled_filter == "no"),
-        "val": enabled_filter,
-    }
-
-    return render(request, template_name="admin/finance/currencies.html", context=context)
-
-
-@admin_login_required
-def admin_finance_methods(request):
-    context = Context(request)
-
-    if request.method == 'GET':
-        form = CreatePaymentMethodForm()
-    elif request.method == 'POST':
-        method = PaymentMethod()
-        form = CreatePaymentMethodForm(request.POST, instance=method)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Method created successfully")
-            form = CreatePaymentMethodForm()
-        else:
-            context["showModal"] = True
-
-    else:
-        # TODO Replace with proper handler
-        assert False
-    context['form'] = form
-    page_length = int(request.GET.get('page_length', 20))
-    search = request.GET.get('search', '')
-    page = int(request.GET.get('page', 0))
-    currency_filter = int(request.GET['currency']) if 'currency' in request.GET else None
-
-    methods = PaymentMethod.objects.filter(Q(name__contains=search) | Q(currency__name__contains=search)).filter(
-        currency__enabled=True)
-    if currency_filter:
-        methods = methods.filter(currency__pk=currency_filter)
-
-    context.add_pagination_context(methods, page, page_length, 'methods')
-
-    context["page_number"] = page
-    context["page_length"] = generate_page_length_options(page_length)
-    context["search"] = search
-    return render(request, "admin/finance/methods.html", context)
-
-
-@admin_login_required
-def admin_finance_methods_delete(request):
-    if request.method == "POST":
-        if "id" in request.POST:
-            try:
-                method = PaymentMethod.objects.get(id=uuid.UUID(request.POST["id"]))
-                method.delete()
-                messages.success(request, "The payment method was successfully deleted")
-            except PaymentMethod.DoesNotExist:
-                messages.warning(request, "The specified Payment method doesn't exist")
-            except ProtectedError:
-                messages.error(request, "The specified method can't be deleted as other records such as "
-                                        "payments or tills depend on it. You can remove it from the deposits "
-                                        "to prevent further use.")
-    return redirect("admin/finance/methods")
-
-
-@admin_login_required
-def admin_units_overview(request):
-    context = Context(request)
-    if request.method == "POST":
-        if check_dict(request.POST, ['newUnitGroupName', 'newUnitGroupSymbol']):
-            group = UnitGroup()
-            group.name = request.POST['newUnitGroupName']
-            group.symbol = request.POST['newUnitGroupSymbol']
-            group.save()
-            messages.success(request, "The unit group was created successfully")
-        if check_dict(request.POST, ['groupId', 'newUnitName', 'newUnitSymbol', 'newUnitRatio']):
-            group_id = uuid.UUID(request.POST['groupId'])
-            try:
-                unit = Unit()
-                unit.name = request.POST['newUnitName']
-                unit.symbol = request.POST['newUnitSymbol']
-                unit.ratio = float(request.POST['newUnitRatio'])
-                unit.group = UnitGroup.objects.get(id=group_id)
-                unit.save()
-                messages.success(request, "The unit was created successfully")
-            except UnitGroup.DoesNotExist:
-                messages.error(request, "Creation failed: Unit Group does not exist!")
-
-        if 'deleteUnitId' in request.POST:
-            try:
-                unit = Unit.objects.get(id=uuid.UUID(request.POST['deleteUnitId']))
-                unit.delete()
-                messages.success(request, "The unit was deleted successfully")
-            except Unit.DoesNotExist:
-                messages.error(request, "Deletion failed: Unit does not exist!")
-        if 'deleteUnitGroupId' in request.POST:
-            try:
-                group = UnitGroup.objects.get(id=uuid.UUID(request.POST['deleteUnitGroupId']))
-                group.delete()
-                messages.success(request, "The unit group was deleted successfully")
-            except UnitGroup.DoesNotExist:
-                messages.error(request, "Deletion failed: Unit Group does not exist!")
-            except ProtectedError:
-                messages.warning(request, "Deletion failed: an Item depends on this Unit Group!")
-    context['groups'] = UnitGroup.objects.all()
-
-    return render(request, template_name='admin/units/index.html', context=context)
-
-
 class Admin:
+    class Finance:
+        class Currencies(AdminLoginRequiredMixin, views.View):
+            def get(self, request):
+                context = Context(request)
+                page_length = int(request.GET.get('page_length', 20))
+                search = request.GET.get('search', '')
+                page = int(request.GET.get('page', 0))
+                enabled_filter = request.GET.get('enabled', '')
+
+                currencies = Currency.objects.filter(
+                    Q(name__contains=search) | Q(code__contains=search) | Q(symbol__contains=search)).order_by('code')
+                if enabled_filter:
+                    if enabled_filter == "yes":
+                        currencies = currencies.filter(enabled=True)
+                    if enabled_filter == "no":
+                        currencies = currencies.filter(enabled=False)
+                context.add_pagination_context(currencies, page, page_length, 'currencies')
+
+                context["page_number"] = page
+                context["page_length"] = generate_page_length_options(page_length)
+                context["search"] = search
+                context["enabledFilter"] = {
+                    "yes": (enabled_filter == "yes"),
+                    "none": (enabled_filter == ""),
+                    "no": (enabled_filter == "no"),
+                    "val": enabled_filter,
+                }
+
+                return render(request, "admin/finance/currencies.html", context)
+
+        class Methods(AdminLoginRequiredMixin, views.View):
+            def get(self, request, form = None, show_modal = False):
+                context = Context(request)
+
+                form = form or CreatePaymentMethodForm()
+                context['form'] = form
+                page_length = int(request.GET.get('page_length', 20))
+                search = request.GET.get('search', '')
+                page = int(request.GET.get('page', 0))
+                currency_filter = int(request.GET['currency']) if 'currency' in request.GET else None
+
+                methods = PaymentMethod.objects.filter(Q(name__contains=search) | Q(currency__name__contains=search)).filter(
+                    currency__enabled=True)
+                if currency_filter:
+                    methods = methods.filter(currency__pk=currency_filter)
+
+                context.add_pagination_context(methods, page, page_length, 'methods')
+
+                context["page_number"] = page
+                context["page_length"] = generate_page_length_options(page_length)
+                context["search"] = search
+
+                context["showModal"] = show_modal
+                return render(request, "admin/finance/methods.html", context)
+
+            def post(self, request):
+                method = PaymentMethod()
+                form = CreatePaymentMethodForm(request.POST, instance=method)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, "Method created successfully")
+                    form = CreatePaymentMethodForm()
+                    show_modal = False
+                else:
+                    show_modal = True
+                return self.get(request, form, show_modal)
+
+            class Method(AdminLoginRequiredMixin, views.View):
+                def get(self, request, id):
+                    messages.info(request, f"Well that was disappointing...")
+                    return redirect(reverse("admin/finance/methods"))
+
+                class Delete(AdminLoginRequiredMixin, views.View):
+                    def get(self, request, id):
+                        try:
+                            method = PaymentMethod.objects.get(id=id)
+                            method.delete()
+                            messages.success(request, "The payment method was successfully deleted")
+                        except PaymentMethod.DoesNotExist:
+                            messages.warning(request, "The specified Payment method doesn't exist")
+                        except ProtectedError:
+                            messages.error(request, "The specified method can't be deleted as other records such as "
+                                                    "payments or tills depend on it. You can remove it from the deposits "
+                                                    "to prevent further use.")
+                        return redirect("admin/finance/methods")
+
+    class Units(AdminLoginRequiredMixin, views.View):
+        def get(self, request):
+            context = Context(request)
+            context['groups'] = UnitGroup.objects.all()
+
+            return render(request, template_name='admin/units/index.html', context=context)
+
+        def post(self, request):
+            context = Context(request)
+            if check_dict(request.POST, ['newUnitGroupName', 'newUnitGroupSymbol']):
+                group = UnitGroup()
+                group.name = request.POST['newUnitGroupName']
+                group.symbol = request.POST['newUnitGroupSymbol']
+                group.save()
+                messages.success(request, "The unit group was created successfully")
+            if check_dict(request.POST, ['groupId', 'newUnitName', 'newUnitSymbol', 'newUnitRatio']):
+                group_id = uuid.UUID(request.POST['groupId'])
+                try:
+                    unit = Unit()
+                    unit.name = request.POST['newUnitName']
+                    unit.symbol = request.POST['newUnitSymbol']
+                    unit.ratio = float(request.POST['newUnitRatio'])
+                    unit.group = UnitGroup.objects.get(id=group_id)
+                    unit.save()
+                    messages.success(request, "The unit was created successfully")
+                except UnitGroup.DoesNotExist:
+                    messages.error(request, "Creation failed: Unit Group does not exist!")
+
+            if 'deleteUnitId' in request.POST:
+                try:
+                    unit = Unit.objects.get(id=uuid.UUID(request.POST['deleteUnitId']))
+                    unit.delete()
+                    messages.success(request, "The unit was deleted successfully")
+                except Unit.DoesNotExist:
+                    messages.error(request, "Deletion failed: Unit does not exist!")
+            if 'deleteUnitGroupId' in request.POST:
+                try:
+                    group = UnitGroup.objects.get(id=uuid.UUID(request.POST['deleteUnitGroupId']))
+                    group.delete()
+                    messages.success(request, "The unit group was deleted successfully")
+                except UnitGroup.DoesNotExist:
+                    messages.error(request, "Deletion failed: Unit Group does not exist!")
+                except ProtectedError:
+                    messages.warning(request, "Deletion failed: an Item depends on this Unit Group!")
+            context['groups'] = UnitGroup.objects.all()
+
+            return render(request, template_name='admin/units/index.html', context=context)
+
     class Menu:
         class Products(AdminLoginRequiredMixin, views.View):
             def fill_data(self, request):

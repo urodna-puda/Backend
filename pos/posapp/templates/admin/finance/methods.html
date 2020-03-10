@@ -92,14 +92,11 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <form action="{% url "admin/finance/methods/delete" %}" method="post">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="id" value="{{ method.id }}"/>
-                                            <button type="submit" class="btn btn-tool" data-toggle="tooltip"
-                                                    data-position="top" title="Delete">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
+                                        <a href="{% url "admin/finance/methods/method/delete" method.id %}"
+                                           class="btn btn-tool" data-toggle="tooltip" data-position="top"
+                                           title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
                                     </td>
                                 </tr>
                             {% endfor %}
