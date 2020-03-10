@@ -31,8 +31,9 @@ class User(AbstractUser):
         return f"{self.first_name} {self.last_name}"
 
     def can_grant(self, target, role):
-        return (self.username != target.username or role != "admin") and \
-               (self.is_admin or (self.is_manager and role == "waiter"))
+        return (self.username != target.username or role not in ("admin", "active")) and \
+               (self.is_admin or (self.is_manager and role in ("waiter", "active"))) and \
+               (role != "active" or (self.is_admin or (self.is_manager and not target.is_admin)))
 
     def __str__(self):
         return f"{self.name} ({self.username})"

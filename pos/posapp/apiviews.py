@@ -66,8 +66,8 @@ class UserToggles(APIView):
             else:
                 return Response({
                     'status': 403,
-                    'error': 'A manager can only toggle waiter status. '
-                             'Admins can toggle anything except own admin status.',
+                    'error': 'A manager can only toggle waiter status or disable a waiter. '
+                             'Admins can toggle anything except own admin and enabled status.',
                 }, status.HTTP_403_FORBIDDEN)
             return response
 
