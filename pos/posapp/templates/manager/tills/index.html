@@ -54,7 +54,8 @@
                                     <td class="col-2">&nbsp;</td>
                                     <td class="col-1">
                                         <button type="button" class="btn btn-tool stopTillButton"
-                                                data-till-id="{{ till.id }}">
+                                                data-till-id="{{ till.id }}"
+                                                data-url="{% url "manager/tills/till/stop" till.id %}">
                                             <i class="fas fa-stop-circle" data-toggle="tooltip" data-placement="top"
                                                title="Stop till"></i>
                                         </button>
@@ -158,14 +159,10 @@
                                     <td class="col-2">{{ till.stoppedAt }}</td>
                                     <td class="col-2">&nbsp;</td>
                                     <td class="col-1">
-                                        <form action="{% url "manager/tills/till/count" %}" method="post">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="id" value="{{ till.id }}"/>
-                                            <button type="submit" name="show" class="btn btn-tool">
-                                                <i class="fas fa-piggy-bank" data-toggle="tooltip" data-placement="top"
-                                                   title="Count till"></i>
-                                            </button>
-                                        </form>
+                                        <a href="{% url "manager/tills/till/count" till.id %}" class="btn btn-tool"
+                                           data-toggle="tooltip" data-placement="top" title="Count till">
+                                            <i class="fas fa-piggy-bank"></i>
+                                        </a>
                                     </td>
                                 </tr>
                             {% endfor %}
@@ -264,26 +261,14 @@
                                     <td class="col-2">{{ till.stoppedAt }}</td>
                                     <td class="col-2">{{ till.countedAt }}</td>
                                     <td class="col-1">
-                                        <form action="{% url "manager/tills/till" %}" method="post"
-                                              style="display:none;" id="showForm-{{ till.id }}">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="id" value="{{ till.id }}"/>
-                                        </form>
-                                        <form action="{% url "manager/tills/till/edit" %}" method="post"
-                                              style="display:none;" id="editForm-{{ till.id }}">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="id" value="{{ till.id }}"/>
-                                        </form>
-                                        <button type="submit" name="show" class="btn btn-tool"
-                                                form="showForm-{{ till.id }}" data-toggle="tooltip" data-position="top"
-                                                title="Show">
+                                        <a href="{% url "manager/tills/till" till.id %}" class="btn btn-tool"
+                                           data-toggle="tooltip" data-position="top" title="Show">
                                             <i class="fas fa-receipt"></i>
-                                        </button>
-                                        <button type="submit" name="show" class="btn btn-tool"
-                                                form="editForm-{{ till.id }}" data-toggle="tooltip" data-position="top"
-                                                title="Edit">
+                                        </a>
+                                        <a href="{% url "manager/tills/till/edit" till.id %}" class="btn btn-tool"
+                                           data-toggle="tooltip" data-position="top" title="Edit">
                                             <i class="far fa-edit"></i>
-                                        </button>
+                                        </a>
                                     </td>
                                 </tr>
                             {% endfor %}
@@ -367,12 +352,7 @@
                 <div class="modal-body" id="confirmStopTillModalBody"></div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
-                    <form action="{% url "manager/tills/till/stop" %}" method="post">
-                        {% csrf_token %}
-                        <input name="id" id="stopTillIdField" type="hidden"/>
-                        <button type="submit" class="btn btn-success" id="confirmStopTillButton">Confirm and close
-                        </button>
-                    </form>
+                    <a id="confirmStopTillLink" class="btn btn-success">Confirm and close</a>
                 </div>
             </div>
         </div>
@@ -388,8 +368,8 @@
             let deposit = $('#till-' + id + '-deposit').html();
             let message = "Are you sure you want to close the " + deposit + " till of cashier(s) " + cashiers + "?<br>After this operation waiters won't be able to finish any orders and the till will have to be counted. After stopping, the till can't be reopened.";
             $('#confirmStopTillModalBody').html(message);
-            $('#stopTillIdField').val($(this).data('till-id'));
             $('#confirmStopTillModal').modal('show');
+            $('#confirmStopTillLink').attr("href", $(this).data('url'));
         });
     </script>
 {% endblock %}
