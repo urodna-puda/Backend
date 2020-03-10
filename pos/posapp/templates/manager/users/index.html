@@ -163,58 +163,34 @@
 {% block javascript %}
     {{ block.super }}
     <script>
-        const me = "{{ me }}";
-        const admin = Boolean("{{ admin_role }}");
-
         function toggleRole(role, username, requiresAdmin) {
             event.stopPropagation();
             event.stopImmediatePropagation();
 
-            if (username === me) {
-                $(document).Toasts('create', {
-                    body: 'For security reasons, you can\'t change your own roles. Ask someone else to do it for you.',
-                    title: 'You can\'t change yourself',
-                    icon: 'text-warning fas fa-exclamation-triangle fa-lg',
-                    autohide: true,
-                    delay: 5000,
-                });
-                return;
-            }
-
-            if (role === "waiter" || ((role === "manager" || role === "admin") && admin) || (role === "active" && (!requiresAdmin || admin)))
-                postData("/api/1/users/" + username + "/toggle/" + role).then(result => {
-                    if (result.status === 200) {
-                        if (result.now) {
-                            $("#" + role + "-indicator-" + username).removeClass().addClass("text-success fas fa-check-circle");
-                        } else {
-                            $("#" + role + "-indicator-" + username).removeClass().addClass("text-danger fas fa-times-circle");
-                        }
-                        $(document).Toasts('create', {
-                            body: result.message,
-                            title: 'User updated',
-                            icon: 'text-success fas fa-check fa-lg',
-                            autohide: true,
-                            delay: 5000,
-                        })
+            postData("/api/1/users/" + username + "/toggle/" + role).then(result => {
+                if (result.status === 200) {
+                    if (result.now) {
+                        $("#" + role + "-indicator-" + username).removeClass().addClass("text-success fas fa-check-circle");
                     } else {
-                        $(document).Toasts('create', {
-                            body: result.error,
-                            title: 'User update failed',
-                            icon: 'text-danger fas fa-times fa-lg',
-                            autohide: true,
-                            delay: 5000,
-                        })
+                        $("#" + role + "-indicator-" + username).removeClass().addClass("text-danger fas fa-times-circle");
                     }
-                });
-            else {
-                $(document).Toasts('create', {
-                    body: 'A manager can only give user waiter role. He may not promote or demote managers, admins or enable/disable them.',
-                    title: 'You can\'t do this',
-                    icon: 'text-warning fas fa-exclamation-triangle fa-lg',
-                    autohide: true,
-                    delay: 5000,
-                })
-            }
+                    $(document).Toasts('create', {
+                        body: result.message,
+                        title: 'User updated',
+                        icon: 'text-success fas fa-check fa-lg',
+                        autohide: true,
+                        delay: 5000,
+                    })
+                } else {
+                    $(document).Toasts('create', {
+                        body: result.error,
+                        title: 'User update failed',
+                        icon: 'text-danger fas fa-times fa-lg',
+                        autohide: true,
+                        delay: 5000,
+                    })
+                }
+            });
         }
     </script>
 {% endblock %}

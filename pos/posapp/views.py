@@ -6,29 +6,31 @@ from django import views
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, ProtectedError
-from django.shortcuts import render as render_django, redirect
+from django.shortcuts import render, redirect
+from django.urls import reverse
 
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
     PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct
-from posapp.security import waiter_login_required, manager_login_required, admin_login_required
-
-
-def render(request, template_name, context, content_type=None, status=None, using=None):
-    return render_django(request, template_name, dict(context), content_type, status, using)
+from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, AdminLoginRequiredMixin
 
 
 class Context:
-    def __init__(self, request):
+    def __init__(self, request, template_name):
         self.page = request.get_full_path()[1:]
         self.waiter_role = request.user.is_waiter
         self.manager_role = request.user.is_manager
         self.admin_role = request.user.is_admin
         self.notifications = []
         self.data = {}
+        self.request = request
+        self.template_name = template_name
 
-    def add_pagination_context(self, manager, page, page_length, key):
+    def add_pagination_context(self, manager, key, page_get_name="page", page_length_get_name="page_length"):
         count = manager.count()
+        page_length = int(self.request.GET.get(page_length_get_name, 20))
+        page = int(self.request.GET.get(page_get_name, 0))
+
         last_page = count // page_length
         self.data[key] = {}
 
@@ -45,6 +47,8 @@ class Context:
         self.data[key]['pages']['next'] = page + 1
         self.data[key]['pages']['showNext'] = self.data[key]['pages']['next'] <= last_page
         self.data[key]['pages']['last'] = last_page
+        self.data[key]['pages']['page'] = page
+        self.data[key]['pages']['page_length'] = generate_page_length_options(page_length)
 
         links = []
         if page < (last_page / 2):
@@ -60,6 +64,9 @@ class Context:
             links.append({'page': i, 'active': i == page})
 
         self.data[key]['pages']['links'] = links
+
+    def render(self, content_type=None, status=None, using=None):
+        return render(self.request, self.template_name, dict(self))
 
     def __getitem__(self, item):
         return self.data[item]
@@ -77,7 +84,7 @@ class Context:
         yield 'page', self.page
         yield 'waiter_role', self.waiter_role
         yield 'manager_role', self.manager_role
-        yield 'admin_role', self.manager_role
+        yield 'admin_role', self.admin_role
         yield 'notifications', self.notifications
         for key in self.data:
             yield key, self.data[key]
@@ -102,9 +109,11 @@ def generate_page_length_options(page_length):
     return options
 
 
-@login_required
-def index(request):
-    return redirect("waiter/tabs")
+def check_dict(dictionary, keys):
+    for key in keys:
+        if key not in dictionary:
+            return False
+    return True
 
 
 def prepare_tab_dict(tab):
@@ -175,42 +184,66 @@ def prepare_tab_dict(tab):
     return out
 
 
-@waiter_login_required
-def waiter_tabs(request):
-    context = Context(request)
-    tabs = []
-    tabs_list = Tab.objects.filter(state=Tab.OPEN)
-    for tab in tabs_list:
-        tabs.append(prepare_tab_dict(tab))
-
-    context['tabs'] = tabs
-    context['products'] = []
-    for product in Product.objects.all():
-        context['products'].append({
-            'id': product.id,
-            'name': product.name,
-        })
-
-    if request.user.is_manager:
-        context['paid_tabs'] = Tab.objects.filter(state=Tab.PAID)
-    return render(request, template_name="waiter/tabs.html", context=context)
+@login_required
+def index(request):
+    return redirect(reverse("waiter/tabs"))
 
 
-@waiter_login_required
-def waiter_tabs_tab(request):
-    context = Context(request)
-    if request.method == "POST":
-        if "id" in request.POST:
-            id = uuid.UUID(request.POST["id"])
-            context["id"] = id
-            current_till = request.user.current_till
-            if current_till:
-                context["money_counts"] = current_till.tillmoneycount_set.all()
-                try:
-                    tab = Tab.objects.get(id=id)
-                    context["tab_open"] = tab.state == Tab.OPEN
+class Waiter:
+    class Tabs(WaiterLoginRequiredMixin, views.View):
+        def get(self, request):
+            context = Context(request, "waiter/tabs/index.html")
+            tabs = []
+            tabs_list = Tab.objects.filter(state=Tab.OPEN)
+            for tab in tabs_list:
+                tabs.append(prepare_tab_dict(tab))
+
+            context['tabs'] = tabs
+            context['products'] = []
+            for product in Product.objects.all():
+                context['products'].append({
+                    'id': product.id,
+                    'name': product.name,
+                })
+
+            if request.user.is_manager:
+                context['paid_tabs'] = Tab.objects.filter(state=Tab.PAID)
+            return context.render()
+
+        class Tab(WaiterLoginRequiredMixin, views.View):
+            def fill_data(self, request, id, update_handler=None):
+                context = Context(request, "waiter/tabs/tab.html")
+                context["id"] = id
+                current_till = request.user.current_till
+                if current_till:
+                    context["money_counts"] = current_till.tillmoneycount_set.all()
+                    try:
+                        tab = Tab.objects.get(id=id)
+                        context["tab_open"] = tab.state == Tab.OPEN
+
+                        if update_handler:
+                            update_handler(context, tab)
+
+                        context["tab"] = prepare_tab_dict(tab)
+                        context["payments"] = tab.payments.all()
+                        context["change_method_name"] = current_till.changeMethod.name
+                    except Tab.DoesNotExist:
+                        messages.error(request, "Invalid request: specified Tab does not exist. "
+                                                "Go back to previous page and try it again.")
+                else:
+                    messages.error(request,
+                                   "You don't have a till assigned. If you want to accept payment, "
+                                   "ask a manager to assign you a till.")
+                return context
+
+            def get(self, request, id):
+                context = self.fill_data(request, id)
+                return context.render()
+
+            def post(self, request, id):
+                def update_handler(context, tab):
                     if context["tab_open"]:
-                        if check_dict(request.POST, ["moneyCountId", "amount"]):
+                        if check_dict(request.POST, ["moneyCountId", "amount"]) and tab:
                             try:
                                 money_count_id = uuid.UUID(request.POST["moneyCountId"])
                                 context["last_used_method"] = money_count_id
@@ -227,7 +260,7 @@ def waiter_tabs_tab(request):
                                     messages.success(request, "Payment created successfully")
                             except TillMoneyCount.DoesNotExist:
                                 messages.warning(request, "Invalid request: Payment method does not exist")
-                        if check_dict(request.POST, ["paymentId", "delete"]):
+                        if check_dict(request.POST, ["paymentId", "delete"]) and tab:
                             try:
                                 payment_id = uuid.UUID(request.POST["paymentId"])
                                 payment = PaymentInTab.objects.get(id=payment_id, tab=tab)
@@ -236,469 +269,434 @@ def waiter_tabs_tab(request):
                             except PaymentInTab.DoesNotExist:
                                 messages.warning(request,
                                                  "The specified payment can't be deleted as it does not exist.")
-                        if check_dict(request.POST, ["close"]):
+                        if check_dict(request.POST, ["close"]) and tab:
                             change_payment = tab.mark_paid(request.user)
                             messages.success(request, "The Tab was marked as paid.")
                             if change_payment:
                                 messages.info(request, f"The remaining variance of {change_payment.amount} was "
                                                        f"returned via {change_payment.method.paymentMethod.name}")
-                    context["tab"] = prepare_tab_dict(tab)
-                    context["payments"] = tab.payments.all()
-                    context["change_method_name"] = current_till.changeMethod.name
-                except Tab.DoesNotExist:
-                    messages.error(request, "Invalid request: specified Tab does not exist. "
-                                            "Go back to previous page and try it again.")
-            else:
-                messages.error(request,
-                               "You don't have a till assigned. If you want to accept payment, "
-                               "ask a manager to assign you a till.")
-        else:
-            messages.error(request, "Invalid request: Tab ID is missing. Go back to previous page and try it again.")
-    else:
-        messages.error(request, "Invalid request. Go back to previous page and try it again.")
-    return render(request, template_name="waiter/tabs/tab.html", context=context)
-
-
-@waiter_login_required
-def waiter_orders(request):
-    context = Context(request)
-    return render(request, template_name="waiter/orders.html", context=context)
-
-
-@manager_login_required
-def manager_users_overview(request):
-    context = Context(request)
-    page_length = int(request.GET.get('page_length', 20))
-    page = int(request.GET.get('page', 0))
-
-    users = User.objects.filter(is_active=True).order_by("last_name", "first_name")
-    context['me'] = request.user.username
-    context.add_pagination_context(users, page, page_length, 'users')
-
-    return render(request, template_name="manager/users/overview.html", context=context)
-
-
-def check_dict(dictionary, keys):
-    for key in keys:
-        if key not in dictionary:
-            return False
-    return True
-
-
-@manager_login_required
-def manager_users_create(request):
-    context = Context(request)
-    if request.method == 'GET':
-        form = CreateUserForm()
-    elif request.method == 'POST':
-        print(request.POST)
-        user = User()
-        form = CreateUserForm(request.POST, instance=user)
-        if form.is_valid():
-            form.save()
-            messages.success(request, f"The user {form.cleaned_data['username']} was created successfully")
-            return redirect("manager/users/overview")
-        else:
-            print("form is not valid")
-
-    else:
-        # TODO Replace with proper handler
-        assert False
-    context['form'] = form
-    return render(request, template_name="manager/users/create.html", context=context)
-
-
-@manager_login_required
-def manager_tills_overview(request):
-    context = Context(request)
-    page_length = int(request.GET.get('page_length', 20))
-    page_open = int(request.GET.get('page_open', 0))
-    page_stopped = int(request.GET.get('page_closed', 0))
-    page_counted = int(request.GET.get('page_counted', 0))
-
-    open_tills = Till.objects.filter(state=Till.OPEN)
-    stopped_tills = Till.objects.filter(state=Till.STOPPED)
-    counted_tills = Till.objects.filter(state=Till.COUNTED)
-    context.add_pagination_context(open_tills, page_open, page_length, 'open')
-    context.add_pagination_context(stopped_tills, page_stopped, page_length, 'stopped')
-    context.add_pagination_context(counted_tills, page_counted, page_length, 'counted')
-
-    context["page_open"] = page_open
-    context["page_stopped"] = page_stopped
-    context["page_counted"] = page_counted
-    context["page_length"] = generate_page_length_options(page_length)
-
-    return render(request, template_name="manager/tills/overview.html", context=context)
-
-
-@manager_login_required
-def manager_tills_assign(request):
-    context = Context(request)
-    if request.method == 'POST':
-        if all(k in request.POST for k in ["users", "options"]):
-            usernames = request.POST.getlist("users")
-            options_id = request.POST["options"]
-
-            try:
-                options = TillPaymentOptions.objects.get(id=uuid.UUID(options_id))
-                till = options.create_till()
-                for username in usernames:
-                    user = User.objects.get(username=username)
-                    if user.current_till:
-                        messages.warning(request,
-                                         f"The user {user} was excluded from this Till "
-                                         f"as they already have another Till assigned.")
                     else:
-                        user.current_till = till
-                        user.save()
-                        till.cashiers.add(user)
-                messages.success(request, "The till was assigned successfully")
-            except User.DoesNotExist:
-                messages.error(request, "One of the selected users does not exist")
-            except TillPaymentOptions.DoesNotExist:
-                messages.error(request, "The selected payment options config does not exist. It may have also been "
-                                        "disabled by an administrator.")
-        else:
-            messages.error(request, "Some required fields are missing")
+                        messages.error(request, "This Tab is closed and cannot be edited")
 
-    context["users"] = User.objects.filter(is_waiter=True, current_till=None)
-    context["options"] = TillPaymentOptions.objects.filter(enabled=True)
+                context = self.fill_data(request, id, update_handler)
+                return context.render()
 
-    return render(request, template_name="manager/tills/assign.html", context=context)
+    class Orders(WaiterLoginRequiredMixin, views.View):
+        def get(self, request):
+            return Context(request, "waiter/orders.html").render()
 
 
-@manager_login_required
-def manager_tills_till(request):
-    context = Context(request)
-    if request.method == "POST":
-        if "id" in request.POST:
-            id = uuid.UUID(request.POST["id"])
-            try:
-                till = Till.objects.filter(state=Till.COUNTED).get(id=id)
-                context["id"] = id
-                counts = till.tillmoneycount_set.all()
-                context["counts"] = []
-                context["edits"] = []
-                context["totals"] = {"expected": 0, "counted": 0, "variance": 0}
+class Manager:
+    class Users(ManagerLoginRequiredMixin, views.View):
+        def get(self, request):
+            context = Context(request, "manager/users/index.html")
 
-                for count in counts:
-                    expected = count.expected
-                    counted = count.counted
-                    variance = counted - expected
-                    context["counts"].append({
-                        "methodName": count.paymentMethod.name,
-                        "expected": expected,
-                        "counted": counted,
-                        "variance": variance,
-                        "varianceUp": variance > 0,
-                        "varianceDown": variance < 0,
-                    })
-                    context["totals"]["expected"] += expected
-                    context["totals"]["counted"] += counted
-                    context["totals"]["variance"] += variance
+            users = User.objects.filter(is_active=True).order_by("last_name", "first_name")
+            context['me'] = request.user.username
+            context.add_pagination_context(users, 'users')
 
-                    for edit in count.tilledit_set.order_by('created').all():
-                        context["edits"].append(edit)
+            return context.render()
 
-                context["totals"]["varianceDown"] = context["totals"]["variance"] < 0
-                context["totals"]["varianceUp"] = context["totals"]["variance"] > 0
+        class Create(ManagerLoginRequiredMixin, views.View):
+            def get(self, request):
+                context = Context(request, "manager/users/create.html")
+                context["form"] = CreateUserForm()
+                return context.render()
 
-                context["till"] = {
-                    "cashiers": [],
-                    "deposit": till.deposit,
-                    "openedAt": till.openedAt,
-                    "stoppedAt": till.stoppedAt,
-                    "countedAt": till.countedAt,
-                    "countedBy": till.countedBy,
-                }
-                for cashier in till.cashiers.all():
-                    context["till"]["cashiers"].append(cashier.name)
+            def post(self, request):
+                user = User()
+                form = CreateUserForm(request.POST, instance=user)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, f"The user {form.cleaned_data['username']} was created successfully")
+                    return redirect(reverse("manager/users"))
 
-                context["show_value"] = True
-            except Till.DoesNotExist:
-                pass
-            return render(request, template_name="manager/tills/till.html", context=context)
-    messages.error(request, 'Server error occurred, please try again.')
-    return redirect("manager/tills/overview")
+                context = Context(request, "manager/users/create.html")
+                context["form"] = form
+                return context.render()
 
+    class Tills(ManagerLoginRequiredMixin, views.View):
+        def get(self, request):
+            context = Context(request, "manager/tills/index.html")
 
-@manager_login_required
-def manager_tills_till_stop(request):
-    if request.method == "GET":
-        return redirect('manager/tills/overview')
-    elif request.method == "POST":
-        try:
-            till = Till.objects.get(id=uuid.UUID(request.POST["id"]))
-            if till.state == Till.OPEN:
-                if till.stop():
-                    messages.success(request, 'The till was stopped successfully. It is now available for counting.')
-                else:
-                    messages.error(request, 'An error occured during stopping. Please try again.')
-            else:
-                messages.warning(request, f'The till is in a state from which it cannot be closed: {till.state}')
-        except Till.DoesNotExist:
-            messages.error(request, 'The specified till does not exist.')
-    return redirect("manager/tills/overview")
+            open_tills = Till.objects.filter(state=Till.OPEN)
+            stopped_tills = Till.objects.filter(state=Till.STOPPED)
+            counted_tills = Till.objects.filter(state=Till.COUNTED)
+            context.add_pagination_context(open_tills, 'open', page_get_name="page_open")
+            context.add_pagination_context(stopped_tills, 'stopped', page_get_name="page_stopped")
+            context.add_pagination_context(counted_tills, 'counted', page_get_name="page_counted")
 
+            return context.render()
 
-@manager_login_required
-def manager_tills_till_count(request):
-    context = Context(request)
-    if request.method == "GET":
-        return redirect("manager/tills/overview")
-    id = uuid.UUID(request.POST["id"])
-    context["id"] = id
-    try:
-        till = Till.objects.get(id=id)
-        zeroed = []
-        if "save" in request.POST:
-            counts = till.tillmoneycount_set.all()
-            for count in counts:
-                count.amount = float(request.POST[f"counted-{count.id}"])
-                if count.amount < 0:
-                    zeroed.append(count.id)
-                    count.amount = 0
-                count.save()
+        class Assign(ManagerLoginRequiredMixin, views.View):
+            def get(self, request):
+                context = Context(request, "manager/tills/assign.html")
 
-        counts = till.tillmoneycount_set.all()
-        context["counts"] = []
-        context["totals"] = {
-            "counted": 0,
-            "expected": 0,
-            "variance": 0,
-        }
-        for count in counts:
-            expected = count.expected
-            variance = count.amount - expected
-            if variance > 0:
-                warn = "The counted amount is higher than expected"
-            elif variance < 0:
-                warn = "The counted amount is lower than expected"
-            else:
-                warn = None
+                context["users"] = User.objects.filter(is_waiter=True, current_till=None)
+                context["options"] = TillPaymentOptions.objects.filter(enabled=True)
 
-            context["counts"].append({
-                "id": count.id,
-                "name": count.paymentMethod.name,
-                "amount": count.amount,
-                "expected": expected,
-                "variance": variance,
-                "warn": warn,
-                "zeroed": count.id in zeroed,
-            })
-            context["totals"]["counted"] += count.amount
-            context["totals"]["expected"] += expected
-            context["totals"]["variance"] += variance
-        if context["totals"]["variance"] > 0:
-            context["totals"]["warn"] = "The total is higher than expected"
-        if context["totals"]["variance"] < 0:
-            context["totals"]["danger"] = "Some money is (still) missing!"
-    except Till.DoesNotExist:
-        messages.error(request, "The specified till does not exist")
-    except KeyError:
-        messages.error(request, "One of the counts required was missing in the request. Please fill all counts")
+                return context.render()
 
-    return render(request, template_name="manager/tills/till/count.html", context=context)
+            def post(self, request):
+                context = Context(request, "manager/tills/assign.html")
+                if check_dict(request.POST, ["users", "options"]):
+                    usernames = request.POST.getlist("users")
+                    options_id = request.POST["options"]
 
-
-@manager_login_required
-def manager_tills_till_close(request):
-    level = messages.ERROR
-    message = 'Server error occurred, please try again'
-    if request.method == "POST":
-        if "id" in request.POST:
-            try:
-                till = Till.objects.get(id=uuid.UUID(request.POST["id"]))
-                if till.state == Till.STOPPED:
-                    till.close(request)
-                    level = messages.SUCCESS
-                    message = "The till was closed successfully"
-                else:
-                    level = messages.WARNING
-                    message = f'The till is in a state from which it cannot be closed: {till.state}'
-            except Till.DoesNotExist:
-                level = messages.ERROR
-                message = 'The specified till does not exist.'
-    messages.add_message(request, level, message)
-    return redirect("manager/tills/overview")
-
-
-@manager_login_required
-def manager_tills_till_edit(request):
-    context = Context(request)
-    if request.method == "POST":
-        if "id" in request.POST:
-            id = uuid.UUID(request.POST["id"])
-            try:
-                till = Till.objects.filter(state=Till.COUNTED).get(id=id)
-                if "save" in request.POST:
                     try:
-                        count_id = request.POST["count"]
-                        amount = float(request.POST["amount"])
-                        reason = request.POST["reason"]
-                        count = till.tillmoneycount_set.get(id=count_id)
-                        edit = count.add_edit(amount, reason)
-                        if not edit:
-                            messages.warning(request, 'Zero edits can\'t be saved.')
-                        elif edit.amount > amount:
-                            messages.info(request, f"The edit had to be changed so that total amount of money "
-                                                   f"wouldn't be negative. Actual saved amount is {edit.amount} "
-                                                   f"and new counted amount is {count.counted}.")
+                        options = TillPaymentOptions.objects.get(id=uuid.UUID(options_id))
+                        till = options.create_till()
+                        for username in usernames:
+                            user = User.objects.get(username=username)
+                            if user.current_till:
+                                messages.warning(request,
+                                                 f"The user {user} was excluded from this Till "
+                                                 f"as they already have another Till assigned.")
+                            else:
+                                user.current_till = till
+                                user.save()
+                                till.cashiers.add(user)
+                        messages.success(request, "The till was assigned successfully")
+                    except User.DoesNotExist:
+                        messages.error(request, "One of the selected users does not exist")
+                    except TillPaymentOptions.DoesNotExist:
+                        messages.error(request,
+                                       "The selected payment options config does not exist. It may have also been "
+                                       "disabled by an administrator.")
+                else:
+                    messages.error(request, "Some required fields are missing")
+
+                context["users"] = User.objects.filter(is_waiter=True, current_till=None)
+                context["options"] = TillPaymentOptions.objects.filter(enabled=True)
+
+                return context.render()
+
+        class Till(ManagerLoginRequiredMixin, views.View):
+            def get(self, request, id):
+                context = Context(request, "manager/tills/till/index.html")
+                try:
+                    till = Till.objects.filter(state=Till.COUNTED).get(id=id)
+                    context["id"] = id
+                    counts = till.tillmoneycount_set.all()
+                    context["counts"] = []
+                    context["edits"] = []
+                    context["totals"] = {"expected": 0, "counted": 0, "variance": 0}
+
+                    for count in counts:
+                        expected = count.expected
+                        counted = count.counted
+                        variance = counted - expected
+                        context["counts"].append({
+                            "methodName": count.paymentMethod.name,
+                            "expected": expected,
+                            "counted": counted,
+                            "variance": variance,
+                            "varianceUp": variance > 0,
+                            "varianceDown": variance < 0,
+                        })
+                        context["totals"]["expected"] += expected
+                        context["totals"]["counted"] += counted
+                        context["totals"]["variance"] += variance
+
+                        for edit in count.tilledit_set.order_by('created').all():
+                            context["edits"].append(edit)
+
+                    context["totals"]["varianceDown"] = context["totals"]["variance"] < 0
+                    context["totals"]["varianceUp"] = context["totals"]["variance"] > 0
+
+                    context["till"] = {
+                        "cashiers": [],
+                        "deposit": till.deposit,
+                        "openedAt": till.openedAt,
+                        "stoppedAt": till.stoppedAt,
+                        "countedAt": till.countedAt,
+                        "countedBy": till.countedBy,
+                    }
+                    for cashier in till.cashiers.all():
+                        context["till"]["cashiers"].append(cashier.name)
+
+                    context["show_value"] = True
+                except Till.DoesNotExist:
+                    pass
+                return context.render()
+
+            class Stop(ManagerLoginRequiredMixin, views.View):
+                def get(self, request, id):
+                    try:
+                        till = Till.objects.get(id=id)
+                        if till.state == Till.OPEN:
+                            if till.stop():
+                                messages.success(request,
+                                                 'The till was stopped successfully. It is now available for counting.')
+                            else:
+                                messages.error(request, 'An error occured during stopping. Please try again.')
                         else:
-                            messages.success(request, 'The edit was saved.')
-                    except TillMoneyCount.DoesNotExist:
-                        messages.warning(request,
-                                         'The specified payment method does not exist in this till. Please try again.'
-                                         )
-                context["id"] = id
-                context["counts"] = till.tillmoneycount_set.all()
-            except Till.DoesNotExist:
-                messages.error(request,
-                               'The selected till is not available for edits. It either does not exist or '
-                               'is in a state that does not allow edits.')
+                            messages.warning(request,
+                                             f'The till is in a state from which it cannot be closed: {till.state}')
+                    except Till.DoesNotExist:
+                        messages.error(request, 'The specified till does not exist.')
+                    return redirect(reverse("manager/tills"))
 
-            return render(request, template_name="manager/tills/till/edit.html", context=context)
-    messages.error(request, 'Server error occurred, please try again.')
-    return redirect("manager/tills/overview")
+            class Count(ManagerLoginRequiredMixin, views.View):
+                def get(self, request, id, zeroed=None):
+                    context = Context(request, "manager/tills/till/count.html")
+                    context["id"] = id
+                    zeroed = zeroed or []
 
+                    try:
+                        till = Till.objects.get(id=id)
 
-@admin_login_required
-def admin_finance_currencies(request):
-    context = Context(request)
-    page_length = int(request.GET.get('page_length', 20))
-    search = request.GET.get('search', '')
-    page = int(request.GET.get('page', 0))
-    enabled_filter = request.GET.get('enabled', '')
+                        counts = till.tillmoneycount_set.all()
+                        context["counts"] = []
+                        context["totals"] = {
+                            "counted": 0,
+                            "expected": 0,
+                            "variance": 0,
+                        }
+                        for count in counts:
+                            expected = count.expected
+                            variance = count.amount - expected
+                            if variance > 0:
+                                warn = "The counted amount is higher than expected"
+                            elif variance < 0:
+                                warn = "The counted amount is lower than expected"
+                            else:
+                                warn = None
 
-    currencies = Currency.objects.filter(
-        Q(name__contains=search) | Q(code__contains=search) | Q(symbol__contains=search)).order_by('code')
-    if enabled_filter:
-        if enabled_filter == "yes":
-            currencies = currencies.filter(enabled=True)
-        if enabled_filter == "no":
-            currencies = currencies.filter(enabled=False)
-    context.add_pagination_context(currencies, page, page_length, 'currencies')
+                            context["counts"].append({
+                                "id": count.id,
+                                "name": count.paymentMethod.name,
+                                "amount": count.amount,
+                                "expected": expected,
+                                "variance": variance,
+                                "warn": warn,
+                                "zeroed": count.id in zeroed,
+                            })
+                            context["totals"]["counted"] += count.amount
+                            context["totals"]["expected"] += expected
+                            context["totals"]["variance"] += variance
+                        if context["totals"]["variance"] > 0:
+                            context["totals"]["warn"] = "The total is higher than expected"
+                        if context["totals"]["variance"] < 0:
+                            context["totals"]["danger"] = "Some money is (still) missing!"
+                    except Till.DoesNotExist:
+                        messages.error(request, "The specified till does not exist")
+                    except KeyError:
+                        messages.error(request,
+                                       "One of the counts required was missing in the request. Please fill all counts")
 
-    context["page_number"] = page
-    context["page_length"] = generate_page_length_options(page_length)
-    context["search"] = search
-    context["enabledFilter"] = {
-        "yes": (enabled_filter == "yes"),
-        "none": (enabled_filter == ""),
-        "no": (enabled_filter == "no"),
-        "val": enabled_filter,
-    }
+                    return context.render()
 
-    return render(request, template_name="admin/finance/currencies.html", context=context)
+                def post(self, request, id):
+                    till = Till.objects.get(id=id)
+                    zeroed = []
 
+                    counts = till.tillmoneycount_set.all()
+                    for count in counts:
+                        count.amount = float(request.POST[f"counted-{count.id}"])
+                        if count.amount < 0:
+                            zeroed.append(count.id)
+                            count.amount = 0
+                        count.save()
 
-@admin_login_required
-def admin_finance_methods(request):
-    context = Context(request)
+                    return self.get(request, id, zeroed)
 
-    if request.method == 'GET':
-        form = CreatePaymentMethodForm()
-    elif request.method == 'POST':
-        method = PaymentMethod()
-        form = CreatePaymentMethodForm(request.POST, instance=method)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Method created successfully")
-            form = CreatePaymentMethodForm()
-        else:
-            context["showModal"] = True
+            class Close(ManagerLoginRequiredMixin, views.View):
+                def get(self, request, id):
+                    try:
+                        till = Till.objects.get(id=id)
+                        if till.state == Till.STOPPED:
+                            till.close(request)
+                            messages.success(request, "The till was closed successfully")
+                        else:
+                            messages.warning(request,
+                                             f'The till is in a state from which it cannot be closed: {till.state}')
+                    except Till.DoesNotExist:
+                        messages.error(request, 'The specified till does not exist.')
+                    return redirect(reverse("manager/tills"))
 
-    else:
-        # TODO Replace with proper handler
-        assert False
-    context['form'] = form
-    page_length = int(request.GET.get('page_length', 20))
-    search = request.GET.get('search', '')
-    page = int(request.GET.get('page', 0))
-    currency_filter = int(request.GET['currency']) if 'currency' in request.GET else None
+            class Edit(ManagerLoginRequiredMixin, views.View):
+                def get(self, request, id):
+                    context = Context(request, "manager/tills/till/edit.html")
+                    try:
+                        till = Till.objects.filter(state=Till.COUNTED).get(id=id)
+                        context["id"] = id
+                        context["counts"] = till.tillmoneycount_set.all()
+                    except Till.DoesNotExist:
+                        messages.error(request,
+                                       'The selected till is not available for edits. It either does not exist or '
+                                       'is in a state that does not allow edits.')
 
-    methods = PaymentMethod.objects.filter(Q(name__contains=search) | Q(currency__name__contains=search)).filter(
-        currency__enabled=True)
-    if currency_filter:
-        methods = methods.filter(currency__pk=currency_filter)
+                    return context.render()
 
-    context.add_pagination_context(methods, page, page_length, 'methods')
+                def post(self, request, id):
+                    context = Context(request, "manager/tills/till/edit.html")
+                    try:
+                        till = Till.objects.filter(state=Till.COUNTED).get(id=id)
+                        if "save" in request.POST:
+                            try:
+                                count_id = request.POST["count"]
+                                amount = float(request.POST["amount"])
+                                reason = request.POST["reason"]
+                                count = till.tillmoneycount_set.get(id=count_id)
+                                edit = count.add_edit(amount, reason)
+                                if not edit:
+                                    messages.warning(request, 'Zero edits can\'t be saved.')
+                                elif edit.amount > amount:
+                                    messages.info(request,
+                                                  f"The edit had to be changed so that total amount of money "
+                                                  f"wouldn't be negative. Actual saved amount is {edit.amount} "
+                                                  f"and new counted amount is {count.counted}.")
+                                else:
+                                    messages.success(request, 'The edit was saved.')
+                            except TillMoneyCount.DoesNotExist:
+                                messages.warning(request,
+                                                 'The specified payment method does not exist in this till. Please try again.'
+                                                 )
+                        context["id"] = id
+                        context["counts"] = till.tillmoneycount_set.all()
+                    except Till.DoesNotExist:
+                        messages.error(request,
+                                       'The selected till is not available for edits. It either does not exist or '
+                                       'is in a state that does not allow edits.')
 
-    context["page_number"] = page
-    context["page_length"] = generate_page_length_options(page_length)
-    context["search"] = search
-    return render(request, "admin/finance/methods.html", context)
-
-
-@admin_login_required
-def admin_finance_methods_delete(request):
-    if request.method == "POST":
-        if "id" in request.POST:
-            try:
-                method = PaymentMethod.objects.get(id=uuid.UUID(request.POST["id"]))
-                method.delete()
-                messages.success(request, "The payment method was successfully deleted")
-            except PaymentMethod.DoesNotExist:
-                messages.warning(request, "The specified Payment method doesn't exist")
-            except ProtectedError:
-                messages.error(request, "The specified method can't be deleted as other records such as "
-                                        "payments or tills depend on it. You can remove it from the deposits "
-                                        "to prevent further use.")
-    return redirect("admin/finance/methods")
-
-
-@admin_login_required
-def admin_units_overview(request):
-    context = Context(request)
-    if request.method == "POST":
-        if check_dict(request.POST, ['newUnitGroupName', 'newUnitGroupSymbol']):
-            group = UnitGroup()
-            group.name = request.POST['newUnitGroupName']
-            group.symbol = request.POST['newUnitGroupSymbol']
-            group.save()
-            messages.success(request, "The unit group was created successfully")
-        if check_dict(request.POST, ['groupId', 'newUnitName', 'newUnitSymbol', 'newUnitRatio']):
-            group_id = uuid.UUID(request.POST['groupId'])
-            try:
-                unit = Unit()
-                unit.name = request.POST['newUnitName']
-                unit.symbol = request.POST['newUnitSymbol']
-                unit.ratio = float(request.POST['newUnitRatio'])
-                unit.group = UnitGroup.objects.get(id=group_id)
-                unit.save()
-                messages.success(request, "The unit was created successfully")
-            except UnitGroup.DoesNotExist:
-                messages.error(request, "Creation failed: Unit Group does not exist!")
-
-        if 'deleteUnitId' in request.POST:
-            try:
-                unit = Unit.objects.get(id=uuid.UUID(request.POST['deleteUnitId']))
-                unit.delete()
-                messages.success(request, "The unit was deleted successfully")
-            except Unit.DoesNotExist:
-                messages.error(request, "Deletion failed: Unit does not exist!")
-        if 'deleteUnitGroupId' in request.POST:
-            try:
-                group = UnitGroup.objects.get(id=uuid.UUID(request.POST['deleteUnitGroupId']))
-                group.delete()
-                messages.success(request, "The unit group was deleted successfully")
-            except UnitGroup.DoesNotExist:
-                messages.error(request, "Deletion failed: Unit Group does not exist!")
-            except ProtectedError:
-                messages.warning(request, "Deletion failed: an Item depends on this Unit Group!")
-    context['groups'] = UnitGroup.objects.all()
-
-    return render(request, template_name='admin/units/overview.html', context=context)
+                    return context.render()
 
 
 class Admin:
-    class Menu:
-        class Products(views.View):
-            def fill_data(self, request):
-                context = Context(request)
+    class Finance:
+        class Currencies(AdminLoginRequiredMixin, views.View):
+            def get(self, request):
+                context = Context(request, "admin/finance/currencies.html")
                 page_length = int(request.GET.get('page_length', 20))
                 search = request.GET.get('search', '')
-                page = int(request.GET.get('page', 0))
+                enabled_filter = request.GET.get('enabled', '')
+
+                currencies = Currency.objects.filter(
+                    Q(name__contains=search) | Q(code__contains=search) | Q(symbol__contains=search)).order_by('code')
+                if enabled_filter:
+                    if enabled_filter == "yes":
+                        currencies = currencies.filter(enabled=True)
+                    if enabled_filter == "no":
+                        currencies = currencies.filter(enabled=False)
+                context.add_pagination_context(currencies, 'currencies')
+
+                context["search"] = search
+                context["enabledFilter"] = {
+                    "yes": (enabled_filter == "yes"),
+                    "none": (enabled_filter == ""),
+                    "no": (enabled_filter == "no"),
+                    "val": enabled_filter,
+                }
+
+                return context.render()
+
+        class Methods(AdminLoginRequiredMixin, views.View):
+            def get(self, request, form=None, show_modal=False):
+                context = Context(request, "admin/finance/methods.html")
+
+                form = form or CreatePaymentMethodForm()
+                context['form'] = form
+                search = request.GET.get('search', '')
+                currency_filter = int(request.GET['currency']) if 'currency' in request.GET else None
+
+                methods = PaymentMethod.objects.filter(
+                    Q(name__contains=search) | Q(currency__name__contains=search)).filter(
+                    currency__enabled=True)
+                if currency_filter:
+                    methods = methods.filter(currency__pk=currency_filter)
+
+                context.add_pagination_context(methods, 'methods')
+
+                context["search"] = search
+
+                context["showModal"] = show_modal
+                return context.render()
+
+            def post(self, request):
+                method = PaymentMethod()
+                form = CreatePaymentMethodForm(request.POST, instance=method)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, "Method created successfully")
+                    form = CreatePaymentMethodForm()
+                    show_modal = False
+                else:
+                    show_modal = True
+                return self.get(request, form, show_modal)
+
+            class Method(AdminLoginRequiredMixin, views.View):
+                def get(self, request, id):
+                    messages.info(request, f"Well that was disappointing...")
+                    return redirect(reverse("admin/finance/methods"))
+
+                class Delete(AdminLoginRequiredMixin, views.View):
+                    def get(self, request, id):
+                        try:
+                            method = PaymentMethod.objects.get(id=id)
+                            method.delete()
+                            messages.success(request, "The payment method was successfully deleted")
+                        except PaymentMethod.DoesNotExist:
+                            messages.warning(request, "The specified Payment method doesn't exist")
+                        except ProtectedError:
+                            messages.error(request, "The specified method can't be deleted as other records such as "
+                                                    "payments or tills depend on it. You can remove it from the deposits "
+                                                    "to prevent further use.")
+                        return redirect(reverse("admin/finance/methods"))
+
+    class Units(AdminLoginRequiredMixin, views.View):
+        def get(self, request):
+            context = Context(request, 'admin/units/index.html')
+            context['groups'] = UnitGroup.objects.all()
+
+            return context.render()
+
+        def post(self, request):
+            context = Context(request, 'admin/units/index.html')
+            if check_dict(request.POST, ['newUnitGroupName', 'newUnitGroupSymbol']):
+                group = UnitGroup()
+                group.name = request.POST['newUnitGroupName']
+                group.symbol = request.POST['newUnitGroupSymbol']
+                group.save()
+                messages.success(request, "The unit group was created successfully")
+            if check_dict(request.POST, ['groupId', 'newUnitName', 'newUnitSymbol', 'newUnitRatio']):
+                group_id = uuid.UUID(request.POST['groupId'])
+                try:
+                    unit = Unit()
+                    unit.name = request.POST['newUnitName']
+                    unit.symbol = request.POST['newUnitSymbol']
+                    unit.ratio = float(request.POST['newUnitRatio'])
+                    unit.group = UnitGroup.objects.get(id=group_id)
+                    unit.save()
+                    messages.success(request, "The unit was created successfully")
+                except UnitGroup.DoesNotExist:
+                    messages.error(request, "Creation failed: Unit Group does not exist!")
+
+            if 'deleteUnitId' in request.POST:
+                try:
+                    unit = Unit.objects.get(id=uuid.UUID(request.POST['deleteUnitId']))
+                    unit.delete()
+                    messages.success(request, "The unit was deleted successfully")
+                except Unit.DoesNotExist:
+                    messages.error(request, "Deletion failed: Unit does not exist!")
+            if 'deleteUnitGroupId' in request.POST:
+                try:
+                    group = UnitGroup.objects.get(id=uuid.UUID(request.POST['deleteUnitGroupId']))
+                    group.delete()
+                    messages.success(request, "The unit group was deleted successfully")
+                except UnitGroup.DoesNotExist:
+                    messages.error(request, "Deletion failed: Unit Group does not exist!")
+                except ProtectedError:
+                    messages.warning(request, "Deletion failed: an Item depends on this Unit Group!")
+            context['groups'] = UnitGroup.objects.all()
+
+            return context.render()
+
+    class Menu:
+        class Products(AdminLoginRequiredMixin, views.View):
+            def fill_data(self, request):
+                context = Context(request, 'admin/menu/products/index.html')
+                search = request.GET.get('search', '')
                 enabled_filter = request.GET.get('enabled', '')
 
                 products = Product.objects.filter(name__contains=search).order_by('name')
@@ -707,10 +705,8 @@ class Admin:
                         products = products.filter(enabled=True)
                     if enabled_filter == "no":
                         products = products.filter(enabled=False)
-                context.add_pagination_context(products, page, page_length, 'products')
+                context.add_pagination_context(products, 'products')
 
-                context["page_number"] = page
-                context["page_length"] = generate_page_length_options(page_length)
                 context["search"] = search
                 context["enabledFilter"] = {
                     "yes": (enabled_filter == "yes"),
@@ -725,7 +721,7 @@ class Admin:
                 context = self.fill_data(request)
                 context["create_product_form"] = CreateEditProductForm()
 
-                return render(request, 'admin/menu/products/index.html', context)
+                return context.render()
 
             def post(self, request, *args, **kwargs):
                 product = Product()
@@ -738,11 +734,11 @@ class Admin:
                     context = self.fill_data(request)
                     context["create_product_form"] = form
 
-                    return render(request, "admin/menu/products/index.html", context)
+                    return context.render()
 
-            class Product(views.View):
+            class Product(AdminLoginRequiredMixin, views.View):
                 def get(self, request, id, *args, **kwargs):
-                    context = Context(request)
+                    context = Context(request, 'admin/menu/products/product.html')
                     context["id"] = id
                     try:
                         product = Product.objects.get(id=id)
@@ -753,10 +749,10 @@ class Admin:
                         context["show_form"] = True
                     except Product.DoesNotExist:
                         context["show_does_not_exist"] = True
-                    return render(request, 'admin/menu/products/product.html', context)
+                    return context.render()
 
                 def post(self, request, id, *args, **kwargs):
-                    context = Context(request)
+                    context = Context(request, 'admin/menu/products/product.html')
                     context["id"] = id
                     try:
                         product = Product.objects.get(id=id)
@@ -794,15 +790,15 @@ class Admin:
                             messages.error(request, "Something went wrong, please retry your last action")
                     except Product.DoesNotExist:
                         context["show_does_not_exist"] = True
-                    return render(request, 'admin/menu/products/product.html', context)
+                    return context.render()
 
-                class Delete(views.View):
+                class Delete(AdminLoginRequiredMixin, views.View):
                     def get(self, request, id, *args, **kwargs):
                         try:
                             product = Product.objects.get(id=id)
                             product.delete()
                             messages.success(request, f"Product {product.name} was deleted.")
-                            return redirect("admin/menu/products")
+                            return redirect(reverse("admin/menu/products"))
                         except Product.DoesNotExist:
                             return redirect("admin/menu/products/product", id=id)
                         except ProtectedError:

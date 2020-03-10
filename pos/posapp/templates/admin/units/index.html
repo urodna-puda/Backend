@@ -60,7 +60,7 @@
                                     <td class="col-2">{{ unit.symbol }}</td>
                                     <td class="col-4 text-center">{{ unit.ratio }}</td>
                                     <td class="col-2">
-                                        <form action="{% url "admin/units/overview" %}" method="post">
+                                        <form action="{% url "admin/units" %}" method="post">
                                             {% csrf_token %}
                                             <input type="hidden" name="deleteUnitId" value="{{ unit.id }}"/>
                                             <button type="submit" class="btn btn-tool" data-toggle="tooltip"
@@ -89,7 +89,7 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form id="newUnitGroupForm" action="{% url "admin/units/overview" %}" method="post">
+                    <form id="newUnitGroupForm" action="{% url "admin/units" %}" method="post">
                         {% csrf_token %}
                         <div class="form-group">
                             <label for="newUnitGroupName" class="col-form-label">New unit group name:</label>
@@ -125,7 +125,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <form action="{% url "admin/units/overview" %}" method="post">
+                    <form action="{% url "admin/units" %}" method="post">
                         {% csrf_token %}
                         <input type="hidden" name="deleteUnitGroupId" id="deleteUnitGroupModalGroupId"/>
                         <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i>&nbsp;Delete</button>
@@ -146,7 +146,7 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form id="newUnitForm" action="{% url "admin/units/overview" %}" method="post">
+                    <form id="newUnitForm" action="{% url "admin/units" %}" method="post">
                         {% csrf_token %}
                         <input type="hidden" id="newUnitFormGroupId" name="groupId"/>
                         <div class="form-group">
