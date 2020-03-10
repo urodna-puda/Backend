@@ -34,7 +34,7 @@
         {% if manager_role or admin_role %}
             <li class="nav-header">Manager tasks</li>
             <li class="nav-item has-treeview {% isopen page "manager/users" %}">
-                <a href="{% url "manager/users" %}" class="nav-link {% isactive page "manager/users" %}">
+                <a href="{% url "manager/users" %}" class="nav-link {% isactive page "manager/users"%}">
                     <i class="nav-icon fas fa-users-cog"></i>
                     <p>
                         Users
@@ -43,8 +43,8 @@
                 </a>
                 <ul class="nav nav-treeview">
                     <li class="nav-item">
-                        <a href="{% url "manager/user" %}"
-                           class="nav-link {% isactive page "manager/users" %}">
+                        <a href="{% url "manager/users" %}"
+                           class="nav-link {% isactive page "manager/users" "True" %}">
                             <i class="nav-icon fas fa-users"></i>
                             <p>Overview</p>
                         </a>
