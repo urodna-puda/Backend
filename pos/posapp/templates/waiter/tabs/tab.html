@@ -140,9 +140,8 @@
                             </h2>
                         </div>
                         <div class="card-body">
-                            <form method="post" action="{% url "waiter/tabs/tab" %}" id="paymentForm">
+                            <form method="post" action="{% url "waiter/tabs/tab" id %}" id="paymentForm">
                                 {% csrf_token %}
-                                <input type="hidden" name="id" value="{{ id }}"/>
                                 <div class="form-group">
                                     <label for="moneyCount">Payment method</label>
                                     <select id="moneyCount" name="moneyCountId" class="form-control" required>
@@ -198,15 +197,13 @@
         </div>
         <!--FAKE FORMS-->
         {% for payment in payments %}
-            <form action="{% url "waiter/tabs/tab" %}" method="post" id="deletePayment{{ payment.id }}Form">
+            <form action="{% url "waiter/tabs/tab" id %}" method="post" id="deletePayment{{ payment.id }}Form">
                 {% csrf_token %}
-                <input type="hidden" name="id" value="{{ id }}"/>
                 <input type="hidden" name="paymentId" value="{{ payment.id }}"/>
             </form>
         {% endfor %}
-        <form action="{% url "waiter/tabs/tab" %}" method="post" id="finaliseForm">
+        <form action="{% url "waiter/tabs/tab" id %}" method="post" id="finaliseForm">
             {% csrf_token %}
-            <input type="hidden" name="id" value="{{ id }}"/>
             <input type="hidden" name="close" value="true"/>
         </form>
     {% endif %}
