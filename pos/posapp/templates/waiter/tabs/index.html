@@ -54,14 +54,10 @@
                                         <td>{{ tab.closedAt }}</td>
                                         <td>{{ tab.total }}</td>
                                         <td>
-                                            <form action="{% url "waiter/tabs/tab" %}" method="post">
-                                                {% csrf_token %}
-                                                <input type="hidden" name="id" value="{{ tab.id }}"/>
-                                                <button type="submit" class="btn btn-tool" data-toggle="tooltip"
-                                                        data-position="top" title="Show details">
-                                                    <i class="fas fa-receipt"></i>
-                                                </button>
-                                            </form>
+                                            <a href="{% url "waiter/tabs/tab" tab.id %}" class="btn btn-tool"
+                                               data-toggle="tooltip" data-position="top" title="Show details">
+                                                <i class="fas fa-receipt"></i>
+                                            </a>
                                         </td>
                                     </tr>
                                 {% endfor %}
@@ -83,10 +79,10 @@
                                 <i class="fas fa-plus" data-toggle="tooltip" data-placement="top"
                                    title="Order"></i>
                             </button>
-                            <button type="submit" class="btn btn-tool" form="payTab{{ tab.id }}Form">
-                                <i class="fas fa-coins" data-toggle="tooltip" data-placement="top"
-                                   title="Pay"></i>
-                            </button>
+                            <a href="{% url "waiter/tabs/tab" tab.id %}" class="btn btn-tool" data-toggle="tooltip"
+                               data-placement="top" title="Pay">
+                                <i class="fas fa-coins"></i>
+                            </a>
                         </div>
                     </div>
                     <div class="card-body p-0">
@@ -219,13 +215,6 @@
             </div>
         </div>
     </div>
-    <!--VIRTUAL FORMS-->
-    {% for tab in tabs %}
-        <form id="payTab{{ tab.id }}Form" action="{% url "waiter/tabs/tab" %}" method="post">
-            {% csrf_token %}
-            <input type="hidden" name="id" value="{{ tab.id }}"/>
-        </form>
-    {% endfor %}
 {% endblock %}
 
 {% block javascript %}
