@@ -5,6 +5,7 @@ import uuid
 from django import views
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q, ProtectedError
 from django.shortcuts import render as render_django, redirect
 
@@ -12,6 +13,7 @@ from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProd
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
     PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct
 from posapp.security import waiter_login_required, manager_login_required, admin_login_required
+from posapp.security.role_decorators import WaiterLoginRequiredMixin
 
 
 def render(request, template_name, context, content_type=None, status=None, using=None):
@@ -175,42 +177,61 @@ def prepare_tab_dict(tab):
     return out
 
 
-@waiter_login_required
-def waiter_tabs(request):
-    context = Context(request)
-    tabs = []
-    tabs_list = Tab.objects.filter(state=Tab.OPEN)
-    for tab in tabs_list:
-        tabs.append(prepare_tab_dict(tab))
+class Waiter:
+    class Tabs(WaiterLoginRequiredMixin, views.View):
+        def get(self, request):
+            context = Context(request)
+            tabs = []
+            tabs_list = Tab.objects.filter(state=Tab.OPEN)
+            for tab in tabs_list:
+                tabs.append(prepare_tab_dict(tab))
 
-    context['tabs'] = tabs
-    context['products'] = []
-    for product in Product.objects.all():
-        context['products'].append({
-            'id': product.id,
-            'name': product.name,
-        })
+            context['tabs'] = tabs
+            context['products'] = []
+            for product in Product.objects.all():
+                context['products'].append({
+                    'id': product.id,
+                    'name': product.name,
+                })
 
-    if request.user.is_manager:
-        context['paid_tabs'] = Tab.objects.filter(state=Tab.PAID)
-    return render(request, template_name="waiter/tabs.html", context=context)
+            if request.user.is_manager:
+                context['paid_tabs'] = Tab.objects.filter(state=Tab.PAID)
+            return render(request, template_name="waiter/tabs/index.html", context=context)
 
+        class Tab(WaiterLoginRequiredMixin, views.View):
+            def fill_data(self, request, id, update_handler = None):
+                context = Context(request)
+                context["id"] = id
+                current_till = request.user.current_till
+                if current_till:
+                    context["money_counts"] = current_till.tillmoneycount_set.all()
+                    try:
+                        tab = Tab.objects.get(id=id)
+                        context["tab_open"] = tab.state == Tab.OPEN
 
-@waiter_login_required
-def waiter_tabs_tab(request):
-    context = Context(request)
-    if request.method == "POST":
-        if "id" in request.POST:
-            id = uuid.UUID(request.POST["id"])
-            context["id"] = id
-            current_till = request.user.current_till
-            if current_till:
-                context["money_counts"] = current_till.tillmoneycount_set.all()
-                try:
-                    tab = Tab.objects.get(id=id)
-                    context["tab_open"] = tab.state == Tab.OPEN
+                        if update_handler:
+                            update_handler(context, tab)
+
+                        context["tab"] = prepare_tab_dict(tab)
+                        context["payments"] = tab.payments.all()
+                        context["change_method_name"] = current_till.changeMethod.name
+                    except Tab.DoesNotExist:
+                        messages.error(request, "Invalid request: specified Tab does not exist. "
+                                                "Go back to previous page and try it again.")
+                else:
+                    messages.error(request,
+                                   "You don't have a till assigned. If you want to accept payment, "
+                                   "ask a manager to assign you a till.")
+                return context
+
+            def get(self, request, id):
+                context = self.fill_data(request, id)
+                return render(request, template_name="waiter/tabs/tab.html", context=context)
+
+            def post(self, request, id):
+                def update_handler(context, tab):
                     if context["tab_open"]:
-                        if check_dict(request.POST, ["moneyCountId", "amount"]):
+                        if check_dict(request.POST, ["moneyCountId", "amount"]) and tab:
                             try:
                                 money_count_id = uuid.UUID(request.POST["moneyCountId"])
                                 context["last_used_method"] = money_count_id
@@ -227,7 +248,7 @@ def waiter_tabs_tab(request):
                                     messages.success(request, "Payment created successfully")
                             except TillMoneyCount.DoesNotExist:
                                 messages.warning(request, "Invalid request: Payment method does not exist")
-                        if check_dict(request.POST, ["paymentId", "delete"]):
+                        if check_dict(request.POST, ["paymentId", "delete"]) and tab:
                             try:
                                 payment_id = uuid.UUID(request.POST["paymentId"])
                                 payment = PaymentInTab.objects.get(id=payment_id, tab=tab)
@@ -236,33 +257,22 @@ def waiter_tabs_tab(request):
                             except PaymentInTab.DoesNotExist:
                                 messages.warning(request,
                                                  "The specified payment can't be deleted as it does not exist.")
-                        if check_dict(request.POST, ["close"]):
+                        if check_dict(request.POST, ["close"]) and tab:
                             change_payment = tab.mark_paid(request.user)
                             messages.success(request, "The Tab was marked as paid.")
                             if change_payment:
                                 messages.info(request, f"The remaining variance of {change_payment.amount} was "
                                                        f"returned via {change_payment.method.paymentMethod.name}")
-                    context["tab"] = prepare_tab_dict(tab)
-                    context["payments"] = tab.payments.all()
-                    context["change_method_name"] = current_till.changeMethod.name
-                except Tab.DoesNotExist:
-                    messages.error(request, "Invalid request: specified Tab does not exist. "
-                                            "Go back to previous page and try it again.")
-            else:
-                messages.error(request,
-                               "You don't have a till assigned. If you want to accept payment, "
-                               "ask a manager to assign you a till.")
-        else:
-            messages.error(request, "Invalid request: Tab ID is missing. Go back to previous page and try it again.")
-    else:
-        messages.error(request, "Invalid request. Go back to previous page and try it again.")
-    return render(request, template_name="waiter/tabs/tab.html", context=context)
+                    else:
+                        messages.error(request, "This Tab is closed and cannot be edited")
 
+                context = self.fill_data(request, id, update_handler)
+                return render(request, "waiter/tabs/tab.html", context)
 
-@waiter_login_required
-def waiter_orders(request):
-    context = Context(request)
-    return render(request, template_name="waiter/orders.html", context=context)
+    class Orders(WaiterLoginRequiredMixin, views.View):
+        def get(self, request):
+            context = Context(request)
+            return render(request, "waiter/orders.html", context)
 
 
 @manager_login_required

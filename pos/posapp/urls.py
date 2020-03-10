@@ -6,9 +6,9 @@ from posapp import views
 urlpatterns = [
     path('', views.index, name='index'),
     path('waiter', RedirectView.as_view(url='waiter/tabs'), name='waiter'),
-    path('waiter/tabs', views.waiter_tabs, name='waiter/tabs'),
-    path('waiter/tabs/tab', views.waiter_tabs_tab, name='waiter/tabs/tab'),
-    path('waiter/orders', views.waiter_orders, name='waiter/orders'),
+    path('waiter/tabs', views.Waiter.Tabs.as_view(), name='waiter/tabs'),
+    path('waiter/tabs/<uuid:id>', views.Waiter.Tabs.Tab.as_view(), name='waiter/tabs/tab'),
+    path('waiter/orders', views.Waiter.Orders.as_view(), name='waiter/orders'),
     path('manager', RedirectView.as_view(url="manager/users"), name='manager'),
     path('manager/users', RedirectView.as_view(url="users/overview"), name='manager/users'),
     path('manager/users/overview', views.manager_users_overview, name='manager/users/overview'),
