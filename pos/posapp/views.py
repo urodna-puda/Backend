@@ -6,28 +6,25 @@ from django import views
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, ProtectedError
-from django.shortcuts import render as render_django, redirect
+from django.shortcuts import render, redirect
 from django.urls import reverse
 
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
     PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct
-from posapp.security import admin_login_required
 from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, AdminLoginRequiredMixin
 
 
-def render(request, template_name, context, content_type=None, status=None, using=None):
-    return render_django(request, template_name, dict(context), content_type, status, using)
-
-
 class Context:
-    def __init__(self, request):
+    def __init__(self, request, template_name):
         self.page = request.get_full_path()[1:]
         self.waiter_role = request.user.is_waiter
         self.manager_role = request.user.is_manager
         self.admin_role = request.user.is_admin
         self.notifications = []
         self.data = {}
+        self.request = request
+        self.template_name = template_name
 
     def add_pagination_context(self, manager, page, page_length, key):
         count = manager.count()
@@ -62,6 +59,9 @@ class Context:
             links.append({'page': i, 'active': i == page})
 
         self.data[key]['pages']['links'] = links
+
+    def render(self, content_type=None, status=None, using=None):
+        return render(self.request, self.template_name, dict(self))
 
     def __getitem__(self, item):
         return self.data[item]
@@ -187,7 +187,7 @@ def index(request):
 class Waiter:
     class Tabs(WaiterLoginRequiredMixin, views.View):
         def get(self, request):
-            context = Context(request)
+            context = Context(request, "waiter/tabs/index.html")
             tabs = []
             tabs_list = Tab.objects.filter(state=Tab.OPEN)
             for tab in tabs_list:
@@ -203,11 +203,11 @@ class Waiter:
 
             if request.user.is_manager:
                 context['paid_tabs'] = Tab.objects.filter(state=Tab.PAID)
-            return render(request, template_name="waiter/tabs/index.html", context=context)
+            return context.render()
 
         class Tab(WaiterLoginRequiredMixin, views.View):
             def fill_data(self, request, id, update_handler=None):
-                context = Context(request)
+                context = Context(request, "waiter/tabs/tab.html")
                 context["id"] = id
                 current_till = request.user.current_till
                 if current_till:
@@ -233,7 +233,7 @@ class Waiter:
 
             def get(self, request, id):
                 context = self.fill_data(request, id)
-                return render(request, template_name="waiter/tabs/tab.html", context=context)
+                return context.render()
 
             def post(self, request, id):
                 def update_handler(context, tab):
@@ -274,18 +274,17 @@ class Waiter:
                         messages.error(request, "This Tab is closed and cannot be edited")
 
                 context = self.fill_data(request, id, update_handler)
-                return render(request, "waiter/tabs/tab.html", context)
+                return context.render()
 
     class Orders(WaiterLoginRequiredMixin, views.View):
         def get(self, request):
-            context = Context(request)
-            return render(request, "waiter/orders.html", context)
+            return Context(request, "waiter/orders.html").render()
 
 
 class Manager:
     class Users(ManagerLoginRequiredMixin, views.View):
         def get(self, request):
-            context = Context(request)
+            context = Context(request, "manager/users/index.html")
             page_length = int(request.GET.get('page_length', 20))
             page = int(request.GET.get('page', 0))
 
@@ -293,13 +292,13 @@ class Manager:
             context['me'] = request.user.username
             context.add_pagination_context(users, page, page_length, 'users')
 
-            return render(request, "manager/users/index.html", context)
+            return context.render()
 
         class Create(ManagerLoginRequiredMixin, views.View):
             def get(self, request):
-                context = Context(request)
+                context = Context(request, "manager/users/create.html")
                 context["form"] = CreateUserForm()
-                return render(request, "manager/users/create.html", context)
+                return context.render()
 
             def post(self, request):
                 user = User()
@@ -309,13 +308,13 @@ class Manager:
                     messages.success(request, f"The user {form.cleaned_data['username']} was created successfully")
                     return redirect(reverse("manager/users"))
 
-                context = Context(request)
+                context = Context(request, "manager/users/create.html")
                 context["form"] = form
-                return render(request, "manager/users/create.html", context)
+                return context.render()
 
     class Tills(ManagerLoginRequiredMixin, views.View):
         def get(self, request):
-            context = Context(request)
+            context = Context(request, "manager/tills/index.html")
             page_length = int(request.GET.get('page_length', 20))
             page_open = int(request.GET.get('page_open', 0))
             page_stopped = int(request.GET.get('page_closed', 0))
@@ -333,19 +332,19 @@ class Manager:
             context["page_counted"] = page_counted
             context["page_length"] = generate_page_length_options(page_length)
 
-            return render(request, "manager/tills/index.html", context)
+            return context.render()
 
         class Assign(ManagerLoginRequiredMixin, views.View):
             def get(self, request):
-                context = Context(request)
+                context = Context(request, "manager/tills/assign.html")
 
                 context["users"] = User.objects.filter(is_waiter=True, current_till=None)
                 context["options"] = TillPaymentOptions.objects.filter(enabled=True)
 
-                return render(request, template_name="manager/tills/assign.html", context=context)
+                return context.render()
 
             def post(self, request):
-                context = Context(request)
+                context = Context(request, "manager/tills/assign.html")
                 if check_dict(request.POST, ["users", "options"]):
                     usernames = request.POST.getlist("users")
                     options_id = request.POST["options"]
@@ -376,11 +375,11 @@ class Manager:
                 context["users"] = User.objects.filter(is_waiter=True, current_till=None)
                 context["options"] = TillPaymentOptions.objects.filter(enabled=True)
 
-                return render(request, template_name="manager/tills/assign.html", context=context)
+                return context.render()
 
         class Till(ManagerLoginRequiredMixin, views.View):
             def get(self, request, id):
-                context = Context(request)
+                context = Context(request, "manager/tills/till/index.html")
                 try:
                     till = Till.objects.filter(state=Till.COUNTED).get(id=id)
                     context["id"] = id
@@ -425,7 +424,7 @@ class Manager:
                     context["show_value"] = True
                 except Till.DoesNotExist:
                     pass
-                return render(request, template_name="manager/tills/till/index.html", context=context)
+                return context.render()
 
             class Stop(ManagerLoginRequiredMixin, views.View):
                 def get(self, request, id):
@@ -445,9 +444,11 @@ class Manager:
                     return redirect("manager/tills")
 
             class Count(ManagerLoginRequiredMixin, views.View):
-                def get(self, request, id, zeroed=[]):
-                    context = Context(request)
+                def get(self, request, id, zeroed=None):
+                    context = Context(request, "manager/tills/till/count.html")
                     context["id"] = id
+                    zeroed = zeroed or []
+
                     try:
                         till = Till.objects.get(id=id)
 
@@ -490,7 +491,7 @@ class Manager:
                         messages.error(request,
                                        "One of the counts required was missing in the request. Please fill all counts")
 
-                    return render(request, template_name="manager/tills/till/count.html", context=context)
+                    return context.render()
 
                 def post(self, request, id):
                     till = Till.objects.get(id=id)
@@ -522,7 +523,7 @@ class Manager:
 
             class Edit(ManagerLoginRequiredMixin, views.View):
                 def get(self, request, id):
-                    context = Context(request)
+                    context = Context(request, "manager/tills/till/edit.html")
                     try:
                         till = Till.objects.filter(state=Till.COUNTED).get(id=id)
                         context["id"] = id
@@ -532,10 +533,10 @@ class Manager:
                                        'The selected till is not available for edits. It either does not exist or '
                                        'is in a state that does not allow edits.')
 
-                    return render(request, template_name="manager/tills/till/edit.html", context=context)
+                    return context.render()
 
                 def post(self, request, id):
-                    context = Context(request)
+                    context = Context(request, "manager/tills/till/edit.html")
                     try:
                         till = Till.objects.filter(state=Till.COUNTED).get(id=id)
                         if "save" in request.POST:
@@ -565,14 +566,14 @@ class Manager:
                                        'The selected till is not available for edits. It either does not exist or '
                                        'is in a state that does not allow edits.')
 
-                    return render(request, template_name="manager/tills/till/edit.html", context=context)
+                    return context.render()
 
 
 class Admin:
     class Finance:
         class Currencies(AdminLoginRequiredMixin, views.View):
             def get(self, request):
-                context = Context(request)
+                context = Context(request, "admin/finance/currencies.html")
                 page_length = int(request.GET.get('page_length', 20))
                 search = request.GET.get('search', '')
                 page = int(request.GET.get('page', 0))
@@ -597,11 +598,11 @@ class Admin:
                     "val": enabled_filter,
                 }
 
-                return render(request, "admin/finance/currencies.html", context)
+                return context.render()
 
         class Methods(AdminLoginRequiredMixin, views.View):
-            def get(self, request, form = None, show_modal = False):
-                context = Context(request)
+            def get(self, request, form=None, show_modal=False):
+                context = Context(request, "admin/finance/methods.html")
 
                 form = form or CreatePaymentMethodForm()
                 context['form'] = form
@@ -610,7 +611,8 @@ class Admin:
                 page = int(request.GET.get('page', 0))
                 currency_filter = int(request.GET['currency']) if 'currency' in request.GET else None
 
-                methods = PaymentMethod.objects.filter(Q(name__contains=search) | Q(currency__name__contains=search)).filter(
+                methods = PaymentMethod.objects.filter(
+                    Q(name__contains=search) | Q(currency__name__contains=search)).filter(
                     currency__enabled=True)
                 if currency_filter:
                     methods = methods.filter(currency__pk=currency_filter)
@@ -622,7 +624,7 @@ class Admin:
                 context["search"] = search
 
                 context["showModal"] = show_modal
-                return render(request, "admin/finance/methods.html", context)
+                return context.render()
 
             def post(self, request):
                 method = PaymentMethod()
@@ -657,13 +659,13 @@ class Admin:
 
     class Units(AdminLoginRequiredMixin, views.View):
         def get(self, request):
-            context = Context(request)
+            context = Context(request, 'admin/units/index.html')
             context['groups'] = UnitGroup.objects.all()
 
-            return render(request, template_name='admin/units/index.html', context=context)
+            return context.render()
 
         def post(self, request):
-            context = Context(request)
+            context = Context(request, 'admin/units/index.html')
             if check_dict(request.POST, ['newUnitGroupName', 'newUnitGroupSymbol']):
                 group = UnitGroup()
                 group.name = request.POST['newUnitGroupName']
@@ -701,12 +703,12 @@ class Admin:
                     messages.warning(request, "Deletion failed: an Item depends on this Unit Group!")
             context['groups'] = UnitGroup.objects.all()
 
-            return render(request, template_name='admin/units/index.html', context=context)
+            return context.render()
 
     class Menu:
         class Products(AdminLoginRequiredMixin, views.View):
             def fill_data(self, request):
-                context = Context(request)
+                context = Context(request, 'admin/menu/products/index.html')
                 page_length = int(request.GET.get('page_length', 20))
                 search = request.GET.get('search', '')
                 page = int(request.GET.get('page', 0))
@@ -736,7 +738,7 @@ class Admin:
                 context = self.fill_data(request)
                 context["create_product_form"] = CreateEditProductForm()
 
-                return render(request, 'admin/menu/products/index.html', context)
+                return context.render()
 
             def post(self, request, *args, **kwargs):
                 product = Product()
@@ -749,11 +751,11 @@ class Admin:
                     context = self.fill_data(request)
                     context["create_product_form"] = form
 
-                    return render(request, "admin/menu/products/index.html", context)
+                    return context.render()
 
             class Product(AdminLoginRequiredMixin, views.View):
                 def get(self, request, id, *args, **kwargs):
-                    context = Context(request)
+                    context = Context(request, 'admin/menu/products/product.html')
                     context["id"] = id
                     try:
                         product = Product.objects.get(id=id)
@@ -764,10 +766,10 @@ class Admin:
                         context["show_form"] = True
                     except Product.DoesNotExist:
                         context["show_does_not_exist"] = True
-                    return render(request, 'admin/menu/products/product.html', context)
+                    return context.render()
 
                 def post(self, request, id, *args, **kwargs):
-                    context = Context(request)
+                    context = Context(request, 'admin/menu/products/product.html')
                     context["id"] = id
                     try:
                         product = Product.objects.get(id=id)
@@ -805,7 +807,7 @@ class Admin:
                             messages.error(request, "Something went wrong, please retry your last action")
                     except Product.DoesNotExist:
                         context["show_does_not_exist"] = True
-                    return render(request, 'admin/menu/products/product.html', context)
+                    return context.render()
 
                 class Delete(AdminLoginRequiredMixin, views.View):
                     def get(self, request, id, *args, **kwargs):
