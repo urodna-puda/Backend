@@ -1,13 +1,14 @@
 import decimal
 import uuid
 
+# Create your views here.
+from django import views
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, ProtectedError
 from django.shortcuts import render as render_django, redirect
 
-# Create your views here.
-from posapp.forms import CreateUserForm, CreatePaymentMethodForm
+from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
     PaymentInTab, PaymentMethod, UnitGroup, Unit
 from posapp.security import waiter_login_required, manager_login_required, admin_login_required
@@ -690,34 +691,53 @@ def admin_units_overview(request):
     return render(request, template_name='admin/units/overview.html', context=context)
 
 
-def admin_menu_products(request):
-    context = Context(request)
-    page_length = int(request.GET.get('page_length', 20))
-    search = request.GET.get('search', '')
-    page = int(request.GET.get('page', 0))
-    enabled_filter = request.GET.get('enabled', '')
+class Admin:
+    class Menu:
+        class Products(views.View):
+            def fill_data(self, request):
+                context = Context(request)
+                page_length = int(request.GET.get('page_length', 20))
+                search = request.GET.get('search', '')
+                page = int(request.GET.get('page', 0))
+                enabled_filter = request.GET.get('enabled', '')
 
-    products = Product.objects.filter(name__contains=search).order_by('name')
-    if enabled_filter:
-        if enabled_filter == "yes":
-            products = products.filter(enabled=True)
-        if enabled_filter == "no":
-            products = products.filter(enabled=False)
-    context.add_pagination_context(products, page, page_length, 'products')
+                products = Product.objects.filter(name__contains=search).order_by('name')
+                if enabled_filter:
+                    if enabled_filter == "yes":
+                        products = products.filter(enabled=True)
+                    if enabled_filter == "no":
+                        products = products.filter(enabled=False)
+                context.add_pagination_context(products, page, page_length, 'products')
 
-    context["page_number"] = page
-    context["page_length"] = generate_page_length_options(page_length)
-    context["search"] = search
-    context["enabledFilter"] = {
-        "yes": (enabled_filter == "yes"),
-        "none": (enabled_filter == ""),
-        "no": (enabled_filter == "no"),
-        "val": enabled_filter,
-    }
+                context["page_number"] = page
+                context["page_length"] = generate_page_length_options(page_length)
+                context["search"] = search
+                context["enabledFilter"] = {
+                    "yes": (enabled_filter == "yes"),
+                    "none": (enabled_filter == ""),
+                    "no": (enabled_filter == "no"),
+                    "val": enabled_filter,
+                }
 
-    return render(request, 'admin/menu/products/index.html', context)
+                return context
 
+            def get(self, request, *args, **kwargs):
+                context = self.fill_data(request)
+                context["create_product_form"] = CreateEditProductForm()
 
-def admin_menu_products_product(request):
+                return render(request, 'admin/menu/products/index.html', context)
+
+            def post(self, request, *args, **kwargs):
+                product = Product()
+                form = CreateEditProductForm(request.POST, instance=product)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, "Product created successfully")
+                    return redirect("admin/menu/products/product", id=product.id)
+                else:
+                    context = self.fill_data(request)
+                    context["create_product_form"] = form
+
+                    return render(request, "admin/menu/products/index.html", context)
     context = Context(request)
     return render(request, 'admin/menu/products/product.html', context)
