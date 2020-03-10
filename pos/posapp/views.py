@@ -181,7 +181,7 @@ def prepare_tab_dict(tab):
 
 @login_required
 def index(request):
-    return redirect("waiter/tabs")
+    return redirect(reverse("waiter/tabs"))
 
 
 class Waiter:
@@ -441,7 +441,7 @@ class Manager:
                                              f'The till is in a state from which it cannot be closed: {till.state}')
                     except Till.DoesNotExist:
                         messages.error(request, 'The specified till does not exist.')
-                    return redirect("manager/tills")
+                    return redirect(reverse("manager/tills"))
 
             class Count(ManagerLoginRequiredMixin, views.View):
                 def get(self, request, id, zeroed=None):
@@ -519,7 +519,7 @@ class Manager:
                                              f'The till is in a state from which it cannot be closed: {till.state}')
                     except Till.DoesNotExist:
                         messages.error(request, 'The specified till does not exist.')
-                    return redirect("manager/tills")
+                    return redirect(reverse("manager/tills"))
 
             class Edit(ManagerLoginRequiredMixin, views.View):
                 def get(self, request, id):
@@ -655,7 +655,7 @@ class Admin:
                             messages.error(request, "The specified method can't be deleted as other records such as "
                                                     "payments or tills depend on it. You can remove it from the deposits "
                                                     "to prevent further use.")
-                        return redirect("admin/finance/methods")
+                        return redirect(reverse("admin/finance/methods"))
 
     class Units(AdminLoginRequiredMixin, views.View):
         def get(self, request):
@@ -815,7 +815,7 @@ class Admin:
                             product = Product.objects.get(id=id)
                             product.delete()
                             messages.success(request, f"Product {product.name} was deleted.")
-                            return redirect("admin/menu/products")
+                            return redirect(reverse("admin/menu/products"))
                         except Product.DoesNotExist:
                             return redirect("admin/menu/products/product", id=id)
                         except ProtectedError:
