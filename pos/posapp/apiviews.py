@@ -171,3 +171,31 @@ class MethodToggleChange(APIView):
                 'status': 404,
                 'error': 'Payment method with this id was not found',
             }, status.HTTP_404_NOT_FOUND)
+
+
+class ProductToggleEnabled(APIView):
+    is_text = "success\">is"
+    isnt_text = "danger\">isn't"
+
+    def post(self, request, id, format=None):
+        if not request.user.is_admin:
+            return Response({
+                'status': 404,
+                'error': 'Only admins can access this view',
+            }, status.HTTP_403_FORBIDDEN)
+
+        try:
+            product = Product.objects.get(id=id)
+            product.enabled = not product.enabled
+            product.save()
+            return Response({
+                'status': 200,
+                'now': product.enabled,
+                'message': f"The product now <span class=\"badge badge-{self.is_text if product.enabled else self.isnt_text}</span> enabled.",
+            }, status.HTTP_200_OK)
+
+        except Product.DoesNotExist:
+            return Response({
+                'status': 404,
+                'error': 'Product with this id was not found',
+            }, status.HTTP_404_NOT_FOUND)

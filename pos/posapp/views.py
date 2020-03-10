@@ -1,15 +1,16 @@
 import decimal
 import uuid
 
+# Create your views here.
+from django import views
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, ProtectedError
 from django.shortcuts import render as render_django, redirect
 
-# Create your views here.
-from posapp.forms import CreateUserForm, CreatePaymentMethodForm
+from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
-    PaymentInTab, PaymentMethod, UnitGroup, Unit
+    PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct
 from posapp.security import waiter_login_required, manager_login_required, admin_login_required
 
 
@@ -688,3 +689,122 @@ def admin_units_overview(request):
     context['groups'] = UnitGroup.objects.all()
 
     return render(request, template_name='admin/units/overview.html', context=context)
+
+
+class Admin:
+    class Menu:
+        class Products(views.View):
+            def fill_data(self, request):
+                context = Context(request)
+                page_length = int(request.GET.get('page_length', 20))
+                search = request.GET.get('search', '')
+                page = int(request.GET.get('page', 0))
+                enabled_filter = request.GET.get('enabled', '')
+
+                products = Product.objects.filter(name__contains=search).order_by('name')
+                if enabled_filter:
+                    if enabled_filter == "yes":
+                        products = products.filter(enabled=True)
+                    if enabled_filter == "no":
+                        products = products.filter(enabled=False)
+                context.add_pagination_context(products, page, page_length, 'products')
+
+                context["page_number"] = page
+                context["page_length"] = generate_page_length_options(page_length)
+                context["search"] = search
+                context["enabledFilter"] = {
+                    "yes": (enabled_filter == "yes"),
+                    "none": (enabled_filter == ""),
+                    "no": (enabled_filter == "no"),
+                    "val": enabled_filter,
+                }
+
+                return context
+
+            def get(self, request, *args, **kwargs):
+                context = self.fill_data(request)
+                context["create_product_form"] = CreateEditProductForm()
+
+                return render(request, 'admin/menu/products/index.html', context)
+
+            def post(self, request, *args, **kwargs):
+                product = Product()
+                form = CreateEditProductForm(request.POST, instance=product)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, "Product created successfully")
+                    return redirect("admin/menu/products/product", id=product.id)
+                else:
+                    context = self.fill_data(request)
+                    context["create_product_form"] = form
+
+                    return render(request, "admin/menu/products/index.html", context)
+
+            class Product(views.View):
+                def get(self, request, id, *args, **kwargs):
+                    context = Context(request)
+                    context["id"] = id
+                    try:
+                        product = Product.objects.get(id=id)
+                        form = CreateEditProductForm(instance=product)
+                        items_formset = ItemsInProductFormSet(queryset=ItemInProduct.objects.filter(product=product))
+                        context["form"] = form
+                        context["items_formset"] = items_formset
+                        context["show_form"] = True
+                    except Product.DoesNotExist:
+                        context["show_does_not_exist"] = True
+                    return render(request, 'admin/menu/products/product.html', context)
+
+                def post(self, request, id, *args, **kwargs):
+                    context = Context(request)
+                    context["id"] = id
+                    try:
+                        product = Product.objects.get(id=id)
+                        if "formSelector" in request.POST:
+                            product_changed = request.POST["formSelector"] == "product"
+                            product_form = CreateEditProductForm(request.POST if product_changed else None,
+                                                                 instance=product)
+                            if product_changed and product_form.is_valid():
+                                product_form.save()
+                                messages.success(request, "Product successfully updated")
+                                product_form = CreateEditProductForm(instance=product)
+
+                            items_changed = request.POST["formSelector"] == "items"
+                            items_formset = ItemsInProductFormSet(
+                                request.POST if items_changed else None,
+                                queryset=ItemInProduct.objects.filter(
+                                    product=product
+                                )
+                            )
+                            if items_changed and items_formset.is_valid():
+                                items_formset.save(commit=False)
+                                for form in items_formset.forms:
+                                    form.instance.product = product
+                                items_formset.save()
+                                items_formset = ItemsInProductFormSet(
+                                    queryset=ItemInProduct.objects.filter(
+                                        product=product
+                                    )
+                                )
+
+                            context["form"] = product_form
+                            context["items_formset"] = items_formset
+                            context["show_form"] = True
+                        else:
+                            messages.error(request, "Something went wrong, please retry your last action")
+                    except Product.DoesNotExist:
+                        context["show_does_not_exist"] = True
+                    return render(request, 'admin/menu/products/product.html', context)
+
+                class Delete(views.View):
+                    def get(self, request, id, *args, **kwargs):
+                        try:
+                            product = Product.objects.get(id=id)
+                            product.delete()
+                            messages.success(request, f"Product {product.name} was deleted.")
+                            return redirect("admin/menu/products")
+                        except Product.DoesNotExist:
+                            return redirect("admin/menu/products/product", id=id)
+                        except ProtectedError:
+                            messages.error(request, "This Product can't be deleted as it was already ordered")
+                            return redirect("admin/menu/products/product", id=id)

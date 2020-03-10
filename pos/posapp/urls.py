@@ -28,4 +28,10 @@ urlpatterns = [
     path('admin/finance/methods/delete', views.admin_finance_methods_delete, name='admin/finance/methods/delete'),
     path('admin/units', RedirectView.as_view(url="admin/units/overview"), name='admin/units'),
     path('admin/units/overview', views.admin_units_overview, name='admin/units/overview'),
+    path('admin/menu', RedirectView.as_view(url="admin/menu/products"), name='admin/menu'),
+    path('admin/menu/products', views.Admin.Menu.Products.as_view(), name='admin/menu/products'),
+    path('admin/menu/products/<uuid:id>', views.Admin.Menu.Products.Product.as_view(),
+         name='admin/menu/products/product'),
+    path('admin/menu/products/<uuid:id>/delete', views.Admin.Menu.Products.Product.Delete.as_view(),
+         name='admin/menu/products/product/delete'),
 ]

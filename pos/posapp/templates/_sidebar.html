@@ -131,6 +131,24 @@
                     </li>
                 </ul>
             </li>
+            <li class="nav-item has-treeview {% isopen page "admin/menu" %}">
+                <a href="{% url "admin/menu" %}" class="nav-link {% isactive page "admin/menu" %}">
+                    <i class="nav-icon fas fa-book-open"></i>
+                    <p>
+                        Menu
+                        <i class="right fas fa-angle-left"></i>
+                    </p>
+                </a>
+                <ul class="nav nav-treeview">
+                    <li class="nav-item">
+                        <a href="{% url "admin/menu/products" %}"
+                           class="nav-link {% isactive page "admin/menu/products" %}">
+                            <i class="nav-icon fas fa-utensils"></i>
+                            <p>Products</p>
+                        </a>
+                    </li>
+                </ul>
+            </li>
         {% endif %}
     </ul>
 {% endblock %}

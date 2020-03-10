@@ -68,6 +68,7 @@ class Product(models.Model):
     name = models.CharField(max_length=1024, null=False)
     price = models.DecimalField(max_digits=15, decimal_places=3)
     items = models.ManyToManyField(Item, through="ItemInProduct")
+    enabled = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
