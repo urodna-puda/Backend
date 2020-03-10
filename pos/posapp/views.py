@@ -5,15 +5,15 @@ import uuid
 from django import views
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q, ProtectedError
 from django.shortcuts import render as render_django, redirect
+from django.urls import reverse
 
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
     PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct
-from posapp.security import waiter_login_required, manager_login_required, admin_login_required
-from posapp.security.role_decorators import WaiterLoginRequiredMixin
+from posapp.security import manager_login_required, admin_login_required
+from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin
 
 
 def render(request, template_name, context, content_type=None, status=None, using=None):
@@ -206,7 +206,7 @@ class Waiter:
             return render(request, template_name="waiter/tabs/index.html", context=context)
 
         class Tab(WaiterLoginRequiredMixin, views.View):
-            def fill_data(self, request, id, update_handler = None):
+            def fill_data(self, request, id, update_handler=None):
                 context = Context(request)
                 context["id"] = id
                 current_till = request.user.current_till
@@ -282,40 +282,36 @@ class Waiter:
             return render(request, "waiter/orders.html", context)
 
 
-@manager_login_required
-def manager_users_overview(request):
-    context = Context(request)
-    page_length = int(request.GET.get('page_length', 20))
-    page = int(request.GET.get('page', 0))
+class Manager:
+    class Users(ManagerLoginRequiredMixin, views.View):
+        def get(self, request):
+            context = Context(request)
+            page_length = int(request.GET.get('page_length', 20))
+            page = int(request.GET.get('page', 0))
 
-    users = User.objects.filter(is_active=True).order_by("last_name", "first_name")
-    context['me'] = request.user.username
-    context.add_pagination_context(users, page, page_length, 'users')
+            users = User.objects.filter(is_active=True).order_by("last_name", "first_name")
+            context['me'] = request.user.username
+            context.add_pagination_context(users, page, page_length, 'users')
 
-    return render(request, template_name="manager/users/overview.html", context=context)
+            return render(request, "manager/users/index.html", context)
 
+        class Create(ManagerLoginRequiredMixin, views.View):
+            def get(self, request):
+                context = Context(request)
+                context["form"] = CreateUserForm()
+                return render(request, "manager/users/create.html", context)
 
-@manager_login_required
-def manager_users_create(request):
-    context = Context(request)
-    if request.method == 'GET':
-        form = CreateUserForm()
-    elif request.method == 'POST':
-        print(request.POST)
-        user = User()
-        form = CreateUserForm(request.POST, instance=user)
-        if form.is_valid():
-            form.save()
-            messages.success(request, f"The user {form.cleaned_data['username']} was created successfully")
-            return redirect("manager/users/overview")
-        else:
-            print("form is not valid")
+            def post(self, request):
+                user = User()
+                form = CreateUserForm(request.POST, instance=user)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, f"The user {form.cleaned_data['username']} was created successfully")
+                    return redirect(reverse("manager/users"))
 
-    else:
-        # TODO Replace with proper handler
-        assert False
-    context['form'] = form
-    return render(request, template_name="manager/users/create.html", context=context)
+                context = Context(request)
+                context["form"] = form
+                return render(request, "manager/users/create.html", context)
 
 
 @manager_login_required
