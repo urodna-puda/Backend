@@ -104,9 +104,11 @@ def generate_page_length_options(page_length):
     return options
 
 
-@login_required
-def index(request):
-    return redirect("waiter/tabs")
+def check_dict(dictionary, keys):
+    for key in keys:
+        if key not in dictionary:
+            return False
+    return True
 
 
 def prepare_tab_dict(tab):
@@ -175,6 +177,11 @@ def prepare_tab_dict(tab):
         })
 
     return out
+
+
+@login_required
+def index(request):
+    return redirect("waiter/tabs")
 
 
 class Waiter:
@@ -286,13 +293,6 @@ def manager_users_overview(request):
     context.add_pagination_context(users, page, page_length, 'users')
 
     return render(request, template_name="manager/users/overview.html", context=context)
-
-
-def check_dict(dictionary, keys):
-    for key in keys:
-        if key not in dictionary:
-            return False
-    return True
 
 
 @manager_login_required
