@@ -807,10 +807,10 @@ class Admin:
 
         class Items(views.View):
             def get(self, request):
-                context = Context(request)
+                context = Context(request, 'admin/menu/items.html')
                 items = Item.objects.all()
-                context.add_pagination_context(items, 0, 20, "items")
-                return render(request, 'admin/menu/items.html', context)
+                context.add_pagination_context(items, "items")
+                return context.render()
 
             class Item(views.View):
                 def get(self, request, id):
