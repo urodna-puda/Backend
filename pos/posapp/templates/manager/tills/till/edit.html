@@ -12,7 +12,7 @@
     <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
     <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager" %}">Manager</a></li>
     <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager/tills" %}">Tills</a></li>
-    <li class="breadcrumb-item" aria-current="page"><button type="submit" class="btn btn-link p-0 m-0 align-baseline" form="thisTillShowForm">This till</button></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager/tills/till" id %}">This till</a></li>
     <li class="breadcrumb-item active" aria-current="page">Edit</li>
 {% endblock %}
 
@@ -36,13 +36,13 @@
                             Edit details
                         </h2>
                         <div class="card-tools">
-                            <button type="submit" class="btn btn-tool" name="show" data-toggle="tooltip"
-                                    data-position="top" title="Show till" form="showForm">
+                            <a href="{% url "manager/tills/till" id %}" class="btn btn-tool" data-toggle="tooltip"
+                               data-position="top" title="Show till">
                                 <i class="fas fa-receipt"></i>
-                            </button>
+                            </a>
                         </div>
                     </div>
-                    <form action="{% url "manager/tills/till/edit" %}" method="post">
+                    <form action="{% url "manager/tills/till/edit" id %}" method="post">
                         {% csrf_token %}
                         <input type="hidden" name="id" value="{{ id }}"/>
                         <div class="card-body">
@@ -76,13 +76,4 @@
             </div>
         </div>
     </div>
-    <!--VIRTUAL FORMS-->
-    <form action="{% url "manager/tills/till" %}" method="post" id="showForm" style="display: none;">
-        {% csrf_token %}
-        <input type="hidden" name="id" value="{{ id }}"/>
-    </form>
-    <form action="{% url "manager/tills/till" %}" method="post" id="thisTillShowForm" style="display:none">
-        {% csrf_token %}
-        <input type="hidden" name="id" value="{{ id }}"/>
-    </form>
 {% endblock %}
