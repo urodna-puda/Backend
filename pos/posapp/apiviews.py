@@ -53,34 +53,21 @@ class UserToggles(APIView):
     def post(self, request, username, role, format=None):
         if role not in ["waiter", "manager", "admin", "active"]:
             return Response({
-                'status': 404,
+                'status': 400,
                 'error': f'role must be one of waiter/manager/admin/active, was {role}',
             }, status.HTTP_400_BAD_REQUEST)
 
-        if not request.user.is_manager and not request.user.is_admin:
-            return Response({
-                'status': 404,
-                'error': 'Only managers and admins can access this view',
-            }, status.HTTP_403_FORBIDDEN)
-
-        if request.user.username == username:
-            return Response({
-                'status': 404,
-                'error': 'You can\'t change yourself, that is not a good idea',
-            }, status.HTTP_406_NOT_ACCEPTABLE)
-
         try:
             user = User.objects.get(username=username)
-            if request.user.is_admin:
-                response = self.update_user(user, role)
-                user.save()
-            elif request.user.is_manager and role == "waiter" and not (user.is_manager or user.is_admin):
+
+            if request.user.can_grant(user, role):
                 response = self.update_user(user, role)
                 user.save()
             else:
                 return Response({
-                    'status': 404,
-                    'error': 'A manager can only change waiter status of other non-manager and non-admin users',
+                    'status': 403,
+                    'error': 'A manager can only toggle waiter status. '
+                             'Admins can toggle anything except own admin status.',
                 }, status.HTTP_403_FORBIDDEN)
             return response
 
