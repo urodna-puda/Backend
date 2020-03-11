@@ -25,11 +25,11 @@
                             <i class="fas fa-table"></i>
                             Currencies
                         </h2>
-                        <div class="card-tools">
-                            <div class="container">
-                                <div class="row float-right">
-                                    <div class="col-4 float-right">
-                                        <div class="btn-group btn-group-sm" role="group">
+                        <div class="card-tools text-right">
+                            <div class="row">
+                                <div class="col-4">
+                                    <div class="input-group">
+                                        <div class="btn-group" role="group">
                                             <button type="button"
                                                     class="btn btn-outline-success{% if enabledFilter.yes %} active{% endif %}"
                                                     onclick="window.location = '?page={{ currencies.pages.page }}&page_length={{ currencies.pages.page_length.value }}&enabled=yes{% if search %}&search={{ search }}{% endif %}'">
@@ -47,21 +47,21 @@
                                             </button>
                                         </div>
                                     </div>
-                                    <div class="col-8 float-right">
-                                        <form id="searchForm">
-                                            <div class="input-group mb-3 imput-group-sm">
-                                                <input type="text" class="form-control" placeholder="Search"
-                                                       aria-label="Search"
-                                                       aria-describedby="search-addon-button" id="searchField"
-                                                       name="search"{% if search %} value="{{ search }}"{% endif %}>
-                                                <div class="input-group-append">
-                                                    <button class="btn btn-outline-secondary" type="submit"
-                                                            id="search-addon-button"><i
-                                                            class="fas fa-search"></i></button>
-                                                </div>
+                                </div>
+                                <div class="col-8">
+                                    <form id="searchForm">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control border-right-0 border-secondary"
+                                                   placeholder="Search" aria-label="Search"
+                                                   aria-describedby="search-addon-button" id="searchField"
+                                                   name="search"{% if search %} value="{{ search }}"{% endif %}>
+                                            <div class="input-group-append">
+                                                <button class="btn btn-outline-secondary border-left-0" type="submit"
+                                                        id="search-addon-button"><i
+                                                        class="fas fa-search"></i></button>
                                             </div>
-                                        </form>
-                                    </div>
+                                        </div>
+                                    </form>
                                 </div>
                             </div>
                         </div>
