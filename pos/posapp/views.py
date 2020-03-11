@@ -809,21 +809,25 @@ class Admin:
         class Items(views.View):
             def get(self, request):
                 context = Context(request, 'admin/menu/items/index.html')
-                items = Item.objects.all()
+                search = request.GET.get('search', '')
+                items = Item.objects.filter(name__contains=search)
                 context.add_pagination_context(items, "items")
                 context["create_item_form"] = CreateItemForm()
+                context["search"] = search
                 return context.render()
 
             def post(self, request):
                 context = Context(request, 'admin/menu/items/index.html')
+                search = request.GET.get('search', '')
                 item = Item()
                 create_item_form = CreateItemForm(request.POST, instance=item)
                 if create_item_form.is_valid():
                     create_item_form.save()
                     create_item_form = CreateItemForm()
                 context["create_item_form"] = create_item_form
-                items = Item.objects.all()
+                items = Item.objects.filter(name__contains=search)
                 context.add_pagination_context(items, "items")
+                context["search"] = search
                 return context.render()
 
             class Item(views.View):
