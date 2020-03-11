@@ -823,6 +823,8 @@ class Admin:
                             item = Item.objects.get(id=id)
                             item.delete()
                             messages.success(request, f"The item {item.name} was successfully deleted")
-                        except:
+                        except Item.DoesNotExist:
                             messages.error(request, "The item wasn't deleted as it can't be found.")
+                        except ProtectedError:
+                            messages.error(request, "The item can't be deleted because it is used by a Product")
                         return redirect(reverse('admin/menu/items'))
