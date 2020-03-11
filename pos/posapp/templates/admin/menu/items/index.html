@@ -25,23 +25,41 @@
                             <i class="fas fa-table"></i>
                             Items
                         </h2>
-                        <div class="card-tools">
-                            <div class="float-right">
-                                <form id="searchForm">
+                        <div class="card-tools text-right">
+                            <div class="row">
+                                <div class="col">
                                     <div class="input-group mb-3 imput-group-sm">
-                                        <input type="text" class="form-control border-right-0 border-secondary"
-                                               placeholder="Search"
-                                               aria-label="Search"
-                                               aria-describedby="search-addon-button" id="searchField"
-                                               name="search"{% if search %} value="{{ search }}"{% endif %}>
-                                        <div class="input-group-append">
-                                            <button class="btn btn-outline-secondary border-left-0"
-                                                    type="submit"
-                                                    id="search-addon-button"><i
-                                                    class="fas fa-search"></i></button>
-                                        </div>
+                                        <select class="form-control"
+                                                onchange="window.location = '?page={{ items.pages.page }}&page_length={{ items.pages.page_length.value }}&unit_group=' + this.options[this.selectedIndex].value{% if search %} + '&search={{ search }}'{% endif %};">
+                                            <option value="">
+                                                All
+                                            </option>
+                                            {% for group in unit_groups %}
+                                                <option value="{{ group.id }}"
+                                                        {% ifequal unit_group group.id %}selected{% endifequal %}>
+                                                    {{ group.name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
                                     </div>
-                                </form>
+                                </div>
+                                <div class="col">
+                                    <form>
+                                        <div class="input-group mb-3 imput-group-sm">
+                                            <input type="text" class="form-control border-right-0 border-secondary"
+                                                   placeholder="Search" aria-label="Search"
+                                                   aria-describedby="search-addon-button"
+                                                   id="searchField" name="search"{% if search %}
+                                                   value="{{ search }}"{% endif %}>
+                                            <div class="input-group-append">
+                                                <button class="btn btn-outline-secondary border-left-0" type="submit"
+                                                        id="search-addon-button">
+                                                    <i class="fas fa-search"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -74,7 +92,7 @@
                             through {{ items.showing.to|add_one }} of {{ items.showing.of }}.
                             &nbsp;
                             Items per page:
-                            <select onchange="window.location = '?page={{ items.pages.page }}&page_length=' + this.options[this.selectedIndex].value{% if search %} + '&search={{ search }}'{% endif %};">
+                            <select onchange="window.location = '?page={{ items.pages.page }}&page_length=' + this.options[this.selectedIndex].value{% if unit_group %} + '&unit_group={{ unit_group }}'{% endif %}{% if search %} + '&search={{ search }}'{% endif %};">
                                 <option value="5" {% if items.pages.page_length.len5 %}selected{% endif %}>
                                     5 items
                                 </option>
@@ -106,33 +124,28 @@
                         <div class="btn-group float-right" role="group">
                             {% if items.pages.showPrevious %}
                                 <button type="button" class="btn btn-outline-secondary"
-                                        onclick="window.location = '?page=0&page_length={{ items.pages.page_length.value }}'{% if search %} +
-                                            '&search={{ search }}{% endif %}">
+                                        onclick="window.location = '?page=0&page_length={{ items.pages.page_length.value }}'{% if unit_group %} + '&unit_group={{ unit_group }}'{% endif %}{% if search %} + '&search={{ search }}{% endif %}">
                                     <i class="fas fa-angle-double-left"></i>
                                 </button>
                                 <button type="button" class="btn btn-outline-secondary"
-                                        onclick="window.location = '?page={{ items.pages.previous }}&page_length={{ items.pages.page_length.value }}'{% if search %} +
-                                            '&search={{ search }}{% endif %}">
+                                        onclick="window.location = '?page={{ items.pages.previous }}&page_length={{ items.pages.page_length.value }}'{% if unit_group %} + '&unit_group={{ unit_group }}'{% endif %}{% if search %} + '&search={{ search }}{% endif %}">
                                     <i class=" fas fa-angle-left"></i>
                                 </button>
                             {% endif %}
                             {% for link in items.pages.links %}
                                 <button type="button"
                                         class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
-                                        onclick="window.location = '?page={{ link.page }}&page_length={{ items.pages.page_length.value }}'{% if search %} +
-                                            '&search={{ search }}{% endif %}">
+                                        onclick="window.location = '?page={{ link.page }}&page_length={{ items.pages.page_length.value }}'{% if unit_group %} + '&unit_group={{ unit_group }}'{% endif %}{% if search %} + '&search={{ search }}{% endif %}">
                                     {{ link.page|add_one }}
                                 </button>
                             {% endfor %}
                             {% if items.pages.showNext %}
                                 <button type="button" class="btn btn-outline-secondary"
-                                        onclick="window.location = '?page={{ items.pages.next }}&page_length={{ items.pages.page_length.value }}'{% if search %} +
-                                            '&search={{ search }}{% endif %}">
+                                        onclick="window.location = '?page={{ items.pages.next }}&page_length={{ items.pages.page_length.value }}'{% if unit_group %} + '&unit_group={{ unit_group }}'{% endif %}{% if search %} + '&search={{ search }}{% endif %}">
                                     <i class="fas fa-angle-right"></i>
                                 </button>
                                 <button type="button" class="btn btn-outline-secondary"
-                                        onclick="window.location = '?page={{ items.pages.last }}&page_length={{ items.pages.page_length.value }}'{% if search %} +
-                                            '&search={{ search }}{% endif %}">
+                                        onclick="window.location = '?page={{ items.pages.last }}&page_length={{ items.pages.page_length.value }}'{% if unit_group %} + '&unit_group={{ unit_group }}'{% endif %}{% if search %} + '&search={{ search }}{% endif %}">
                                     <i class="fas fa-angle-double-right"></i>
                                 </button>
                             {% endif %}
@@ -186,7 +199,8 @@
     <script>
         $('#searchForm').bind('submit', function () {
             let search = $('#searchField').val();
-            window.location = "?page={{ items.pages.page }}&page_length={{ items.pages.page_length.value }}" + (search ? "&search=" + search : "");
+            window.location = "?page={{ items.pages.page }}&page_length={{ items.pages.page_length.value }}"{% if unit_group %}
+                + '&unit_group={{ unit_group }}'{% endif %} + (search ? "&search=" + search : "");
             return false;
         });
     </script>

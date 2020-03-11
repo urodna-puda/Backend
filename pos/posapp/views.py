@@ -807,27 +807,38 @@ class Admin:
                             return redirect("admin/menu/products/product", id=id)
 
         class Items(views.View):
-            def get(self, request):
+            def fill_data(self, request):
                 context = Context(request, 'admin/menu/items/index.html')
                 search = request.GET.get('search', '')
+                unit_group_id = uuid.UUID(request.GET['unit_group']) \
+                    if "unit_group" in request.GET and request.GET["unit_group"] else None
                 items = Item.objects.filter(name__contains=search)
+                if unit_group_id:
+                    try:
+                        unit_group = UnitGroup.objects.get(id=unit_group_id)
+                        items = items.filter(unitGroup=unit_group)
+                    except UnitGroup.DoesNotExist:
+                        messages.warning(request, "The Unit group you attempted to filter by does not exist, ignoring.")
                 context.add_pagination_context(items, "items")
-                context["create_item_form"] = CreateItemForm()
                 context["search"] = search
+                context["unit_groups"] = UnitGroup.objects.all()
+                context["unit_group"] = unit_group_id
+                return context
+
+            def get(self, request):
+                context = self.fill_data(request)
+                context["create_item_form"] = CreateItemForm()
                 return context.render()
 
             def post(self, request):
-                context = Context(request, 'admin/menu/items/index.html')
-                search = request.GET.get('search', '')
                 item = Item()
                 create_item_form = CreateItemForm(request.POST, instance=item)
                 if create_item_form.is_valid():
                     create_item_form.save()
                     create_item_form = CreateItemForm()
+
+                context = self.fill_data(request)
                 context["create_item_form"] = create_item_form
-                items = Item.objects.filter(name__contains=search)
-                context.add_pagination_context(items, "items")
-                context["search"] = search
                 return context.render()
 
             class Item(views.View):
