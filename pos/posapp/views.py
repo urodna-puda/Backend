@@ -9,7 +9,8 @@ from django.db.models import Q, ProtectedError
 from django.shortcuts import render, redirect
 from django.urls import reverse
 
-from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet
+from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet, \
+    CreateItemForm
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
     PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item
 from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, AdminLoginRequiredMixin
@@ -808,6 +809,19 @@ class Admin:
         class Items(views.View):
             def get(self, request):
                 context = Context(request, 'admin/menu/items/index.html')
+                items = Item.objects.all()
+                context.add_pagination_context(items, "items")
+                context["create_item_form"] = CreateItemForm()
+                return context.render()
+
+            def post(self, request):
+                context = Context(request, 'admin/menu/items/index.html')
+                item = Item()
+                create_item_form = CreateItemForm(request.POST, instance=item)
+                if create_item_form.is_valid():
+                    create_item_form.save()
+                    create_item_form = CreateItemForm()
+                context["create_item_form"] = create_item_form
                 items = Item.objects.all()
                 context.add_pagination_context(items, "items")
                 return context.render()
