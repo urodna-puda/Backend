@@ -9,9 +9,10 @@ from django.db.models import Q, ProtectedError
 from django.shortcuts import render, redirect
 from django.urls import reverse
 
-from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet
+from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet, \
+    CreateItemForm
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
-    PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct
+    PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item
 from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, AdminLoginRequiredMixin
 
 
@@ -804,3 +805,55 @@ class Admin:
                         except ProtectedError:
                             messages.error(request, "This Product can't be deleted as it was already ordered")
                             return redirect("admin/menu/products/product", id=id)
+
+        class Items(views.View):
+            def fill_data(self, request):
+                context = Context(request, 'admin/menu/items/index.html')
+                search = request.GET.get('search', '')
+                unit_group_id = uuid.UUID(request.GET['unit_group']) \
+                    if "unit_group" in request.GET and request.GET["unit_group"] else None
+                items = Item.objects.filter(name__contains=search)
+                if unit_group_id:
+                    try:
+                        unit_group = UnitGroup.objects.get(id=unit_group_id)
+                        items = items.filter(unitGroup=unit_group)
+                    except UnitGroup.DoesNotExist:
+                        messages.warning(request, "The Unit group you attempted to filter by does not exist, ignoring.")
+                context.add_pagination_context(items, "items")
+                context["search"] = search
+                context["unit_groups"] = UnitGroup.objects.all()
+                context["unit_group"] = unit_group_id
+                return context
+
+            def get(self, request):
+                context = self.fill_data(request)
+                context["create_item_form"] = CreateItemForm()
+                return context.render()
+
+            def post(self, request):
+                item = Item()
+                create_item_form = CreateItemForm(request.POST, instance=item)
+                if create_item_form.is_valid():
+                    create_item_form.save()
+                    create_item_form = CreateItemForm()
+
+                context = self.fill_data(request)
+                context["create_item_form"] = create_item_form
+                return context.render()
+
+            class Item(views.View):
+                def get(self, request, id):
+                    messages.info(request, "That link leads nowhere, you better be safe.")
+                    return redirect("admin/menu/items")
+
+                class Delete(views.View):
+                    def get(self, request, id):
+                        try:
+                            item = Item.objects.get(id=id)
+                            item.delete()
+                            messages.success(request, f"The item {item.name} was successfully deleted")
+                        except Item.DoesNotExist:
+                            messages.error(request, "The item wasn't deleted as it can't be found.")
+                        except ProtectedError:
+                            messages.error(request, "The item can't be deleted because it is used by a Product")
+                        return redirect(reverse('admin/menu/items'))

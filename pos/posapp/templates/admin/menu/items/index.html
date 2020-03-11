@@ -1,0 +1,207 @@
+{% extends "_base.html" %}
+{% load generic %}
+
+{% block page_name %}
+    <i class="fas fa-cheese"></i>
+    Items
+{% endblock %}
+
+{% block no_description %}{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "admin" %}">Staff</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "admin/menu" %}">Menu</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Items</li>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12 col-md-6">
+                <div class="card">
+                    <div class="card-header border-0">
+                        <h2 class="card-title">
+                            <i class="fas fa-table"></i>
+                            Items
+                        </h2>
+                        <div class="card-tools text-right">
+                            <div class="row">
+                                <div class="col">
+                                    <div class="input-group mb-3 input-group-sm">
+                                        <select class="form-control"
+                                                onchange="window.location = '?page={{ items.pages.page }}&page_length={{ items.pages.page_length.value }}&unit_group=' + this.options[this.selectedIndex].value{% if search %} + '&search={{ search }}'{% endif %};">
+                                            <option value="">
+                                                All
+                                            </option>
+                                            {% for group in unit_groups %}
+                                                <option value="{{ group.id }}"
+                                                        {% ifequal unit_group group.id %}selected{% endifequal %}>
+                                                    {{ group.name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <form>
+                                        <div class="input-group mb-3 input-group-sm">
+                                            <input type="text" class="form-control border-right-0 border-secondary"
+                                                   placeholder="Search" aria-label="Search"
+                                                   aria-describedby="search-addon-button"
+                                                   id="searchField" name="search"{% if search %}
+                                                   value="{{ search }}"{% endif %}>
+                                            <div class="input-group-append">
+                                                <button class="btn btn-outline-secondary border-left-0" type="submit"
+                                                        id="search-addon-button">
+                                                    <i class="fas fa-search"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped table-hover table-valign-middle">
+                            <thead>
+                            <tr>
+                                <th scope="col">Name</th>
+                                <th scope="col">Unit Group</th>
+                                <th scope="col" class="text-center">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for item in items.data %}
+                                <tr>
+                                    <td>{{ item.name }}</td>
+                                    <td>{{ item.unitGroup.name }}</td>
+                                    <td class="text-center"><a
+                                            href="{% url "admin/menu/items/item/delete" item.id %}"
+                                            class="btn btn-tool"><i class="fas fa-trash"></i></a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer border-top">
+                        <div class="btn">
+                            Showing items {{ items.showing.from|add_one }}
+                            through {{ items.showing.to|add_one }} of {{ items.showing.of }}.
+                            &nbsp;
+                            Items per page:
+                            <select onchange="window.location = '?page={{ items.pages.page }}&page_length=' + this.options[this.selectedIndex].value{% if unit_group %} + '&unit_group={{ unit_group }}'{% endif %}{% if search %} + '&search={{ search }}'{% endif %};">
+                                <option value="5" {% if items.pages.page_length.len5 %}selected{% endif %}>
+                                    5 items
+                                </option>
+                                <option value="10" {% if items.pages.page_length.len10 %}selected{% endif %}>
+                                    10 items
+                                </option>
+                                <option value="20" {% if items.pages.page_length.len20 %}selected{% endif %}>
+                                    20 items
+                                </option>
+                                <option value="50" {% if items.pages.page_length.len50 %}selected{% endif %}>
+                                    50 items
+                                </option>
+                                <option value="100" {% if items.pages.page_length.len100 %}selected{% endif %}>
+                                    100 items
+                                </option>
+                                <option value="200" {% if items.pages.page_length.len200 %}selected{% endif %}>
+                                    200 items
+                                </option>
+                                <option value="500" {% if v.pages.page_length.len500 %}selected{% endif %}>
+                                    500 items
+                                </option>
+                                {% if items.pages.page_length.other %}
+                                    <option value="{{ items.pages.page_length.value }}" selected>
+                                        Other ({{ items.pages.page_length.value }} items)
+                                    </option>
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="btn-group float-right" role="group">
+                            {% if items.pages.showPrevious %}
+                                <button type="button" class="btn btn-outline-secondary"
+                                        onclick="window.location = '?page=0&page_length={{ items.pages.page_length.value }}'{% if unit_group %} + '&unit_group={{ unit_group }}'{% endif %}{% if search %} + '&search={{ search }}{% endif %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary"
+                                        onclick="window.location = '?page={{ items.pages.previous }}&page_length={{ items.pages.page_length.value }}'{% if unit_group %} + '&unit_group={{ unit_group }}'{% endif %}{% if search %} + '&search={{ search }}{% endif %}">
+                                    <i class=" fas fa-angle-left"></i>
+                                </button>
+                            {% endif %}
+                            {% for link in items.pages.links %}
+                                <button type="button"
+                                        class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
+                                        onclick="window.location = '?page={{ link.page }}&page_length={{ items.pages.page_length.value }}'{% if unit_group %} + '&unit_group={{ unit_group }}'{% endif %}{% if search %} + '&search={{ search }}{% endif %}">
+                                    {{ link.page|add_one }}
+                                </button>
+                            {% endfor %}
+                            {% if items.pages.showNext %}
+                                <button type="button" class="btn btn-outline-secondary"
+                                        onclick="window.location = '?page={{ items.pages.next }}&page_length={{ items.pages.page_length.value }}'{% if unit_group %} + '&unit_group={{ unit_group }}'{% endif %}{% if search %} + '&search={{ search }}{% endif %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary"
+                                        onclick="window.location = '?page={{ items.pages.last }}&page_length={{ items.pages.page_length.value }}'{% if unit_group %} + '&unit_group={{ unit_group }}'{% endif %}{% if search %} + '&search={{ search }}{% endif %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6">
+                <div class="card card-default">
+                    <div class="card-header">
+                        <h2 class="card-title">New item</h2>
+                    </div>
+                    <div class="card-body">
+                        {% if create_item_form.non_field_errors %}
+                            <div class="alert alert-warning alert-dismissible fade show">
+                                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;
+                                </button>
+                                {{ create_item_form.non_field_errors }}
+                            </div>
+                        {% endif %}
+                        <form action="{% url "admin/menu/items" %}" method="post" id="createItemForm">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="{{ create_item_form.name.id_for_label }}">Name</label>
+                                {{ create_item_form.name }}
+                                {% if create_item_form.name.errors %}
+                                    <div class="text-danger">{{ create_item_form.name.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ create_item_form.unitGroup.id_for_label }}">Unit group</label>
+                                {{ create_item_form.unitGroup }}
+                                {% if create_item_form.unitGroup.errors %}
+                                    <div class="text-danger">{{ create_item_form.unitGroup.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-footer text-right">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary" form="createItemForm">Save changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script>
+        $('#searchForm').bind('submit', function () {
+            let search = $('#searchField').val();
+            window.location = "?page={{ items.pages.page }}&page_length={{ items.pages.page_length.value }}"{% if unit_group %}
+                + '&unit_group={{ unit_group }}'{% endif %} + (search ? "&search=" + search : "");
+            return false;
+        });
+    </script>
+{% endblock %}

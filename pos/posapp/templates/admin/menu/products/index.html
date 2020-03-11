@@ -25,18 +25,18 @@
                             <i class="fas fa-table"></i>
                             Products
                         </h2>
-                        <div class="card-tools">
-                            <div class="container">
-                                <div class="row float-right">
-                                    <div class="col-3 float-right">
-                                        <div class="btn-group btn-group-sm" role="group">
+                        <div class="card-tools text-right">
+                            <div class="row">
+                                <div class="col-4">
+                                    <div class="input-group">
+                                        <div class="btn-group" role="group">
                                             <button type="button"
                                                     class="btn btn-outline-success{% if enabledFilter.yes %} active{% endif %}"
                                                     onclick="window.location = '?page={{ products.pages.page }}&page_length={{ products.pages.page_length.value }}&enabled=yes{% if search %}&search={{ search }}{% endif %}'">
                                                 <i class="fas fa-check-circle"></i>
                                             </button>
                                             <button type="button"
-                                                    class="btn btn-outline-secondary{% if enabledFilter.none %} active{% endif %}"
+                                                    class="form-control btn btn-outline-secondary{% if enabledFilter.none %} active{% endif %}"
                                                     onclick="window.location = '?page={{ products.pages.page }}&page_length={{ products.pages.page_length.value }}&enabled={% if search %}&search={{ search }}{% endif %}'">
                                                 <i class="fas fa-slash"></i>
                                             </button>
@@ -47,30 +47,30 @@
                                             </button>
                                         </div>
                                     </div>
-                                    <div class="col-8 float-right">
-                                        <form id="searchForm">
-                                            <div class="input-group mb-3 imput-group-sm">
-                                                <input type="text" class="form-control border-right-0 border-secondary"
-                                                       placeholder="Search"
-                                                       aria-label="Search"
-                                                       aria-describedby="search-addon-button" id="searchField"
-                                                       name="search"{% if search %} value="{{ search }}"{% endif %}>
-                                                <div class="input-group-append">
-                                                    <button class="btn btn-outline-secondary border-left-0"
-                                                            type="submit"
-                                                            id="search-addon-button"><i
-                                                            class="fas fa-search"></i></button>
-                                                </div>
+                                </div>
+                                <div class="col-7">
+                                    <form id="searchForm">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control border-right-0 border-secondary"
+                                                   placeholder="Search"
+                                                   aria-label="Search"
+                                                   aria-describedby="search-addon-button" id="searchField"
+                                                   name="search"{% if search %} value="{{ search }}"{% endif %}>
+                                            <div class="input-group-append">
+                                                <button class="btn btn-outline-secondary border-left-0"
+                                                        type="submit"
+                                                        id="search-addon-button"><i
+                                                        class="fas fa-search"></i></button>
                                             </div>
-                                        </form>
-                                    </div>
-                                    <div class="col-1 float-right">
-                                        <button type="button" class="btn btn-tool"
-                                                data-toggle="tooltip" data-position="top" title="Add"
-                                                onclick="$('#createProductModal').modal('show')">
-                                            <i class="fas fa-plus"></i>
-                                        </button>
-                                    </div>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="col-1">
+                                    <button type="button" class="btn btn-tool"
+                                            data-toggle="tooltip" data-position="top" title="Add"
+                                            onclick="$('#createProductModal').modal('show')">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>

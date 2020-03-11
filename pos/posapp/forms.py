@@ -1,6 +1,6 @@
 from django import forms
 
-from posapp.models import User, PaymentMethod, Product, ItemInProduct
+from posapp.models import User, PaymentMethod, Product, ItemInProduct, Item
 
 
 class CreateUserForm(forms.ModelForm):
@@ -53,3 +53,17 @@ class CreateEditProductForm(forms.ModelForm):
 
 
 ItemsInProductFormSet = forms.modelformset_factory(ItemInProduct, fields=['item', 'amount'], extra=2, can_delete=True)
+
+
+class CreateItemForm(forms.ModelForm):
+    class Meta:
+        model = Item
+        fields = ['name', 'unitGroup']
+
+    def __init__(self, *args, **kwargs):
+        super(CreateItemForm, self).__init__(*args, **kwargs)
+        for visible in self.visible_fields():
+            if isinstance(visible.field.widget, forms.widgets.TextInput):
+                visible.field.widget.attrs['class'] = 'form-control'
+            elif isinstance(visible.field.widget, forms.widgets.Select):
+                visible.field.widget.attrs['class'] = 'form-control'
