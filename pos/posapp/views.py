@@ -807,7 +807,7 @@ class Admin:
 
         class Items(views.View):
             def get(self, request):
-                context = Context(request, 'admin/menu/items.html')
+                context = Context(request, 'admin/menu/items/index.html')
                 items = Item.objects.all()
                 context.add_pagination_context(items, "items")
                 return context.render()
