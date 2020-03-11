@@ -136,6 +136,15 @@
                         </a>
                     </li>
                 </ul>
+                <ul class="nav nav-treeview">
+                    <li class="nav-item">
+                        <a href="{% url "admin/menu/items" %}"
+                           class="nav-link {% isactive page "admin/menu/items" %}">
+                            <i class="nav-icon fas fa-cheese"></i>
+                            <p>Items</p>
+                        </a>
+                    </li>
+                </ul>
             </li>
         {% endif %}
     </ul>
