@@ -819,5 +819,10 @@ class Admin:
 
                 class Delete(views.View):
                     def get(self, request, id):
-                        pass
-
+                        try:
+                            item = Item.objects.get(id=id)
+                            item.delete()
+                            messages.success(request, f"The item {item.name} was successfully deleted")
+                        except:
+                            messages.error(request, "The item wasn't deleted as it can't be found.")
+                        return redirect(reverse('admin/menu/items'))
