@@ -93,10 +93,12 @@ class ItemInProduct(models.Model):
         verbose_name_plural = "Items in products"
 
     def clean(self):
+        if self.amount < 0:
+            raise ValidationError({"amount": "Amount can't be less than zero"})
         if self.item.allows_fractions or self.amount.is_integer():
             super(ItemInProduct, self).clean()
         else:
-            raise ValidationError("Item does not allow fractions")
+            raise ValidationError({"amount": "Item does not allow fractions"})
 
     def __str__(self):
         return f"{self.item} in {self.product}"
