@@ -116,8 +116,8 @@
                     <div class="card-footer border-top">
                         <div class="row">
                             <div class="col-6">
-                                Showing items {{ currencies.showing.from|add_one }}
-                                through {{ currencies.showing.to|add_one }} of {{ currencies.showing.of }}.
+                                Showing items {{ deposits.showing.from|add_one }}
+                                through {{ deposits.showing.to|add_one }} of {{ deposits.showing.of }}.
                                 &nbsp;
                                 Items per page:
                                 <select onchange="window.location = '?page={{ page_number }}&page_length=' + this.options[this.selectedIndex].value{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} + '&search={{ search }}'{% endif %};">
@@ -140,19 +140,19 @@
                             </div>
                             <div class="col-6 text-right">
                                 <div class="btn-group" role="group">
-                                    {% if currencies.pages.showPrevious %}
+                                    {% if deposits.pages.showPrevious %}
                                         <button type="button" class="btn btn-outline-secondary"
                                                 onclick="window.location = '?page=0&page_length={{ page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
                                                     '&search={{ search }}{% endif %}">
                                             <i class="fas fa-angle-double-left"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ currencies.pages.previous }}&page_length={{ page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
+                                                onclick="window.location = '?page={{ deposits.pages.previous }}&page_length={{ page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
                                                     '&search={{ search }}{% endif %}">
                                             <i class=" fas fa-angle-left"></i>
                                         </button>
                                     {% endif %}
-                                    {% for link in currencies.pages.links %}
+                                    {% for link in deposits.pages.links %}
                                         <button type="button"
                                                 class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
                                                 onclick="window.location = '?page={{ link.page }}&page_length={{ page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
