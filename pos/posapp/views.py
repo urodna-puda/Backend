@@ -645,6 +645,17 @@ class Admin:
                                                     "to prevent further use.")
                         return redirect(reverse("admin/finance/methods"))
 
+        class Deposits(AdminLoginRequiredMixin, views.View):
+            def get(self, request):
+                context = Context(request, 'admin/finance/deposits/index.html')
+                return context.render()
+
+            class Deposit(AdminLoginRequiredMixin, views.View):
+                pass
+
+            class Create(AdminLoginRequiredMixin, views.View):
+                pass
+
     class Units(AdminLoginRequiredMixin, views.View):
         def get(self, request):
             context = Context(request, 'admin/units/index.html')
