@@ -66,6 +66,7 @@ class Item(models.Model):
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
     name = models.CharField(max_length=1024, null=False)
     unitGroup = models.ForeignKey(UnitGroup, on_delete=models.PROTECT)
+    allows_fractions = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
