@@ -1,4 +1,3 @@
-import decimal
 from datetime import datetime
 from uuid import uuid4
 
@@ -185,6 +184,7 @@ class ProductInTab(models.Model):
         (TO_SERVE, "To be served"),
         (SERVED, "Served"),
     ]
+    id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     tab = models.ForeignKey(Tab, on_delete=models.CASCADE)
     state = models.CharField(max_length=1, choices=SERVING_STATES, default=ORDERED)
@@ -197,6 +197,21 @@ class ProductInTab(models.Model):
 
     class Meta:
         verbose_name_plural = "Products in tabs"
+
+    def bump(self):
+        if self.state == ProductInTab.ORDERED:
+            self.state = ProductInTab.PREPARING
+            self.preparingAt = datetime.utcnow()
+        elif self.state == ProductInTab.PREPARING:
+            self.state = ProductInTab.TO_SERVE
+            self.preparedAt = datetime.utcnow()
+        elif self.state == ProductInTab.TO_SERVE:
+            self.state = ProductInTab.SERVED
+            self.servedAt = datetime.utcnow()
+        else:
+            return False
+        self.save()
+        return True
 
     def __str__(self):
         return f"{self.product} in {self.tab}"

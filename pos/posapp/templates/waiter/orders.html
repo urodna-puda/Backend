@@ -1,1 +1,248 @@
 {% extends "_base.html" %}
+{% load static %}
+
+{% block page_name %}
+    <i class="nav-icon fas fa-beer"></i>
+    Orders
+{% endblock %}
+
+{% block no_description %}{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "waiter" %}">Waiter</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Orders</li>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12 col-md-4">
+                <div class="card bg-gradient-warning">
+                    <div class="card-header border-0">
+                        <h2 class="card-title">
+                            <i class="far fa-pause-circle"></i>
+                            Waiting
+                        </h2>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover table-valign-middle">
+                            <thead>
+                            <tr class="d-flex">
+                                <th scope="col" class="col-4">Product<br/><span class="text-xs">Note</span>
+                                </th>
+                                <th scope="col" class="col-4">Tab</th>
+                                <th scope="col" class="col-4"></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for item in waiting %}
+                                <tr class="d-flex">
+                                    <td class="col-4">
+                                        {{ item.product.name }}
+                                        {% if item.note %}
+                                            <br/><span class="text-xs">{{ item.note }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="col-4">{{ item.tab.name }}</td>
+                                    <td class="col-4 text-right">
+                                        <div class="btn-group">
+                                            <a href="{% url "waiter/orders/order/bump" item.id 1 %}"
+                                               class="btn btn-secondary" data-toggle="tooltip" data-position="top"
+                                               title="Preparing">
+                                                <i class="fas fa-spinner"></i>
+                                            </a>
+                                            <a href="{% url "waiter/orders/order/bump" item.id 2 %}"
+                                               class="btn btn-secondary bg-info" data-toggle="tooltip"
+                                               data-position="top" title="Prepared">
+                                                <i class="fas fa-concierge-bell"></i>
+                                            </a>
+                                            <a href="{% url "waiter/orders/order/bump" item.id 3 %}"
+                                               class="btn btn-secondary bg-success" data-toggle="tooltip"
+                                               data-position="top" title="Served">
+                                                <i class="fas fa-check"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="3">Good job, nothing is here!</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="card bg-gradient-secondary">
+                    <div class="card-header border-0">
+                        <h2 class="card-title">
+                            <i class="fas fa-spinner"></i>
+                            In preparation
+                        </h2>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover table-valign-middle">
+                            <thead>
+                            <tr class="d-flex">
+                                <th scope="col" class="col-4">Product<br/><span class="text-xs">Note</span>
+                                </th>
+                                <th scope="col" class="col-4">Tab</th>
+                                <th scope="col" class="col-1"></th>
+                                <th scope="col" class="col-1"></th>
+                                <th scope="col" class="col-1"></th>
+                                <th scope="col" class="col-1"></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for item in preparing %}
+                                <tr class="d-flex">
+                                    <td class="col-4">
+                                        {{ item.product.name }}
+                                        {% if item.note %}
+                                            <br/><span class="text-xs">{{ item.note }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="col-4">{{ item.tab.name }}</td>
+                                    <td class="col-4 text-right">
+                                        <div class="btn-group">
+                                            <a href="{% url "waiter/orders/order/bump" item.id 1 %}"
+                                               class="btn btn-secondary bg-info" data-toggle="tooltip"
+                                               data-position="top" title="Prepared">
+                                                <i class="fas fa-concierge-bell"></i>
+                                            </a>
+                                            <a href="{% url "waiter/orders/order/bump" item.id 2 %}"
+                                               class="btn btn-secondary bg-success" data-toggle="tooltip"
+                                               data-position="top" title="Served">
+                                                <i class="fas fa-check"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="3">Good job, nothing is here!</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="card bg-gradient-info">
+                    <div class="card-header border-0">
+                        <h2 class="card-title">
+                            <i class="fas fa-concierge-bell"></i>
+                            To be served
+                        </h2>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover table-valign-middle">
+                            <thead>
+                            <tr class="d-flex">
+                                <th scope="col" class="col-4">Product<br/><span class="text-xs">Note</span>
+                                </th>
+                                <th scope="col" class="col-4">Tab</th>
+                                <th scope="col" class="col-1"></th>
+                                <th scope="col" class="col-1"></th>
+                                <th scope="col" class="col-1"></th>
+                                <th scope="col" class="col-1"></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for item in prepared %}
+                                <tr class="d-flex">
+                                    <td class="col-4">
+                                        {{ item.product.name }}
+                                        {% if item.note %}
+                                            <br/><span class="text-xs">{{ item.note }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="col-4">{{ item.tab.name }}</td>
+                                    <td class="col-4 text-right">
+                                        <div class="btn-group">
+                                            <a href="{% url "waiter/orders/order/bump" item.id 1 %}"
+                                               class="btn btn-secondary bg-success" data-toggle="tooltip"
+                                               data-position="top" title="Served">
+                                                <i class="fas fa-check"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="3">Good job, nothing is here!</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <div class="card collapsed-card bg-gradient-success" id="servedOrdersCard">
+                    <div class="card-header border-0">
+                        <h2 class="card-title"><i class="fas fa-check"></i>&nbsp;Finished orders</h2>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover table-valign-middle">
+                            <thead>
+                            <tr>
+                                <th scope="col">Product<br/><span class="text-xs">Note</span></th>
+                                <th scope="col">Tab</th>
+                                <th scope="col">Ordered at</th>
+                                <th scope="col">Started at</th>
+                                <th scope="col">Prepared at</th>
+                                <th scope="col">Served at</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for item in served %}
+                                <tr>
+                                    <td>{{ item.product.name }}<br/><span
+                                            class="text-xs">{{ item.note }}</span></td>
+                                    <td>{{ item.tab.name }}</td>
+                                    <td>{{ item.orderedAt }}</td>
+                                    <td>{{ item.preparingAt }}</td>
+                                    <td>{{ item.preparedAt }}</td>
+                                    <td>{{ item.servedAt }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script>
+        $(document).ready(function () {
+            let finishedCard = $('#servedOrdersCard');
+            if (sessionStorage.getItem('waiter/orders#finishedCardState') === "shown") {
+                finishedCard.CardWidget('expand');
+            }
+            finishedCard.on('collapsed.lte.cardwidget', function () {
+                console.log('setting finishedCardState to hidden');
+                sessionStorage.setItem('waiter/orders#finishedCardState', 'hidden');
+            });
+            finishedCard.on('expanded.lte.cardwidget', function () {
+                console.log('setting finishedCardState to shown');
+                sessionStorage.setItem('waiter/orders#finishedCardState', 'shown');
+            });
+        });
+    </script>
+{% endblock %}

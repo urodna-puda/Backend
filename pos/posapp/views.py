@@ -284,7 +284,31 @@ class Waiter:
 
     class Orders(WaiterLoginRequiredMixin, views.View):
         def get(self, request):
-            return Context(request, "waiter/orders.html").render()
+            context = Context(request, "waiter/orders.html")
+            context["waiting"] = ProductInTab.objects.filter(state=ProductInTab.ORDERED).order_by("orderedAt")
+            context["preparing"] = ProductInTab.objects.filter(state=ProductInTab.PREPARING).order_by("preparingAt")
+            context["prepared"] = ProductInTab.objects.filter(state=ProductInTab.TO_SERVE).order_by("preparedAt")
+            context["served"] = ProductInTab.objects.filter(state=ProductInTab.SERVED).order_by("orderedAt")
+            return context.render()
+
+        class Order(WaiterLoginRequiredMixin, views.View):
+            def get(self, request, id):
+                messages.info(request, "Well that was disappointing...")
+                return redirect(reverse("waiter/orders"))
+
+            class Bump(WaiterLoginRequiredMixin, views.View):
+                def get(self, request, id, count):
+                    try:
+                        product = ProductInTab.objects.get(id=id)
+                        for i in range(count):
+                            if not product.bump():
+                                messages.warning(request, "You attempted to bump the order beyond its capabilities, "
+                                                          "it can only take so much.")
+                                break
+                    except ProductInTab.DoesNotExist:
+                        messages.error(request, "The Product order can't be found and thus wasn't bumped.")
+                    return redirect(reverse("waiter/orders"))
+
 
 
 class Manager:
