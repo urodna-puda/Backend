@@ -6,8 +6,12 @@ from posapp.models import User, PaymentMethod, Product, ItemInProduct, Item
 class CreateUserForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'password', 'email', 'mobile_phone', 'is_waiter', 'is_manager',
-                  'is_admin', 'is_active']
+        fields = ['username', 'first_name', 'last_name', 'password1', 'password2', 'email', 'mobile_phone', 'is_waiter',
+                  'is_manager', 'is_admin', 'is_active']
+
+    password1 = forms.CharField(label="Password", widget=forms.PasswordInput)
+    password2 = forms.CharField(label="Password confirmation", widget=forms.PasswordInput,
+                                help_text="Enter the same password as above, for verification.")
 
     def __init__(self, *args, **kwargs):
         super(CreateUserForm, self).__init__(*args, **kwargs)
@@ -16,8 +20,24 @@ class CreateUserForm(forms.ModelForm):
                 visible.field.widget.attrs['class'] = 'form-control'
             elif isinstance(visible.field.widget, forms.widgets.EmailInput):
                 visible.field.widget.attrs['class'] = 'form-control'
+            elif isinstance(visible.field.widget, forms.widgets.PasswordInput):
+                visible.field.widget.attrs['class'] = 'form-control'
             elif isinstance(visible.field.widget, forms.widgets.CheckboxInput):
                 visible.field.widget.attrs['class'] = 'form-check-input'
+
+    def clean_password2(self):
+        password1 = self.cleaned_data.get("password1")
+        password2 = self.cleaned_data.get("password2")
+        if password1 and password2 and password1 != password2:
+            raise forms.ValidationError("The two passwords don't match. Please enter the same password twice.")
+        return password2
+
+    def save(self, commit=True):
+        user = super(CreateUserForm, self).save(commit=False)
+        user.set_password(self.cleaned_data["password1"])
+        if commit:
+            user.save()
+        return user
 
 
 class CreatePaymentMethodForm(forms.ModelForm):
