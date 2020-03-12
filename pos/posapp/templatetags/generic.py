@@ -5,4 +5,7 @@ register = template.Library()
 
 @register.filter
 def add_one(value):
-    return value + 1
+    try:
+        return value + 1
+    except TypeError:
+        return None
