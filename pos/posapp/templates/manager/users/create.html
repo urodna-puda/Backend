@@ -72,15 +72,18 @@
                                 {% endif %}
                             </div>
                             <div class="form-group">
-                                <label for="password">Password:</label>
-                                <input type="password" name="password" id="password" class="form-control">
-                                {% if form.password.errors %}
-                                    <div class="text-danger">{{ form.password.errors }}</div>
+                                <label for="{{ form.password1.id_for_label }}">Password:</label>
+                                {{ form.password1 }}
+                                {% if form.password1.errors %}
+                                    <div class="text-danger">{{ form.password1.errors }}</div>
                                 {% endif %}
                             </div>
                             <div class="form-group">
-                                <label for="password">Password check:</label>
-                                <input type="password" id="password-check" class="form-control">
+                                <label for="{{ form.password2.id_for_label }}">Password verification:</label>
+                                {{ form.password2 }}
+                                {% if form.password2.errors %}
+                                    <div class="text-danger">{{ form.password2.errors }}</div>
+                                {% endif %}
                             </div>
                             <div class="form-group form-check">
                                 {{ form.is_waiter }}
