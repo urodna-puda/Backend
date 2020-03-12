@@ -1,12 +1,29 @@
 {% extends "adminlte/login.html" %}
 {% load static %}
 
-{% block logo_href %}/{% endblock %}
 {% block logo_text %}<img src="{% static 'posapp/img/logo.svg' %}" style="width:100%;"/>{% endblock %}
 
-{% block form %}
+{% block login_form %}
     <form method="post">
         {% csrf_token %}
-        {{ form }}
+        <div class="form-group has-feedback">
+            <input name="username" class="form-control{% if form.username.errors %} is-invalid{% endif %}" placeholder="Username">
+            {% if form.username.errors %}
+                <span class="glyphicon glyphicon-user form-control-feedback text-danger">{{ form.username.errors }}</span>
+            {% endif %}
+        </div>
+        <div class="form-group has-feedback">
+            <input type="password" name="password" class="form-control{% if form.password.errors %} is-invalid{% endif %}" placeholder="Password">
+            {% if form.password.errors %}
+                <span class="glyphicon glyphicon-lock form-control-feedback text-danger">{{ form.password.errors }}</span>
+            {% endif %}
+        </div>
+        <div class="row">
+            <div class="col-xs-8">
+            </div>
+            <div class="col-xs-4">
+                <button type="submit" class="btn btn-primary btn-block btn-flat">Login</button>
+            </div>
+        </div>
     </form>
 {% endblock %}
