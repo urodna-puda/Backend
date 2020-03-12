@@ -2,6 +2,7 @@ from datetime import datetime
 from uuid import uuid4
 
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.db import models
 from django_countries.fields import CountryField
 from phonenumber_field.modelfields import PhoneNumberField
@@ -66,6 +67,7 @@ class Item(models.Model):
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
     name = models.CharField(max_length=1024, null=False)
     unitGroup = models.ForeignKey(UnitGroup, on_delete=models.PROTECT)
+    allows_fractions = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
@@ -89,6 +91,14 @@ class ItemInProduct(models.Model):
 
     class Meta:
         verbose_name_plural = "Items in products"
+
+    def clean(self):
+        if self.amount < 0:
+            raise ValidationError({"amount": "Amount can't be less than zero"})
+        if self.item.allows_fractions or self.amount.is_integer():
+            super(ItemInProduct, self).clean()
+        else:
+            raise ValidationError({"amount": "Item does not allow fractions"})
 
     def __str__(self):
         return f"{self.item} in {self.product}"
