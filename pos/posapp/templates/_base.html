@@ -2,11 +2,10 @@
 
 {% block javascript %}
     <script type="text/javascript">
-        window.FontAwesomeConfig = {autoReplaceSvg: false}
+        window.FontAwesomeConfig = { autoReplaceSvg: false }
     </script>
     <script src="https://kit.fontawesome.com/7635efe91d.js" crossorigin="anonymous"></script>
     {{ block.super }}
-    <script src="//{{ host }}:3000/socket.io/socket.io.js"></script>
     <script>
         $(function () {
             $('[data-toggle="tooltip"]').tooltip()
@@ -53,27 +52,6 @@
         jQuery.fn.invisible = function () {
             return this.css('visibility', 'hidden');
         };
-
-        var socket = io("http://{{ host }}:3000");
-
-        socket.on("connect", function () {
-            socket.emit('authenticate_request', {
-                "user": "{{ request.user.username }}",
-                "key": "{{ request.user.api_totp_now }}"
-            });
-        });
-        socket.on("authenticate_result", (message) => {
-            $(document).Toasts('create', {
-                body: message,
-                title: 'Connected',
-                icon: 'text-success fas fa-check',
-                autohide: true,
-                delay: 5000,
-            })
-        });
-        socket.on("waiters-ping", function (message) {
-            console.log("received waiters ping: "+message)
-        })
     </script>
 {% endblock %}
 

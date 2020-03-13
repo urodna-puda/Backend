@@ -104,22 +104,6 @@ class UserToggles(APIView):
         }, status.HTTP_200_OK)
 
 
-class UserTotpAuth(APIView):
-    def get(self, request, username, totp, format=None):
-        try:
-            user = User.objects.get(username=username)
-            if user.check_api_totp(totp):
-                return Response({
-                    'is_waiter': user.is_waiter,
-                    'is_manager': user.is_manager,
-                    'is_admin': user.is_admin,
-                }, status.HTTP_200_OK)
-            else:
-                return Response(status=status.HTTP_401_UNAUTHORIZED)
-        except User.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-
 class CurrencyToggleEnabled(APIView):
     is_text = "success\">is"
     isnt_text = "danger\">isn't"

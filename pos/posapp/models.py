@@ -1,7 +1,6 @@
 from datetime import datetime
 from uuid import uuid4
 
-import pyotp
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -22,7 +21,6 @@ class User(AbstractUser):
     current_till = models.ForeignKey("Till", null=True, on_delete=models.SET_NULL)
     current_temp_tab = models.ForeignKey("Tab", null=True, on_delete=models.SET_NULL)
     mobile_phone = PhoneNumberField()
-    totp_secret = models.CharField(max_length=16, default=pyotp.random_base32)
 
     @property
     def requires_admin_to_toggle(self):
@@ -31,13 +29,6 @@ class User(AbstractUser):
     @property
     def name(self):
         return f"{self.first_name} {self.last_name}"
-
-    @property
-    def api_totp_now(self):
-        return pyotp.TOTP(self.totp_secret).now()
-
-    def check_api_totp(self, totp):
-        return pyotp.TOTP(self.totp_secret).verify(totp)
 
     def can_grant(self, target, role):
         return (self.username != target.username or role not in ("admin", "active")) and \
