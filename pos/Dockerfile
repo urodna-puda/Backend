@@ -14,4 +14,4 @@ RUN apk update &&\
 
 COPY . /usr/src/pos/
 
-ENTRYPOINT ["/usr/src/app/entrypoint.sh"]
+ENTRYPOINT ["/usr/src/pos/entrypoint.sh"]
