@@ -2,6 +2,7 @@ import decimal
 import uuid
 
 # Create your views here.
+import pyotp
 from django import views
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -14,6 +15,7 @@ from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProd
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
     PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item
 from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, AdminLoginRequiredMixin
+from puda import settings
 
 
 class Context:
@@ -22,8 +24,10 @@ class Context:
         self.waiter_role = request.user.is_waiter
         self.manager_role = request.user.is_manager
         self.admin_role = request.user.is_admin
+        self.host = settings.HOST
         self.notifications = []
         self.data = {}
+
         self.request = request
         self.template_name = template_name
 
@@ -76,7 +80,7 @@ class Context:
         self.data[key] = value
 
     def __len__(self):
-        return 5 + len(self.data)
+        return 6 + len(self.data)
 
     def __contains__(self, item):
         return item in self.data
@@ -87,6 +91,7 @@ class Context:
         yield 'manager_role', self.manager_role
         yield 'admin_role', self.admin_role
         yield 'notifications', self.notifications
+        yield 'host', self.host
         for key in self.data:
             yield key, self.data[key]
 
