@@ -17,7 +17,7 @@ services:
     image: postgres:12.0-alpine
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-    enevironment:
+    environment:
       - POSTGRES_USER=puda
       - POSTGRES_PASSWORD=puda
       - PUSTGRES_DB=puda
