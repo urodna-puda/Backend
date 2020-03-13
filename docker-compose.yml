@@ -7,8 +7,6 @@ services:
     volumes:
       - static_volume:/usr/src/pos/static/
       - ./pos/:/usr/src/pos/
-    expose:
-      - 8000
     env_file:
       - ./.env.dev
     depends_on:
@@ -29,6 +27,11 @@ services:
       - 1337:80
     depends_on:
       - web
+  node:
+    build: ./node
+    command: npm run
+    ports:
+      - 3000:3000
 
 volumes:
   postgres_data:
