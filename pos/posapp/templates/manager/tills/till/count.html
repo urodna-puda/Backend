@@ -155,7 +155,7 @@
     <script>
         $('.count-input').change(function () {
             let input = $(this);
-            let button = $('#reset-' + input.data('id'));
+            let button = $(`#reset-${input.data('id')}`);
             let newVal = Number(input.val());
             let originalVal = Number(input.data('original'));
             if (newVal === originalVal) {
@@ -167,7 +167,7 @@
         $('.reset-count').click(function () {
             let button = $(this);
             let id = button.data('id');
-            let input = $('#counted-' + id);
+            let input = $(`#counted-${id}`);
             input.val(input.data('original'));
             button.invisible();
         });
