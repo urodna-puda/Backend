@@ -132,19 +132,19 @@ def prepare_tab_dict(tab):
         'products': []
     }
 
-    products_list = ProductInTab.objects.filter(tab=tab)
+    order_list = ProductInTab.objects.filter(tab=tab)
     products = {}
-    for product in products_list:
-        if product.product.id not in products:
-            products[product.product.id] = {
-                'id': product.product.id,
-                'name': product.product.name,
+    for order in order_list:
+        if order.product.id not in products:
+            products[order.product.id] = {
+                'id': order.product.id,
+                'name': order.product.name,
                 'variants': {},
             }
 
-        if product.note not in products[product.product.id]['variants']:
-            products[product.product.id]['variants'][product.note] = {
-                'note': product.note,
+        if order.note not in products[order.product.id]['variants']:
+            products[order.product.id]['variants'][order.note] = {
+                'note': order.note,
                 'orderedCount': 0,
                 'preparingCount': 0,
                 'toServeCount': 0,
@@ -154,31 +154,33 @@ def prepare_tab_dict(tab):
                 'showToServe': False,
                 'showServed': False,
                 'total': 0,
+                'orders': [],
             }
 
-        if product.state == ProductInTab.ORDERED:
-            products[product.product.id]['variants'][product.note]['orderedCount'] += 1
-            products[product.product.id]['variants'][product.note]['showOrdered'] = True
-        elif product.state == ProductInTab.PREPARING:
-            products[product.product.id]['variants'][product.note]['preparingCount'] += 1
-            products[product.product.id]['variants'][product.note]['showPreparing'] = True
-        elif product.state == ProductInTab.TO_SERVE:
-            products[product.product.id]['variants'][product.note]['toServeCount'] += 1
-            products[product.product.id]['variants'][product.note]['showToServe'] = True
-        elif product.state == ProductInTab.SERVED:
-            products[product.product.id]['variants'][product.note]['servedCount'] += 1
-            products[product.product.id]['variants'][product.note]['showServed'] = True
+        if order.state == ProductInTab.ORDERED:
+            products[order.product.id]['variants'][order.note]['orderedCount'] += 1
+            products[order.product.id]['variants'][order.note]['showOrdered'] = True
+        elif order.state == ProductInTab.PREPARING:
+            products[order.product.id]['variants'][order.note]['preparingCount'] += 1
+            products[order.product.id]['variants'][order.note]['showPreparing'] = True
+        elif order.state == ProductInTab.TO_SERVE:
+            products[order.product.id]['variants'][order.note]['toServeCount'] += 1
+            products[order.product.id]['variants'][order.note]['showToServe'] = True
+        elif order.state == ProductInTab.SERVED:
+            products[order.product.id]['variants'][order.note]['servedCount'] += 1
+            products[order.product.id]['variants'][order.note]['showServed'] = True
 
-        products[product.product.id]['variants'][product.note]['total'] += product.price
+        products[order.product.id]['variants'][order.note]['orders'].append(order)
+        products[order.product.id]['variants'][order.note]['total'] += order.price
 
-    for product in products:
+    for product_id in products:
         variants = []
-        for variant in products[product]['variants']:
-            variants.append(products[product]['variants'][variant])
+        for variant in products[product_id]['variants']:
+            variants.append(products[product_id]['variants'][variant])
 
         out['products'].append({
-            'id': products[product]['id'],
-            'name': products[product]['name'],
+            'id': products[product_id]['id'],
+            'name': products[product_id]['name'],
             'variants': variants,
         })
 
