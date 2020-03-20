@@ -25,7 +25,7 @@ services:
       - puda
   nginx:
     build: ./nginx
-    vlumes:
+    volumes:
       - static_volume:/var/www/static
     ports:
       - 1337:80
