@@ -2,13 +2,31 @@
 
 {% block javascript %}
     <script type="text/javascript">
-        window.FontAwesomeConfig = { autoReplaceSvg: false }
+        window.FontAwesomeConfig = {autoReplaceSvg: false}
     </script>
     <script src="https://kit.fontawesome.com/7635efe91d.js" crossorigin="anonymous"></script>
     {{ block.super }}
     <script>
         $(function () {
             $('[data-toggle="tooltip"]').tooltip()
+        });
+
+        $('[data-toggle="collapse-toggle"]').each(function () {
+            let button = $(this);
+            let target = $(`${button.data('target')}`);
+            button.on('click', function () {
+                target.collapse('toggle');
+            });
+            target.on('shown.bs.collapse', function () {
+                let icon = button.children('i').first();
+                icon.removeClass('fa-plus');
+                icon.addClass('fa-minus');
+            });
+            target.on('hidden.bs.collapse', function () {
+                let icon = button.children('i').first();
+                icon.removeClass('fa-minus');
+                icon.addClass('fa-plus');
+            });
         });
 
         function getCookie(name) {
