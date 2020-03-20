@@ -223,6 +223,17 @@ class ProductInTab(models.Model):
         self.save()
         return True
 
+    @property
+    def color(self):
+        if self.state == ProductInTab.ORDERED:
+            return "warning"
+        if self.state == ProductInTab.PREPARING:
+            return "secondary"
+        if self.state == ProductInTab.TO_SERVE:
+            return "info"
+        if self.state == ProductInTab.SERVED:
+            return "success"
+
     def __str__(self):
         return f"{self.product} in {self.tab}"
 
