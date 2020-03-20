@@ -59,7 +59,7 @@ class Orders:
                     order = ProductInTab.objects.get(id=id)
                     channel_layer = get_channel_layer()
                     async_to_sync(channel_layer.group_send)(
-                        "manager_notifications",
+                        "notifications_manager",
                         {
                             "type": "notification.void_request",
                             "request_id": uuid.uuid4(),

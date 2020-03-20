@@ -2,12 +2,16 @@ from channels.generic.websocket import WebsocketConsumer
 import json
 
 
-class ItemVoidRequestConsumer(WebsocketConsumer):
-    def connect(self):
-        self.room_name="waiter/tickers/void"
+class Notifications:
+    class Manager(WebsocketConsumer):
+        groups = ["notifications_manager"]
 
-    def disconnect(self, code):
-        pass
+        def connect(self):
+            self.user = self.scope["user"]
 
-    def receive(self, text_data=None, bytes_data=None):
-        pass
+            if not self.user.is_authenticated:
+                self.close(4901)
+            elif not self.user.is_manager:
+                self.close(4903)
+            else:
+                self.accept()
