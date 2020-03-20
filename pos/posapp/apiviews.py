@@ -1,9 +1,14 @@
+import uuid
+
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from posapp.models import Tab, Product, User, PaymentMethod, Currency
+from posapp.models import Tab, Product, User, PaymentMethod, Currency, ProductInTab
+from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin
 from posapp.serializers import TabListSerializer
 
 
@@ -44,6 +49,36 @@ class TabOrder(APIView):
             return Response("Product not found", status.HTTP_404_NOT_FOUND)
         tab.order_product(product, request.data['amount'], request.data['note'], request.data['state'])
         return Response("", status.HTTP_201_CREATED)
+
+
+class Orders:
+    class Order:
+        class RequestVoid(WaiterLoginRequiredMixin, APIView):
+            def get(self, request, id, format=None):
+                try:
+                    order = ProductInTab.objects.get(id=id)
+                    channel_layer = get_channel_layer()
+                    async_to_sync(channel_layer.group_send)(
+                        "manager_notifications",
+                        {
+                            "type": "notification.void_request",
+                            "request_id": uuid.uuid4(),
+                            "user": request.user,
+                            "order": order,
+                        },
+                    )
+                    return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+                except ProductInTab.DoesNotExist:
+                    return Response(status=status.HTTP_404_NOT_FOUND)
+
+        class Void(ManagerLoginRequiredMixin, APIView):
+            def get(self, request, id, format=None):
+                try:
+                    order = ProductInTab.objects.get(id=id)
+                    order.delete()
+                    return Response(status=status.HTTP_200_OK)
+                except ProductInTab.DoesNotExist:
+                    return Response(status=status.HTTP_404_NOT_FOUND)
 
 
 class UserToggles(APIView):
