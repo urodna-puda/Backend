@@ -17,12 +17,12 @@
             button.on('click', function () {
                 target.collapse('toggle');
             });
-            target.on('shown.bs.collapse', function () {
+            target.on('show.bs.collapse', function () {
                 let icon = button.children('i').first();
                 icon.removeClass('fa-plus');
                 icon.addClass('fa-minus');
             });
-            target.on('hidden.bs.collapse', function () {
+            target.on('hide.bs.collapse', function () {
                 let icon = button.children('i').first();
                 icon.removeClass('fa-minus');
                 icon.addClass('fa-plus');
