@@ -93,13 +93,16 @@ DATABASES = {
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": os.environ.get("CHANNELS_BACKEND", "channels.layers.InMemoryChannelLayer"),
-        "CONFIG": {
-            "hosts": [
-                (os.environ.get("CHANNELS_HOST", ""), int(os.environ.get("CHANNELS_PORT", "0")))
-            ],
-        },
+        "CONFIG": {},
     },
 }
+
+if os.environ.get("CHANNELS_HOST", ""):
+    config = CHANNEL_LAYERS["default"]["CONFIG"]
+    if "hosts" not in config:
+        config["hosts"] = []
+
+    config["hosts"].append((os.environ.get("CHANNELS_HOST", ""), int(os.environ.get("CHANNELS_PORT", "0"))))
 
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators
