@@ -188,11 +188,13 @@ class ProductInTab(models.Model):
     PREPARING = 'P'
     TO_SERVE = 'T'
     SERVED = 'S'
+    VOIDED = 'V'
     SERVING_STATES = [
         (ORDERED, "Ordered"),
         (PREPARING, "Being prepared"),
         (TO_SERVE, "To be served"),
         (SERVED, "Served"),
+        (VOIDED, "Voided"),
     ]
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
@@ -203,6 +205,7 @@ class ProductInTab(models.Model):
     preparingAt = models.DateTimeField(null=True, blank=True)
     preparedAt = models.DateTimeField(null=True, blank=True)
     servedAt = models.DateTimeField(null=True, blank=True)
+    voidedAt = models.DateTimeField(null=True, blank=True)
     note = models.TextField(null=True, blank=True)
 
     class Meta:
@@ -233,6 +236,46 @@ class ProductInTab(models.Model):
             return "info"
         if self.state == ProductInTab.SERVED:
             return "success"
+
+    @property
+    def count_price(self):
+        return self.state not in [ProductInTab.VOIDED, ]
+
+    def void(self):
+        self.state = ProductInTab.VOIDED
+        self.voidedAt = datetime.utcnow()
+        self.save()
+
+    def clean(self):
+        def raise_over(state):
+            raise ValidationError(f"Some timestamps are set when the state ({state}) does not allow it")
+
+        def raise_under(state):
+            raise ValidationError(f"The order is missing some timestamps required at its state ({state})")
+
+        if self.state == ProductInTab.ORDERED:
+            if self.preparingAt or self.preparedAt or self.servedAt or self.voidedAt:
+                raise_over(self.state)
+            if not self.orderedAt:
+                raise_under(self.state)
+        if self.state == ProductInTab.PREPARING:
+            if self.preparedAt or self.servedAt or self.voidedAt:
+                raise_over(self.state)
+            if not self.orderedAt or not self.preparingAt:
+                raise_under(self.state)
+        if self.state == ProductInTab.TO_SERVE:
+            if self.servedAt or self.voidedAt:
+                raise_over(self.state)
+            if not self.orderedAt or not self.preparingAt or not self.preparedAt:
+                raise_under(self.state)
+        if self.state == ProductInTab.SERVED:
+            if self.voidedAt:
+                raise_over(self.state)
+            if not self.orderedAt or not self.preparingAt or not self.preparedAt or not self.servedAt:
+                raise_under(self.state)
+        if self.state == ProductInTab.VOIDED:
+            if not self.voidedAt:
+                raise_under(self.state)
 
     def __str__(self):
         return f"{self.product} in {self.tab}"
@@ -411,3 +454,35 @@ class PaymentInTab(models.Model):
     @property
     def converted_value(self):
         return round(float(self.amount) * self.method.paymentMethod.currency.ratio, 3)
+
+
+class OrderVoidRequest(models.Model):
+    APPROVED = 'A'
+    DENIED = 'D'
+    RESOLUTIONS = [
+        (APPROVED, 'Approved'),
+        (DENIED, 'Denied'),
+    ]
+
+    id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
+    order = models.ForeignKey(ProductInTab, on_delete=models.CASCADE)
+    waiter = models.ForeignKey(User, on_delete=models.PROTECT, related_name='voids_requested')
+    manager = models.ForeignKey(User, on_delete=models.PROTECT, related_name='voids_approved')
+    timestamp = models.DateTimeField(auto_now_add=True, editable=False)
+    resolution = models.CharField(max_length=1, choices=RESOLUTIONS, blank=True, null=True)
+
+    def approve(self, manager):
+        if not self.resolution:
+            self.resolution = OrderVoidRequest.APPROVED
+            self.manager = manager
+            self.save()
+            self.order.void()
+            return True
+        else:
+            return False
+
+    def deny(self, manager):
+        if not self.resolution:
+            self.resolution = OrderVoidRequest.DENIED
+            self.manager = manager
+            self.save()
