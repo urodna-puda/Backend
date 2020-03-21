@@ -80,11 +80,19 @@
                                                         <td class="col">{{ order.preparedAt|empty_none }}</td>
                                                         <td class="col">{{ order.servedAt|empty_none }}</td>
                                                         <td class="col-1">
-                                                            <button type="button" class="btn btn-tool">
-                                                                <i class="fas fa-trash" data-toggle="tooltip"
-                                                                   data-position="top"
-                                                                   title="Void item"></i>
-                                                            </button>
+                                                            {% ifnotequal order.state 'V' %}
+                                                                <button type="button"
+                                                                        class="btn btn-tool void-order-button"
+                                                                        data-order-id="{{ order.id }}"
+                                                                        data-order-state="{{ order.state }}"
+                                                                        data-order-product-name="{{ product.name }}"
+                                                                        {% if manager_role %}data-order-void-url="{% url "waiter/orders/order/void" order.id %}?next={% url "waiter/tabs/tab" id %}"{% endif %}
+                                                                        data-order-request-url="{% url "waiter/orders/order/requestVoid" order.id %}?next={% url "waiter/tabs/tab" id %}">
+                                                                    <i class="fas fa-trash" data-toggle="tooltip"
+                                                                       data-position="top"
+                                                                       title="Void item"></i>
+                                                                </button>
+                                                            {% endifnotequal %}
                                                         </td>
                                                     </tr>
                                                 {% endfor %}
@@ -226,6 +234,33 @@
                 </div>
             </div>
         </div>
+        <div class="modal fade" id="confirmVoidRequestModal" tabindex="-1" role="dialog"
+             aria-labelledby="confirmVoidRequestModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmVoidRequestModalLabel">Confirm void requestt</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="confirmVoidRequestModalBody">
+                        ...
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        {% if manager_role %}
+                            <button type="button" class="btn btn-warning" id="confirmVoidRequestModalButtonVoid">Void
+                                immediately
+                            </button>
+                        {% endif %}
+                        <button type="button" class="btn btn-primary" id="confirmVoidRequestModalButtonRequest">Request
+                            void
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <!--FAKE FORMS-->
         {% for payment in payments %}
             <form action="{% url "waiter/tabs/tab" id %}" method="post" id="deletePayment{{ payment.id }}Form">
@@ -238,4 +273,25 @@
             <input type="hidden" name="close" value="true"/>
         </form>
     {% endif %}
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script>
+        $(".void-order-button").on('click', function () {
+            let button = $(this);
+            let productName = button.data('order-product-name'),
+                state = button.data('order-state');
+            $('#confirmVoidRequestModalBody').html(`Are you sure you want to request void of product ${productName} currently in state ${state}?`)
+            $('#confirmVoidRequestModal').modal('show');
+            {% if manager_role %}
+                $('#confirmVoidRequestModalButtonVoid').off('click').on('click', function () {
+                    window.location = button.data('order-void-url');
+                });
+            {% endif %}
+            $('#confirmVoidRequestModalButtonRequest').off('click').on('click', function () {
+                window.location = button.data('order-request-url');
+            });
+        })
+    </script>
 {% endblock %}

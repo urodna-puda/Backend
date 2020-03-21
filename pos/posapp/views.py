@@ -2,6 +2,8 @@ import decimal
 import uuid
 
 # Create your views here.
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django import views
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -12,7 +14,7 @@ from django.urls import reverse
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet, \
     CreateItemForm
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
-    PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item
+    PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest
 from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, AdminLoginRequiredMixin
 
 
@@ -310,6 +312,35 @@ class Waiter:
                     except ProductInTab.DoesNotExist:
                         messages.error(request, "The Product order can't be found and thus wasn't bumped.")
                     return redirect(reverse("waiter/orders"))
+
+            class RequestVoid(WaiterLoginRequiredMixin, views.View):
+                def get(self, request, id, format=None):
+                    try:
+                        order = ProductInTab.objects.get(id=id)
+                        void_request = OrderVoidRequest(order=order, waiter=request.user)
+                        void_request.save()
+                        channel_layer = get_channel_layer()
+                        async_to_sync(channel_layer.group_send)(
+                            "notifications_manager",
+                            {
+                                "type": "notification.void_request",
+                                "void_request": void_request,
+                            },
+                        )
+                        messages.success(request, f"Void of a {order.product.name} requested")
+                    except ProductInTab.DoesNotExist:
+                        messages.error(request, "The Product order can't be found and thus void wasn't requested.")
+                    return redirect(request.GET["next"] if "next" in request.GET else reverse("waiter/orders"))
+
+            class Void(ManagerLoginRequiredMixin, views.View):
+                def get(self, request, id):
+                    try:
+                        order = ProductInTab.objects.get(id=id)
+                        order.void()
+                        messages.success(request, f"Order of a {order.product.name} voided")
+                    except ProductInTab.DoesNotExist:
+                        messages.error(request, "The Product order can't be found and thus wasn't voided.")
+                    return redirect(request.GET["next"] if "next" in request.GET else reverse("waiter/orders"))
 
 
 
