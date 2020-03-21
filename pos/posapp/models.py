@@ -236,15 +236,18 @@ class ProductInTab(models.Model):
             return "info"
         if self.state == ProductInTab.SERVED:
             return "success"
+        if self.state == ProductInTab.VOIDED:
+            return "danger"
 
     @property
     def count_price(self):
         return self.state not in [ProductInTab.VOIDED, ]
 
     def void(self):
-        self.state = ProductInTab.VOIDED
-        self.voidedAt = datetime.utcnow()
-        self.save()
+        if self.state != ProductInTab.VOIDED:
+            self.state = ProductInTab.VOIDED
+            self.voidedAt = datetime.utcnow()
+            self.save()
 
     def clean(self):
         def raise_over(state):
