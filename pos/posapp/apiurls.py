@@ -5,7 +5,6 @@ urlpatterns = [
     path('tabs', apiviews.OpenTabs.as_view()),
     path('tabs/all', apiviews.AllTabs.as_view()),
     path('tabs/<uuid:id>/order', apiviews.TabOrder.as_view()),
-    path('orders/<uuid:id>/requestVoid', apiviews.Orders.Order.RequestVoid.as_view()),
     path('orders/<uuid:id>/void', apiviews.Orders.Order.Void.as_view()),
     path('users/<str:username>/toggle/<str:role>', apiviews.UserToggles.as_view()),
     path('currencies/<int:id>/toggleEnabled', apiviews.CurrencyToggleEnabled.as_view()),
