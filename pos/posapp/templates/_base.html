@@ -1,4 +1,5 @@
 {% extends "adminlte/base.html" %}
+{% load static %}
 
 {% block javascript %}
     <script type="text/javascript">
@@ -70,6 +71,20 @@
         jQuery.fn.invisible = function () {
             return this.css('visibility', 'hidden');
         };
+
+        {% if manager_role %}
+            const managerNotificationsSocket = new WebSocket(`ws://${window.location.host}/ws/posapp/notifications/manager`);
+            managerNotificationsSocket.onmessage = function (e) {
+                const data = JSON.parse(e.data);
+                $(document).Toasts('create', {
+                    body: `<a id="toast"></a>User ${data.user.username} is requesting void of product ${data.order.product_name} in tab ${data.order.tab_name}`,
+                    title: 'Void request',
+                    icon: 'text-success fas fa-check fa-lg',
+                    autohide: false,
+                    close: false,
+                });
+            };
+        {% endif %}
     </script>
 {% endblock %}
 
