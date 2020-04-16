@@ -76,13 +76,15 @@
             const managerNotificationsSocket = new WebSocket(`ws://${window.location.host}/ws/posapp/notifications/manager`);
             managerNotificationsSocket.onmessage = function (e) {
                 const data = JSON.parse(e.data);
-                $(document).Toasts('create', {
-                    body: `<a id="toast"></a>User ${data.user.username} is requesting void of product ${data.order.product_name} in tab ${data.order.tab_name}`,
-                    title: 'Void request',
-                    icon: 'text-success fas fa-check fa-lg',
-                    autohide: false,
-                    close: false,
-                });
+                if (data.notification_type === "void_request") {
+                    $(document).Toasts('create', {
+                        body: `<a id="toast"></a>User ${data.user.username} is requesting void of product ${data.order.product_name} in tab ${data.order.tab_name} <a href={% url "manager/voidrequests" %}>Resolve it now</a>`,
+                        title: 'Void request',
+                        icon: 'text-success fas fa-check fa-lg',
+                        autohide: false,
+                        close: true,
+                    });
+                }
             };
         {% endif %}
     </script>
