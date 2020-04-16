@@ -9,7 +9,7 @@
     {{ block.super }}
     <script>
         $(function () {
-            $('[data-toggle="tooltip"]').tooltip()
+            $('[data-toggle="tooltip"]').tooltip({sanitize: false})
         });
 
         $('[data-toggle="collapse-toggle"]').each(function () {
