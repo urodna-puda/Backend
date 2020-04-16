@@ -72,6 +72,11 @@
             return this.css('visibility', 'hidden');
         };
 
+        const userNotificationsSocket = new WebSocket(`ws://${window.location.host}/ws/posapp/notifications/user`);
+        userNotificationsSocket.onmessage = function (e) {
+            const data = JSON.parse(e.data);
+        }
+
         {% if manager_role %}
             const managerNotificationsSocket = new WebSocket(`ws://${window.location.host}/ws/posapp/notifications/manager`);
             managerNotificationsSocket.onmessage = function (e) {

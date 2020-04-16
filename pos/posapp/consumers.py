@@ -3,6 +3,20 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer, JsonWebsocket
 
 
 class Notifications:
+    class User(JsonWebsocketConsumer):
+        def connect(self):
+            self.user = self.scope["user"]
+
+            if not self.user.is_authenticated:
+                self.close(4401)
+            else:
+                self.accept()
+
+            self.channel_layer.group_add(f"user-{self.user.username}", self.channel_name)
+
+        def disconnect(self, code):
+            self.channel_layer.group_discard(f"user-{self.user.username}", self.channel_name)
+
     class Manager(JsonWebsocketConsumer):
         groups = ["notifications_manager"]
 
