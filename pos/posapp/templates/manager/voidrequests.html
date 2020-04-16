@@ -60,7 +60,7 @@
                                     </td>
                                     <td class="col">{{ void_request.requestedAt }}</td>
                                     <td class="col-1 text-center">
-                                        <a href="{% url "manager/voidrequests/resolve" void_request.id "accept" %}"
+                                        <a href="{% url "manager/voidrequests/resolve" void_request.id "approve" %}"
                                            class="btn btn-tool" data-toggle="tooltip"
                                            data-position="top" title="Accept">
                                             <i class="fas fa-check"></i>
@@ -130,7 +130,7 @@
                                         at {{ void_request.resolvedAt }}
                                     </td>
                                     <td class="col-1">
-                                        {% ifequal void_request.resolution "R" %}
+                                        {% ifequal void_request.resolution "A" %}
                                             <i class="text-success fas fa-check" data-toggle="tooltip"
                                                title="Accepted"></i>
                                         {% else %}

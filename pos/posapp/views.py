@@ -7,6 +7,7 @@ from channels.layers import get_channel_layer
 from django import views
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.db.models import Q, ProtectedError
 from django.shortcuts import render, redirect
 from django.urls import reverse
@@ -352,6 +353,7 @@ class Waiter:
                     try:
                         order = ProductInTab.objects.get(id=id)
                         void_request = OrderVoidRequest(order=order, waiter=request.user)
+                        void_request.clean()
                         void_request.save()
                         channel_layer = get_channel_layer()
                         async_to_sync(channel_layer.group_send)(
@@ -362,6 +364,8 @@ class Waiter:
                             },
                         )
                         messages.success(request, f"Void of a {order.product.name} requested")
+                    except ValidationError as err:
+                        messages.error(request, err.message)
                     except ProductInTab.DoesNotExist:
                         messages.error(request, "The Product order can't be found and thus void wasn't requested.")
                     return redirect(request.GET["next"] if "next" in request.GET else reverse("waiter/orders"))
