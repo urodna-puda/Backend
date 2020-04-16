@@ -620,6 +620,36 @@ class Manager:
 
                     return context.render()
 
+    class VoidRequests(ManagerLoginRequiredMixin, views.View):
+        def get(self, request):
+            context = Context(request, "manager/voidrequests.html")
+            context["open_requests"] = OrderVoidRequest.objects.filter(resolution__isnull=True)
+            context.add_pagination_context(OrderVoidRequest.objects.exclude(resolution__isnull=True), "closed_requests")
+            return context.render()
+
+        class Resolve(ManagerLoginRequiredMixin, views.View):
+            def get(self, request, id, resolution):
+                if resolution not in ["approve", "reject"]:
+                    messages.error(request, f"The specified resolution '{resolution}' is not valid. "
+                                            "It must be either approve or reject.")
+                else:
+                    try:
+                        void_request = OrderVoidRequest.objects.get(id=id)
+                        if resolution == "approve" and void_request.approve(request.user):
+                            messages.success(request, f"The request from {void_request.waiter.name} "
+                                                          f"to void {void_request.order.product.name} was approved.")
+                        elif resolution == "reject" and void_request.reject(request.user):
+                            messages.success(request, f"The request from {void_request.waiter.name} "
+                                                      f"to void {void_request.order.product.name} was rejected.")
+                        else:
+                            messages.warning(request, f"The request from {void_request.waiter.name} "
+                                                      f"to void {void_request.order.product.name} was already "
+                                                      f"{void_request.get_resolution_display().lower()} earlier.")
+                    except OrderVoidRequest.DoesNotExist:
+                        messages.error(request, "The specified Void request does not exist.")
+
+                return redirect(reverse("manager/voidrequests"))
+
 
 class Admin:
     class Finance:

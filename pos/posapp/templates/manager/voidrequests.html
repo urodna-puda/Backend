@@ -1,0 +1,142 @@
+{% extends "_base.html" %}
+{% load generic %}
+
+{% block page_name %}
+    <i class="fas fa-trash"></i>
+    Void requests
+{% endblock %}
+
+{% block no_description %}{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager" %}">Manager</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Void requests</li>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header border-0">
+                        <h2 class="card-title">
+                            <i class="fas fa-table"></i>
+                            Current
+                        </h2>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped table-hover table-valign-middle">
+                            <thead>
+                            <tr class="d-flex">
+                                <th scope="col" class="col">Waiter</th>
+                                <th scope="col" class="col">Product</th>
+                                <th scope="col" class="col">Requested</th>
+                                <th scope="col" class="col-1">&nbsp;</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for open_request in open_requests %}
+                                <tr class="d-flex">
+                                    <td class="col">{{ open_request.waiter.name }}</td>
+                                    <td class="col">
+                                        <span data-toggle="tooltip" data-position="top" data-html="true"
+                                              title="<table>
+                                              <tr><td>State</td><td>{{ open_request.order.get_state_display }}</td></tr>
+                                              <tr><td>Tab</td><td>{{ open_request.order.tab.name }}<td></tr>
+                                              <tr><td>Ordered</td><td>{{ open_request.order.orderedAt }}</td></tr>
+                                              {% if open_request.order.preparingAt %}
+                                                <tr><td>Preparing</td><td>{{ open_request.order.preparingAt }}</td></tr>
+                                                {% if open_request.order.preparedAt %}
+                                                    <tr><td>Prepared</td><td>{{ open_request.order.preparedAt }}</td></tr>
+                                                    {% if open_request.order.servedAt %}
+                                                        <tr><td>Served</td><td>{{ open_request.order.servedAt }}</td></tr>
+                                                    {% endif %}
+                                                {% endif %}
+                                              {% endif %}
+                                              </table>">
+                                            {{ open_request.order.product.name }}
+                                        </span>
+                                    </td>
+                                    <td class="col">{{ open_request.timestamp }}</td>
+                                    <td class="col-1 text-center">
+                                        <a href="{% url "manager/voidrequests/resolve" open_request.id "accept" %}"
+                                           class="btn btn-tool" data-toggle="tooltip"
+                                           data-position="top" title="Accept">
+                                            <i class="fas fa-check"></i>
+                                        </a>
+                                        <a href="{% url "manager/voidrequests/resolve" open_request.id "reject" %}"
+                                           class="btn btn-tool" data-toggle="tooltip"
+                                           data-position="top" title="Reject">
+                                            <i class="fas fa-times"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--MODALS-->
+    <div class="modal fade" id="createProductModal" tabindex="-1" role="dialog"
+         aria-labelledby="createProductModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createProductModalLabel">New product</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    {% if create_product_form.non_field_errors %}
+                        <div class="alert alert-warning alert-dismissible fade show">
+                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                            {{ create_product_form.non_field_errors }}
+                        </div>
+                    {% endif %}
+                    <form action="{% url "admin/menu/products" %}" method="post" id="createProductForm">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="{{ create_product_form.name.id_for_label }}">Name</label>
+                            {{ create_product_form.name }}
+                            {% if create_product_form.name.errors %}
+                                <div class="text-danger">{{ create_product_form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ create_product_form.price.id_for_label }}">Price</label>
+                            {{ create_product_form.price }}
+                            {% if create_product_form.price.errors %}
+                                <div class="text-danger">{{ create_product_form.price.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group form-check">
+                            {{ create_product_form.enabled }}
+                            <label class="form-check-label"
+                                   for="{{ create_product_form.enabled.id_for_label }}">Enabled</label>
+                            {% if create_product_form.enabled.errors %}
+                                <div class="text-danger">{{ create_product_form.enabled.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary" form="createProductForm">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_head %}
+    <style>
+        .tooltip-inner {
+            max-width: 600px;
+        }
+    </style>
+{% endblock %}
