@@ -461,10 +461,10 @@ class PaymentInTab(models.Model):
 
 class OrderVoidRequest(models.Model):
     APPROVED = 'A'
-    DENIED = 'D'
+    REJECTED = 'R'
     RESOLUTIONS = [
         (APPROVED, 'Approved'),
-        (DENIED, 'Denied'),
+        (REJECTED, 'Rejected'),
     ]
 
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
@@ -488,7 +488,7 @@ class OrderVoidRequest(models.Model):
 
     def reject(self, manager):
         if not self.resolution:
-            self.resolution = OrderVoidRequest.DENIED
+            self.resolution = OrderVoidRequest.REJECTED
             self.manager = manager
             self.resolvedAt = datetime.now()
             self.save()
@@ -501,6 +501,6 @@ class OrderVoidRequest(models.Model):
             raise ValidationError("It appears there already is another unresolved request associated with this order.")
         if self.order.state == ProductInTab.VOIDED:
             raise ValidationError("The order is already voided.")
-        
+
         if bool(self.resolution) != bool(self.resolvedAt):
             raise ValidationError("Resolution and resolution timestamp must either be both set or both None.")
