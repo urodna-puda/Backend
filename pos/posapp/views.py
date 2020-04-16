@@ -648,6 +648,7 @@ class Admin:
         class Deposits(AdminLoginRequiredMixin, views.View):
             def get(self, request):
                 context = Context(request, 'admin/finance/deposits/index.html')
+
                 return context.render()
 
             class Deposit(AdminLoginRequiredMixin, views.View):
