@@ -471,13 +471,15 @@ class OrderVoidRequest(models.Model):
     order = models.ForeignKey(ProductInTab, on_delete=models.CASCADE)
     waiter = models.ForeignKey(User, on_delete=models.PROTECT, related_name='voids_requested')
     manager = models.ForeignKey(User, on_delete=models.PROTECT, related_name='voids_approved', null=True)
-    timestamp = models.DateTimeField(auto_now_add=True, editable=False)
+    requestedAt = models.DateTimeField(auto_now_add=True, editable=False)
+    resolvedAt = models.DateTimeField(null=True)
     resolution = models.CharField(max_length=1, choices=RESOLUTIONS, blank=True, null=True)
 
     def approve(self, manager):
         if not self.resolution:
             self.resolution = OrderVoidRequest.APPROVED
             self.manager = manager
+            self.resolvedAt = datetime.now()
             self.save()
             self.order.void()
             return True
@@ -488,6 +490,7 @@ class OrderVoidRequest(models.Model):
         if not self.resolution:
             self.resolution = OrderVoidRequest.DENIED
             self.manager = manager
+            self.resolvedAt = datetime.now()
             self.save()
             return True
         else:
@@ -498,3 +501,6 @@ class OrderVoidRequest(models.Model):
             raise ValidationError("It appears there already is another unresolved request associated with this order.")
         if self.order.state == ProductInTab.VOIDED:
             raise ValidationError("The order is already voided.")
+        
+        if bool(self.resolution) != bool(self.resolvedAt):
+            raise ValidationError("Resolution and resolution timestamp must either be both set or both None.")
