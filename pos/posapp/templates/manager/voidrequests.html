@@ -82,6 +82,145 @@
                     </div>
                 </div>
             </div>
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header border-0">
+                        <h2 class="card-title">
+                            <i class="fas fa-clipboard-check"></i>
+                            Resolved
+                        </h2>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped table-hover table-valign-middle">
+                            <thead>
+                            <tr class="d-flex">
+                                <th scope="col" class="col">Waiter</th>
+                                <th scope="col" class="col">Product</th>
+                                <th scope="col" class="col">Requested</th>
+                                <th scope="col" class="col">Resolved</th>
+                                <th scope="col" class="col-1">&nbsp;</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for void_request in closed_requests.data %}
+                                <tr class="d-flex">
+                                    <td class="col">{{ void_request.waiter.name }}</td>
+                                    <td class="col">
+                                        <span data-toggle="tooltip" data-position="top" data-html="true"
+                                              title="<table>
+                                              <tr><td>State</td><td>{{ void_request.order.get_state_display }}</td></tr>
+                                              <tr><td>Tab</td><td>{{ void_request.order.tab.name }}<td></tr>
+                                              <tr><td>Ordered</td><td>{{ void_request.order.orderedAt }}</td></tr>
+                                              {% if void_request.order.preparingAt %}
+                                                <tr><td>Preparing</td><td>{{ void_request.order.preparingAt }}</td></tr>
+                                                {% if void_request.order.preparedAt %}
+                                                    <tr><td>Prepared</td><td>{{ void_request.order.preparedAt }}</td></tr>
+                                                    {% if void_request.order.servedAt %}
+                                                        <tr><td>Served</td><td>{{ void_request.order.servedAt }}</td></tr>
+                                                    {% endif %}
+                                                {% endif %}
+                                              {% endif %}
+                                              </table>">
+                                            {{ void_request.order.product.name }}
+                                        </span>
+                                    </td>
+                                    <td class="col">{{ void_request.requestedAt }}</td>
+                                    <td class="col">
+                                        {{ void_request.manager.name }}
+                                        at {{ void_request.resolvedAt }}
+                                    </td>
+                                    <td class="col-1">
+                                        {% ifequal void_request.resolution "R" %}
+                                            <i class="text-success fas fa-check" data-toggle="tooltip"
+                                               title="Accepted"></i>
+                                        {% else %}
+                                            <i class="text-danger fas fa-times" data-toggle="tooltip"
+                                               title="Rejected"></i>
+                                        {% endifequal %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer border-top">
+                        <div class="row">
+                            <div class="col-6">
+                                Showing items {{ closed_requests.showing.from|add_one }}
+                                through {{ closed_requests.showing.to|add_one }} of {{ closed_requests.showing.of }}.
+                                &nbsp;
+                                Items per page:
+                                <select onchange="window.location = '?page={{ closed_requests.pages.page }}&page_length=' + this.options[this.selectedIndex].value;">
+                                    <option value="5"
+                                            {% if closed_requests.pages.page_length.len5 %}selected{% endif %}>
+                                        5 items
+                                    </option>
+                                    <option value="10"
+                                            {% if closed_requests.pages.page_length.len10 %}selected{% endif %}>
+                                        10 items
+                                    </option>
+                                    <option value="20"
+                                            {% if closed_requests.pages.page_length.len20 %}selected{% endif %}>
+                                        20 items
+                                    </option>
+                                    <option value="50"
+                                            {% if closed_requests.pages.page_length.len50 %}selected{% endif %}>
+                                        50 items
+                                    </option>
+                                    <option value="100"
+                                            {% if closed_requests.pages.page_length.len100 %}selected{% endif %}>
+                                        100 items
+                                    </option>
+                                    <option value="200"
+                                            {% if closed_requests.pages.page_length.len200 %}selected{% endif %}>
+                                        200 items
+                                    </option>
+                                    <option value="500"
+                                            {% if closed_requests.pages.page_length.len500 %}selected{% endif %}>
+                                        500 items
+                                    </option>
+                                    {% if closed_requests.pages.page_length.other %}
+                                        <option value="{{ closed_requests.pages.page_length.value }}" selected>
+                                            Other ({{ closed_requests.pages.page_length.value }} items)
+                                        </option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                            <div class="col-6 text-right">
+                                <div class="btn-group" role="group">
+                                    {% if products.pages.showPrevious %}
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="window.location = '?page=0&page_length={{ products.pages.page_length.value }}'">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="window.location = '?page={{ products.pages.previous }}&page_length={{ products.pages.page_length.value }}'">
+                                            <i class=" fas fa-angle-left"></i>
+                                        </button>
+                                    {% endif %}
+                                    {% for link in products.pages.links %}
+                                        <button type="button"
+                                                class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
+                                                onclick="window.location = '?page={{ link.page }}&page_length={{ products.pages.page_length.value }}'">
+                                            {{ link.page|add_one }}
+                                        </button>
+                                    {% endfor %}
+                                    {% if products.pages.showNext %}
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="window.location = '?page={{ products.pages.next }}&page_length={{ products.pages.page_length.value }}'">
+                                            <i class="fas fa-angle-right"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="window.location = '?page={{ products.pages.last }}&page_length={{ products.pages.page_length.value }}'">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <!--MODALS-->
