@@ -468,7 +468,7 @@ class OrderVoidRequest(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
-    order = models.OneToOneField(ProductInTab, on_delete=models.CASCADE)
+    order = models.ForeignKey(ProductInTab, on_delete=models.CASCADE)
     waiter = models.ForeignKey(User, on_delete=models.PROTECT, related_name='voids_requested')
     manager = models.ForeignKey(User, on_delete=models.PROTECT, related_name='voids_approved', null=True)
     timestamp = models.DateTimeField(auto_now_add=True, editable=False)
@@ -492,3 +492,9 @@ class OrderVoidRequest(models.Model):
             return True
         else:
             return False
+
+    def clean(self):
+        if self.order.ordervoidrequest_set.filter(resolution__isnull=True).count():
+            raise ValidationError("It appears there already is another unresolved request associated with this order.")
+        if self.order.state == ProductInTab.VOIDED:
+            raise ValidationError("The order is already voided.")
