@@ -21,7 +21,7 @@
                 <div class="card">
                     <div class="card-header border-0">
                         <h2 class="card-title">
-                            <i class="fas fa-table"></i>
+                            <i class="fas fa-clipboard-list"></i>
                             Current
                         </h2>
                     </div>
@@ -36,41 +36,45 @@
                             </tr>
                             </thead>
                             <tbody>
-                            {% for open_request in open_requests %}
+                            {% for void_request in open_requests %}
                                 <tr class="d-flex">
-                                    <td class="col">{{ open_request.waiter.name }}</td>
+                                    <td class="col">{{ void_request.waiter.name }}</td>
                                     <td class="col">
                                         <span data-toggle="tooltip" data-position="top" data-html="true"
                                               title="<table>
-                                              <tr><td>State</td><td>{{ open_request.order.get_state_display }}</td></tr>
-                                              <tr><td>Tab</td><td>{{ open_request.order.tab.name }}<td></tr>
-                                              <tr><td>Ordered</td><td>{{ open_request.order.orderedAt }}</td></tr>
-                                              {% if open_request.order.preparingAt %}
-                                                <tr><td>Preparing</td><td>{{ open_request.order.preparingAt }}</td></tr>
-                                                {% if open_request.order.preparedAt %}
-                                                    <tr><td>Prepared</td><td>{{ open_request.order.preparedAt }}</td></tr>
-                                                    {% if open_request.order.servedAt %}
-                                                        <tr><td>Served</td><td>{{ open_request.order.servedAt }}</td></tr>
+                                              <tr><td>State</td><td>{{ void_request.order.get_state_display }}</td></tr>
+                                              <tr><td>Tab</td><td>{{ void_request.order.tab.name }}<td></tr>
+                                              <tr><td>Ordered</td><td>{{ void_request.order.orderedAt }}</td></tr>
+                                              {% if void_request.order.preparingAt %}
+                                                <tr><td>Preparing</td><td>{{ void_request.order.preparingAt }}</td></tr>
+                                                {% if void_request.order.preparedAt %}
+                                                    <tr><td>Prepared</td><td>{{ void_request.order.preparedAt }}</td></tr>
+                                                    {% if void_request.order.servedAt %}
+                                                        <tr><td>Served</td><td>{{ void_request.order.servedAt }}</td></tr>
                                                     {% endif %}
                                                 {% endif %}
                                               {% endif %}
                                               </table>">
-                                            {{ open_request.order.product.name }}
+                                            {{ void_request.order.product.name }}
                                         </span>
                                     </td>
-                                    <td class="col">{{ open_request.timestamp }}</td>
+                                    <td class="col">{{ void_request.requestedAt }}</td>
                                     <td class="col-1 text-center">
-                                        <a href="{% url "manager/voidrequests/resolve" open_request.id "accept" %}"
+                                        <a href="{% url "manager/voidrequests/resolve" void_request.id "accept" %}"
                                            class="btn btn-tool" data-toggle="tooltip"
                                            data-position="top" title="Accept">
                                             <i class="fas fa-check"></i>
                                         </a>
-                                        <a href="{% url "manager/voidrequests/resolve" open_request.id "reject" %}"
+                                        <a href="{% url "manager/voidrequests/resolve" void_request.id "reject" %}"
                                            class="btn btn-tool" data-toggle="tooltip"
                                            data-position="top" title="Reject">
                                             <i class="fas fa-times"></i>
                                         </a>
                                     </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="4">Yaaay! Everything is resolved!</td>
                                 </tr>
                             {% endfor %}
                             </tbody>
