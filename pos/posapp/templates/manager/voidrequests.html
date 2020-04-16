@@ -223,57 +223,6 @@
             </div>
         </div>
     </div>
-    <!--MODALS-->
-    <div class="modal fade" id="createProductModal" tabindex="-1" role="dialog"
-         aria-labelledby="createProductModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="createProductModalLabel">New product</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    {% if create_product_form.non_field_errors %}
-                        <div class="alert alert-warning alert-dismissible fade show">
-                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                            {{ create_product_form.non_field_errors }}
-                        </div>
-                    {% endif %}
-                    <form action="{% url "admin/menu/products" %}" method="post" id="createProductForm">
-                        {% csrf_token %}
-                        <div class="form-group">
-                            <label for="{{ create_product_form.name.id_for_label }}">Name</label>
-                            {{ create_product_form.name }}
-                            {% if create_product_form.name.errors %}
-                                <div class="text-danger">{{ create_product_form.name.errors }}</div>
-                            {% endif %}
-                        </div>
-                        <div class="form-group">
-                            <label for="{{ create_product_form.price.id_for_label }}">Price</label>
-                            {{ create_product_form.price }}
-                            {% if create_product_form.price.errors %}
-                                <div class="text-danger">{{ create_product_form.price.errors }}</div>
-                            {% endif %}
-                        </div>
-                        <div class="form-group form-check">
-                            {{ create_product_form.enabled }}
-                            <label class="form-check-label"
-                                   for="{{ create_product_form.enabled.id_for_label }}">Enabled</label>
-                            {% if create_product_form.enabled.errors %}
-                                <div class="text-danger">{{ create_product_form.enabled.errors }}</div>
-                            {% endif %}
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary" form="createProductForm">Save changes</button>
-                </div>
-            </div>
-        </div>
-    </div>
 {% endblock %}
 
 {% block extra_head %}
