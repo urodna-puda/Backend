@@ -18,16 +18,50 @@ from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, Till
 from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, AdminLoginRequiredMixin
 
 
+class Notification:
+    def __init__(self, count, title, icon, link):
+        self.count = count
+        self.title = title
+        self.icon = icon
+        self.link = link
+
+
+class Notifications(list):
+    def __init__(self):
+        super(Notifications, self).__init__()
+
+    @property
+    def total(self):
+        return sum(n.count for n in self)
+
+    @property
+    def header(self):
+        total = self.total
+        return "1 Notification" if total == 1 else f"{total} Notifications"
+
+
 class Context:
     def __init__(self, request, template_name):
         self.page = request.get_full_path()[1:]
         self.waiter_role = request.user.is_waiter
         self.manager_role = request.user.is_manager
         self.admin_role = request.user.is_admin
-        self.notifications = []
+        self.notifications = Notifications()
         self.data = {}
         self.request = request
         self.template_name = template_name
+
+        if self.manager_role:
+            unresolved_requests = OrderVoidRequest.objects.filter(resolution__isnull=True)
+            count = len(unresolved_requests)
+            if count == 1:
+                self.notifications.append(
+                    Notification(count, "1 Void request", "trash", reverse("manager/voidrequests"))
+                )
+            elif count > 1:
+                self.notifications.append(
+                    Notification(count, f"{count} void requests", "trash", reverse("manager/voidrequests"))
+                )
 
     def add_pagination_context(self, manager, key, page_get_name="page", page_length_get_name="page_length"):
         count = manager.count()
