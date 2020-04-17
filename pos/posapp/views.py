@@ -6,8 +6,8 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django import views
 from django.contrib import messages
-from django.contrib.auth import authenticate
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db.models import Q, ProtectedError
 from django.shortcuts import render, redirect
@@ -428,6 +428,57 @@ class Manager:
 
             return context.render()
 
+        class User(ManagerLoginRequiredMixin, views.View):
+            def get(self, request, username):
+                context = Context(request, "manager/users/user.html")
+                try:
+                    user = User.objects.get(username=username)
+                    context["user"] = user
+                    if username == request.user.username:
+                        context["password_change_blocked"] = 1
+                    elif not request.user.can_change_password(user):
+                        context["password_change_blocked"] = 2
+                    else:
+                        context["password_change_blocked"] = 0
+                except User.DoesNotExist:
+                    context["user"] = False
+                return context.render()
+
+            def post(self, request, username):
+                context = Context(request, "manager/users/user.html")
+                try:
+                    user = User.objects.get(username=username)
+                    if username == request.user.username:
+                        context["password_change_blocked"] = 1
+                    elif not request.user.can_change_password(user):
+                        context["password_change_blocked"] = 2
+                    else:
+                        context["password_change_blocked"] = 0
+                    if "new_password" in request.POST:
+                        if username == request.user.username:
+                            # TODO link to change password
+                            messages.error(request, "To change your own password visit the Change password section of "
+                                                    "your profile.")
+                        elif request.user.can_change_password(user):
+                            new_password = request.POST["new_password"]
+                            try:
+                                validate_password(new_password)
+                                user.set_password(new_password)
+                                user.save()
+                                messages.success(request, "Password changed")
+                            except ValidationError as err:
+                                message = "Password change failed: <ul>"
+                                for emsg in err.messages:
+                                    message += f"<li>{emsg}</li>"
+                                message += "</ul>"
+                                messages.warning(request, message)
+                        else:
+                            messages.warning(request, "You can't change password of this user")
+                    context["user"] = user
+                except User.DoesNotExist:
+                    context["user"] = False
+                return context.render()
+
         class Create(ManagerLoginRequiredMixin, views.View):
             def get(self, request):
                 context = Context(request, "manager/users/create.html")
@@ -710,7 +761,7 @@ class Manager:
                         void_request = OrderVoidRequest.objects.get(id=id)
                         if resolution == "approve" and void_request.approve(request.user):
                             messages.success(request, f"The request from {void_request.waiter.name} "
-                                                          f"to void {void_request.order.product.name} was approved.")
+                                                      f"to void {void_request.order.product.name} was approved.")
                         elif resolution == "reject" and void_request.reject(request.user):
                             messages.success(request, f"The request from {void_request.waiter.name} "
                                                       f"to void {void_request.order.product.name} was rejected.")

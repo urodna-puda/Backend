@@ -37,6 +37,10 @@ class User(AbstractUser):
                (self.is_admin or (self.is_manager and role in ("waiter", "active"))) and \
                (role != "active" or (self.is_admin or (self.is_manager and not target.is_admin)))
 
+    def can_change_password(self, target):
+        return self.can_grant(target,
+                              User.ADMIN if target.is_admin else User.MANAGER if target.is_manager else User.WAITER)
+
     def __str__(self):
         return f"{self.name} ({self.username})"
 

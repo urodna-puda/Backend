@@ -20,6 +20,7 @@ urlpatterns = [
     path('manager', RedirectView.as_view(url="manager/users"), name='manager'),
     path('manager/users', views.Manager.Users.as_view(), name='manager/users'),
     path('manager/users/create', views.Manager.Users.Create.as_view(), name='manager/users/create'),
+    path('manager/users/<str:username>', views.Manager.Users.User.as_view(), name='manager/users/user'),
     path('manager/tills', views.Manager.Tills.as_view(), name='manager/tills'),
     path('manager/tills/assign', views.Manager.Tills.Assign.as_view(), name='manager/tills/assign'),
     path('manager/tills/<uuid:id>', views.Manager.Tills.Till.as_view(), name='manager/tills/till'),
