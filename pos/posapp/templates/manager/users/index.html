@@ -57,8 +57,15 @@
                             <tbody>
                             {% for user in users.data %}
                                 <tr>
-                                    <td>{{ user.username }}{% ifequal user.username me %}
-                                        <span class="badge badge-success">It's you!</span>{% endifequal %} </td>
+                                    <td>
+                                        <a href="{% url "manager/users/user" user.username %}">
+                                            {{ user.username }}
+                                        </a>
+                                        &nbsp;
+                                        {% ifequal user.username me %}
+                                            <span class="badge badge-success">It's you!</span>
+                                        {% endifequal %}
+                                    </td>
                                     <td>{{ user.first_name }}</td>
                                     <td>{{ user.last_name }}</td>
                                     <td>{{ user.email }}</td>
