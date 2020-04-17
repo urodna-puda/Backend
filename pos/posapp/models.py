@@ -1,6 +1,8 @@
 from datetime import datetime
 from uuid import uuid4
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -214,6 +216,10 @@ class ProductInTab(models.Model):
     @property
     def price(self):
         return self._price if self.count_price else 0
+
+    @price.setter
+    def price(self, value):
+        self._price = value
 
     def bump(self):
         if self.state == ProductInTab.ORDERED:
@@ -486,6 +492,7 @@ class OrderVoidRequest(models.Model):
             self.resolvedAt = datetime.now()
             self.save()
             self.order.void()
+            self.notify_waiter()
             return True
         else:
             return False
@@ -496,9 +503,21 @@ class OrderVoidRequest(models.Model):
             self.manager = manager
             self.resolvedAt = datetime.now()
             self.save()
+            self.notify_waiter()
             return True
         else:
             return False
+
+    def notify_waiter(self):
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"notifications_user-{self.waiter.id}",
+            {
+                "type": "notification.void_request_resolved",
+                "void_request": self,
+            },
+        )
+        print(f"notified waiter {self.waiter.username}")
 
     def clean(self):
         if self.order.ordervoidrequest_set.filter(resolution__isnull=True).count():
