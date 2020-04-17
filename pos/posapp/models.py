@@ -290,6 +290,10 @@ class ProductInTab(models.Model):
             if not self.voidedAt:
                 raise_under(self.state)
 
+    @property
+    def void_request_exists(self):
+        return bool(self.ordervoidrequest_set.filter(resolution__isnull=True).count())
+
     def __str__(self):
         return f"{self.product} in {self.tab}"
 
@@ -520,7 +524,7 @@ class OrderVoidRequest(models.Model):
         print(f"notified waiter {self.waiter.username}")
 
     def clean(self):
-        if self.order.ordervoidrequest_set.filter(resolution__isnull=True).count():
+        if self.order.void_request_exists:
             raise ValidationError("It appears there already is another unresolved request associated with this order.")
         if self.order.state == ProductInTab.VOIDED:
             raise ValidationError("The order is already voided.")

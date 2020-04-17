@@ -79,20 +79,25 @@
                                                         <td class="col">{{ order.preparingAt|empty_none }}</td>
                                                         <td class="col">{{ order.preparedAt|empty_none }}</td>
                                                         <td class="col">{{ order.servedAt|empty_none }}</td>
-                                                        <td class="col-1">
-                                                            {% ifnotequal order.state 'V' %}
-                                                                <button type="button"
-                                                                        class="btn btn-tool void-order-button"
-                                                                        data-order-id="{{ order.id }}"
-                                                                        data-order-state="{{ order.state }}"
-                                                                        data-order-product-name="{{ product.name }}"
-                                                                        {% if manager_role %}data-order-void-url="{% url "waiter/orders/order/void" order.id %}?next={% url "waiter/tabs/tab" id %}"{% endif %}
-                                                                        data-order-request-url="{% url "waiter/orders/order/requestVoid" order.id %}?next={% url "waiter/tabs/tab" id %}">
-                                                                    <i class="fas fa-trash" data-toggle="tooltip"
-                                                                       data-position="top"
-                                                                       title="Void item"></i>
-                                                                </button>
-                                                            {% endifnotequal %}
+                                                        <td class="col-1 text-center">
+                                                            {% if order.state != 'V' %}
+                                                                {% if order.void_request_exists %}
+                                                                    <i class="fas fa-ellipsis-h" data-toggle="tooltip"
+                                                                       title="Request in progress"></i>
+                                                                {% else %}
+                                                                    <button type="button"
+                                                                            class="btn btn-tool void-order-button"
+                                                                            data-order-id="{{ order.id }}"
+                                                                            data-order-state="{{ order.state }}"
+                                                                            data-order-product-name="{{ product.name }}"
+                                                                            {% if manager_role %}data-order-void-url="{% url "waiter/orders/order/void" order.id %}?next={% url "waiter/tabs/tab" id %}"{% endif %}
+                                                                            data-order-request-url="{% url "waiter/orders/order/requestVoid" order.id %}?next={% url "waiter/tabs/tab" id %}">
+                                                                        <i class="fas fa-trash" data-toggle="tooltip"
+                                                                           data-position="top"
+                                                                           title="Void item"></i>
+                                                                    </button>
+                                                                {% endif %}
+                                                            {% endif %}
                                                         </td>
                                                     </tr>
                                                 {% endfor %}
