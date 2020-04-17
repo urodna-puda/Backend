@@ -1,4 +1,6 @@
 from django import forms
+from django.contrib.auth import authenticate
+from django.contrib.auth.validators import UnicodeUsernameValidator
 
 from posapp.models import User, PaymentMethod, Product, ItemInProduct, Item
 
@@ -87,3 +89,21 @@ class CreateItemForm(forms.ModelForm):
                 visible.field.widget.attrs['class'] = 'form-control'
             elif isinstance(visible.field.widget, forms.widgets.Select):
                 visible.field.widget.attrs['class'] = 'form-control'
+
+
+class AuthenticationForm(forms.Form):
+    username_validator = UnicodeUsernameValidator()
+    username = forms.CharField(
+        max_length=150,
+        help_text='Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.',
+        validators=[username_validator],
+    )
+    password = forms.CharField(widget=forms.PasswordInput)
+
+    def __init__(self, *args, **kwargs):
+        super(AuthenticationForm, self).__init__(*args, **kwargs)
+        for visible in self.visible_fields():
+            visible.field.widget.attrs['class'] = 'form-control'
+
+    def authenticate(self):
+        return authenticate(username=self.cleaned_data.get('username'), password=self.cleaned_data.get('password'))

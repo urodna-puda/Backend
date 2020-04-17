@@ -6,6 +6,7 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django import views
 from django.contrib import messages
+from django.contrib.auth import authenticate
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db.models import Q, ProtectedError
@@ -13,7 +14,7 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet, \
-    CreateItemForm
+    CreateItemForm, AuthenticationForm
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
     PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest
 from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, AdminLoginRequiredMixin
@@ -323,7 +324,7 @@ class Waiter:
 
     class Orders(WaiterLoginRequiredMixin, views.View):
         def get(self, request):
-            context = Context(request, "waiter/orders.html")
+            context = Context(request, "waiter/orders/index.html")
             context["waiting"] = ProductInTab.objects.filter(state=ProductInTab.ORDERED).order_by("orderedAt")
             context["preparing"] = ProductInTab.objects.filter(state=ProductInTab.PREPARING).order_by("preparingAt")
             context["prepared"] = ProductInTab.objects.filter(state=ProductInTab.TO_SERVE).order_by("preparedAt")
@@ -380,6 +381,40 @@ class Waiter:
                         messages.error(request, "The Product order can't be found and thus wasn't voided.")
                     return redirect(request.GET["next"] if "next" in request.GET else reverse("waiter/orders"))
 
+            class AuthenticateAndVoid(WaiterLoginRequiredMixin, views.View):
+                def get(self, request, id):
+                    context = Context(request, "waiter/orders/order/authenticateAndVoid.html")
+                    try:
+                        context["id"] = id
+                        context["order"] = ProductInTab.objects.get(id=id)
+                        context["form"] = AuthenticationForm()
+                        if "next" in request.GET:
+                            context["next"] = request.GET["next"]
+                        return context.render()
+                    except ProductInTab.DoesNotExist:
+                        messages.error(request, "The Product order can't be found and thus wasn't voided.")
+                    return redirect(request.GET["next"] if "next" in request.GET else reverse("waiter/orders"))
+
+                def post(self, request, id):
+                    if check_dict(request.POST, ["username", "password"]):
+                        try:
+                            order = ProductInTab.objects.get(id=id)
+                            form = AuthenticationForm(data=request.POST)
+                            if form.is_valid() and (user := form.authenticate()):
+                                if user.is_manager:
+                                    order.void()
+                                    messages.success(request, f"Order of a {order.product.name} voided")
+                                else:
+                                    messages.warning(request, "Only managers can directly void items. "
+                                                              "Please enter credentials of a manager.")
+                            else:
+                                messages.warning(request, "Wrong username/password")
+                        except ProductInTab.DoesNotExist:
+                            messages.error(request, "The Product order can't be found and thus wasn't voided.")
+                    else:
+                        messages.error(request, "Username or password was missing in the request")
+
+                    return redirect(request.GET["next"] if "next" in request.GET else reverse("waiter/orders"))
 
 
 class Manager:

@@ -88,10 +88,11 @@
                                                                     <button type="button"
                                                                             class="btn btn-tool void-order-button"
                                                                             data-order-id="{{ order.id }}"
-                                                                            data-order-state="{{ order.state }}"
+                                                                            data-order-state="{{ order.get_state_display }}"
                                                                             data-order-product-name="{{ product.name }}"
                                                                             {% if manager_role %}data-order-void-url="{% url "waiter/orders/order/void" order.id %}?next={% url "waiter/tabs/tab" id %}"{% endif %}
-                                                                            data-order-request-url="{% url "waiter/orders/order/requestVoid" order.id %}?next={% url "waiter/tabs/tab" id %}">
+                                                                            data-order-request-url="{% url "waiter/orders/order/requestVoid" order.id %}?next={% url "waiter/tabs/tab" id %}"
+                                                                            data-order-authenticate-url="{% url "waiter/orders/order/authenticateAndVoid" order.id %}?next={% url "waiter/tabs/tab" id %}">
                                                                         <i class="fas fa-trash" data-toggle="tooltip"
                                                                            data-position="top"
                                                                            title="Void item"></i>
@@ -244,7 +245,7 @@
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="confirmVoidRequestModalLabel">Confirm void requestt</h5>
+                        <h5 class="modal-title" id="confirmVoidRequestModalLabel">Confirm void request</h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
@@ -255,12 +256,16 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                         {% if manager_role %}
-                            <button type="button" class="btn btn-warning" id="confirmVoidRequestModalButtonVoid">Void
-                                immediately
+                            <button type="button" class="btn btn-warning" id="confirmVoidRequestModalButtonVoid">
+                                Void immediately
+                            </button>
+                        {% else %}
+                            <button type="button" class="btn btn-success" id="confirmVoidRequestModalButtonAuthenticate">
+                                Log in and void
                             </button>
                         {% endif %}
-                        <button type="button" class="btn btn-primary" id="confirmVoidRequestModalButtonRequest">Request
-                            void
+                        <button type="button" class="btn btn-primary" id="confirmVoidRequestModalButtonRequest">
+                            Request void
                         </button>
                     </div>
                 </div>
@@ -293,6 +298,10 @@
                 $('#confirmVoidRequestModalButtonVoid').off('click').on('click', function () {
                     window.location = button.data('order-void-url');
                 });
+                {% else %}
+                $('#confirmVoidRequestModalButtonAuthenticate').off('click').on('click', function() {
+                    window.location = button.data('order-authenticate-url');
+                })
             {% endif %}
             $('#confirmVoidRequestModalButtonRequest').off('click').on('click', function () {
                 window.location = button.data('order-request-url');

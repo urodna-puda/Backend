@@ -15,6 +15,8 @@ urlpatterns = [
     path('waiter/orders/<uuid:id>/requestVoid', views.Waiter.Orders.Order.RequestVoid.as_view(),
          name='waiter/orders/order/requestVoid'),
     path('waiter/orders/<uuid:id>/void', views.Waiter.Orders.Order.Void.as_view(), name='waiter/orders/order/void'),
+    path('waiter/orders/<uuid:id>/authenticateAndVoid', views.Waiter.Orders.Order.AuthenticateAndVoid.as_view(),
+         name='waiter/orders/order/authenticateAndVoid'),
     path('manager', RedirectView.as_view(url="manager/users"), name='manager'),
     path('manager/users', views.Manager.Users.as_view(), name='manager/users'),
     path('manager/users/create', views.Manager.Users.Create.as_view(), name='manager/users/create'),
