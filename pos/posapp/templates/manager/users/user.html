@@ -52,9 +52,8 @@
                         </div>
                     {% elif password_change_blocked == 1 %}
                         <div class="card-body text-danger">
-                            {# TODO add change password link #}
-                            You can't change your own password. To do so, please visit the Change password in your
-                            profile.
+                            You can't change your own password. To do so, please follow
+                            <a href="{% url "password_change" %}">this link</a>.
                         </div>
                     {% elif password_change_blocked == 2 %}
                         <div class="card-body text-danger">
