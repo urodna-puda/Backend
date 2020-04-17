@@ -456,9 +456,9 @@ class Manager:
                         context["password_change_blocked"] = 0
                     if "new_password" in request.POST:
                         if username == request.user.username:
-                            # TODO link to change password
-                            messages.error(request, "To change your own password visit the Change password section of "
-                                                    "your profile.")
+                            messages.error(request, 'You can\'t change your own password. To do so, '
+                                                    f'please follow <a href="{reverse("password_change")}"> '
+                                                    'this link</a>.')
                         elif request.user.can_change_password(user):
                             new_password = request.POST["new_password"]
                             try:
