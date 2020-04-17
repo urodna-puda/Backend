@@ -200,7 +200,7 @@ class ProductInTab(models.Model):
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     tab = models.ForeignKey(Tab, on_delete=models.CASCADE)
     state = models.CharField(max_length=1, choices=SERVING_STATES, default=ORDERED)
-    price = models.DecimalField(max_digits=15, decimal_places=3)
+    _price = models.DecimalField(max_digits=15, decimal_places=3, db_column="price")
     orderedAt = models.DateTimeField(editable=False, auto_now_add=True)
     preparingAt = models.DateTimeField(null=True, blank=True)
     preparedAt = models.DateTimeField(null=True, blank=True)
@@ -210,6 +210,10 @@ class ProductInTab(models.Model):
 
     class Meta:
         verbose_name_plural = "Products in tabs"
+
+    @property
+    def price(self):
+        return self._price if self.count_price else 0
 
     def bump(self):
         if self.state == ProductInTab.ORDERED:
