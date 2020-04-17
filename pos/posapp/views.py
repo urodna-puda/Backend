@@ -434,6 +434,12 @@ class Manager:
                 try:
                     user = User.objects.get(username=username)
                     context["user"] = user
+                    if username == request.user.username:
+                        context["password_change_blocked"] = 1
+                    elif not request.user.can_change_password(user):
+                        context["password_change_blocked"] = 2
+                    else:
+                        context["password_change_blocked"] = 0
                 except User.DoesNotExist:
                     context["user"] = False
                 return context.render()
@@ -442,19 +448,32 @@ class Manager:
                 context = Context(request, "manager/users/user.html")
                 try:
                     user = User.objects.get(username=username)
+                    if username == request.user.username:
+                        context["password_change_blocked"] = 1
+                    elif not request.user.can_change_password(user):
+                        context["password_change_blocked"] = 2
+                    else:
+                        context["password_change_blocked"] = 0
                     if "new_password" in request.POST:
-                        new_password = request.POST["new_password"]
-                        try:
-                            validate_password(new_password)
-                            user.set_password(new_password)
-                            user.save()
-                            messages.success(request, "Password changed")
-                        except ValidationError as err:
-                            message = "Password change failed: <ul>"
-                            for emsg in err.messages:
-                                message += f"<li>{emsg}</li>"
-                            message += "</ul>"
-                            messages.warning(request, message)
+                        if username == request.user.username:
+                            # TODO link to change password
+                            messages.error(request, "To change your own password visit the Change password section of "
+                                                    "your profile.")
+                        elif request.user.can_change_password(user):
+                            new_password = request.POST["new_password"]
+                            try:
+                                validate_password(new_password)
+                                user.set_password(new_password)
+                                user.save()
+                                messages.success(request, "Password changed")
+                            except ValidationError as err:
+                                message = "Password change failed: <ul>"
+                                for emsg in err.messages:
+                                    message += f"<li>{emsg}</li>"
+                                message += "</ul>"
+                                messages.warning(request, message)
+                        else:
+                            messages.warning(request, "You can't change password of this user")
                     context["user"] = user
                 except User.DoesNotExist:
                     context["user"] = False

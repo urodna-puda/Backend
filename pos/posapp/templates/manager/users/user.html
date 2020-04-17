@@ -26,28 +26,41 @@
                             &nbsp;Password reset
                         </h2>
                     </div>
-                    <div class="card-body">
-                        <form method="post" action="{% url "manager/users/user" user.username %}"
-                              id="passwordResetForm" onsubmit="return checkPasswordsMatch();">
-                            {% csrf_token %}
-                            <div class="form-group">
-                                <label for="password">Password</label>
-                                <input class="form-control" type="password" name="new_password" id="password" required/>
-                            </div>
-                            <div class="form-group">
-                                <label for="password-verification">Password verification</label>
-                                <input class="form-control" type="password" id="password-verification" required/>
-                                <div class="invalid-feedback hidden" id="passwordMismatchFeedback">
-                                    Both passwords must match
+                    {% if password_change_blocked == 0 %}
+                        <div class="card-body">
+                            <form method="post" action="{% url "manager/users/user" user.username %}"
+                                  id="passwordResetForm" onsubmit="return checkPasswordsMatch();">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    <label for="password">Password</label>
+                                    <input class="form-control" type="password" name="new_password" id="password"
+                                           required/>
                                 </div>
-                            </div>
-                    </div>
-                    <div class="card-footer text-right">
-                        <button class="btn btn-primary" type="submit" id="checkAndSubmitPasswordFormButton"
-                                form="passwordResetForm">
-                            Change password
-                        </button>
-                    </div>
+                                <div class="form-group">
+                                    <label for="password-verification">Password verification</label>
+                                    <input class="form-control" type="password" id="password-verification" required/>
+                                    <div class="invalid-feedback hidden" id="passwordMismatchFeedback">
+                                        Both passwords must match
+                                    </div>
+                                </div>
+                        </div>
+                        <div class="card-footer text-right">
+                            <button class="btn btn-primary" type="submit" id="checkAndSubmitPasswordFormButton"
+                                    form="passwordResetForm">
+                                Change password
+                            </button>
+                        </div>
+                    {% elif password_change_blocked == 1 %}
+                        <div class="card-body text-danger">
+                            {# TODO add change password link #}
+                            You can't change your own password. To do so, please visit the Change password in your
+                            profile.
+                        </div>
+                    {% elif password_change_blocked == 2 %}
+                        <div class="card-body text-danger">
+                            For security reasons, you can't change this user's password.
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
