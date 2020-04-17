@@ -26,20 +26,23 @@ def admin_login_required(view_func):
 
 class WaiterLoginRequiredMixin(AccessMixin):
     def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_waiter and not request.user.can_grant(request.user, User.WAITER):
-            return self.handle_no_permission()
-        return super().dispatch(request, *args, **kwargs)
+        if request.user.is_authenticated:
+            if request.user.is_waiter or request.user.can_grant(request.user, User.WAITER):
+                return super().dispatch(request, *args, **kwargs)
+        return self.handle_no_permission()
 
 
 class ManagerLoginRequiredMixin(AccessMixin):
     def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_manager and not request.user.can_grant(request.user, User.MANAGER):
-            return self.handle_no_permission()
-        return super().dispatch(request, *args, **kwargs)
+        if request.user.is_authenticated:
+            if request.user.is_manager or request.user.can_grant(request.user, User.MANAGER):
+                return super().dispatch(request, *args, **kwargs)
+        return self.handle_no_permission()
 
 
 class AdminLoginRequiredMixin(AccessMixin):
     def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_admin and not request.user.can_grant(request.user, User.ADMIN):
-            return self.handle_no_permission()
-        return super().dispatch(request, *args, **kwargs)
+        if request.user.is_authenticated:
+            if request.user.is_admin or request.user.can_grant(request.user, User.ADMIN):
+                return super().dispatch(request, *args, **kwargs)
+        return self.handle_no_permission()
