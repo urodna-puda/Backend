@@ -84,6 +84,12 @@
                         </li>
                     </ul>
                 </li>
+                <li class="nav-item">
+                    <a href="{% url "manager/voidrequests" %}" class="nav-link {% isactive page "manager/voidrequests" %}">
+                        <i class="nav-icon fas fa-trash"></i>
+                        <p>Void requests</p>
+                    </a>
+                </li>
             {% endif %}
         {% endif %}
         {% if admin_role %}

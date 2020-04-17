@@ -238,7 +238,7 @@
     <script>
         $('#searchForm').bind('submit', function () {
             let search = $('#searchField').val();
-            window.location = "?page={{ page_number }}&page_length={{ methods.pages.page_length.value }}" + (search ? "&search=" + search : "");
+            window.location = "?page={{ methods.pages.page }}&page_length={{ methods.pages.page_length.value }}" + (search ? "&search=" + search : "");
             return false;
         });
 
@@ -246,12 +246,12 @@
             event.stopPropagation();
             event.stopImmediatePropagation();
 
-            postData("/api/1/methods/" + id + "/toggleChange").then(result => {
+            postData(`/api/1/methods/${id}/toggleChange`).then(result => {
                 if (result.status === 200) {
                     if (result.now) {
-                        $("#change-indicator-" + id).removeClass().addClass("text-success fas fa-check-circle");
+                        $(`#change-indicator-${id}`).removeClass().addClass("text-success fas fa-check-circle");
                     } else {
-                        $("#change-indicator-" + id).removeClass().addClass("text-danger fas fa-times-circle");
+                        $(`#change-indicator-${id}`).removeClass().addClass("text-danger fas fa-times-circle");
                     }
                     $(document).Toasts('create', {
                         body: result.message,

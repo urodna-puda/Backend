@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'adminlte3',
     'adminlte3_theme',
     'django.contrib.admin',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -73,6 +74,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'puda.wsgi.application'
+ASGI_APPLICATION = 'puda.routing.application'
 
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
@@ -87,6 +89,20 @@ DATABASES = {
         "PORT": os.environ.get("SQL_PORT", "5432"),
     }
 }
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": os.environ.get("CHANNELS_BACKEND", "channels.layers.InMemoryChannelLayer"),
+        "CONFIG": {},
+    },
+}
+
+if os.environ.get("CHANNELS_HOST", ""):
+    config = CHANNEL_LAYERS["default"]["CONFIG"]
+    if "hosts" not in config:
+        config["hosts"] = []
+
+    config["hosts"].append((os.environ.get("CHANNELS_HOST", ""), int(os.environ.get("CHANNELS_PORT", "0"))))
 
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators

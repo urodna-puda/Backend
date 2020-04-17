@@ -1,6 +1,8 @@
 from datetime import datetime
 from uuid import uuid4
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -188,25 +190,36 @@ class ProductInTab(models.Model):
     PREPARING = 'P'
     TO_SERVE = 'T'
     SERVED = 'S'
+    VOIDED = 'V'
     SERVING_STATES = [
         (ORDERED, "Ordered"),
         (PREPARING, "Being prepared"),
         (TO_SERVE, "To be served"),
         (SERVED, "Served"),
+        (VOIDED, "Voided"),
     ]
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     tab = models.ForeignKey(Tab, on_delete=models.CASCADE)
     state = models.CharField(max_length=1, choices=SERVING_STATES, default=ORDERED)
-    price = models.DecimalField(max_digits=15, decimal_places=3)
+    _price = models.DecimalField(max_digits=15, decimal_places=3, db_column="price")
     orderedAt = models.DateTimeField(editable=False, auto_now_add=True)
     preparingAt = models.DateTimeField(null=True, blank=True)
     preparedAt = models.DateTimeField(null=True, blank=True)
     servedAt = models.DateTimeField(null=True, blank=True)
+    voidedAt = models.DateTimeField(null=True, blank=True)
     note = models.TextField(null=True, blank=True)
 
     class Meta:
         verbose_name_plural = "Products in tabs"
+
+    @property
+    def price(self):
+        return self._price if self.count_price else 0
+
+    @price.setter
+    def price(self, value):
+        self._price = value
 
     def bump(self):
         if self.state == ProductInTab.ORDERED:
@@ -222,6 +235,64 @@ class ProductInTab(models.Model):
             return False
         self.save()
         return True
+
+    @property
+    def color(self):
+        if self.state == ProductInTab.ORDERED:
+            return "warning"
+        if self.state == ProductInTab.PREPARING:
+            return "secondary"
+        if self.state == ProductInTab.TO_SERVE:
+            return "info"
+        if self.state == ProductInTab.SERVED:
+            return "success"
+        if self.state == ProductInTab.VOIDED:
+            return "danger"
+
+    @property
+    def count_price(self):
+        return self.state not in [ProductInTab.VOIDED, ]
+
+    def void(self):
+        if self.state != ProductInTab.VOIDED:
+            self.state = ProductInTab.VOIDED
+            self.voidedAt = datetime.utcnow()
+            self.save()
+
+    def clean(self):
+        def raise_over(state):
+            raise ValidationError(f"Some timestamps are set when the state ({state}) does not allow it")
+
+        def raise_under(state):
+            raise ValidationError(f"The order is missing some timestamps required at its state ({state})")
+
+        if self.state == ProductInTab.ORDERED:
+            if self.preparingAt or self.preparedAt or self.servedAt or self.voidedAt:
+                raise_over(self.state)
+            if not self.orderedAt:
+                raise_under(self.state)
+        if self.state == ProductInTab.PREPARING:
+            if self.preparedAt or self.servedAt or self.voidedAt:
+                raise_over(self.state)
+            if not self.orderedAt or not self.preparingAt:
+                raise_under(self.state)
+        if self.state == ProductInTab.TO_SERVE:
+            if self.servedAt or self.voidedAt:
+                raise_over(self.state)
+            if not self.orderedAt or not self.preparingAt or not self.preparedAt:
+                raise_under(self.state)
+        if self.state == ProductInTab.SERVED:
+            if self.voidedAt:
+                raise_over(self.state)
+            if not self.orderedAt or not self.preparingAt or not self.preparedAt or not self.servedAt:
+                raise_under(self.state)
+        if self.state == ProductInTab.VOIDED:
+            if not self.voidedAt:
+                raise_under(self.state)
+
+    @property
+    def void_request_exists(self):
+        return bool(self.ordervoidrequest_set.filter(resolution__isnull=True).count())
 
     def __str__(self):
         return f"{self.product} in {self.tab}"
@@ -400,3 +471,63 @@ class PaymentInTab(models.Model):
     @property
     def converted_value(self):
         return round(float(self.amount) * self.method.paymentMethod.currency.ratio, 3)
+
+
+class OrderVoidRequest(models.Model):
+    APPROVED = 'A'
+    REJECTED = 'R'
+    RESOLUTIONS = [
+        (APPROVED, 'Approved'),
+        (REJECTED, 'Rejected'),
+    ]
+
+    id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
+    order = models.ForeignKey(ProductInTab, on_delete=models.CASCADE)
+    waiter = models.ForeignKey(User, on_delete=models.PROTECT, related_name='voids_requested')
+    manager = models.ForeignKey(User, on_delete=models.PROTECT, related_name='voids_approved', null=True)
+    requestedAt = models.DateTimeField(auto_now_add=True, editable=False)
+    resolvedAt = models.DateTimeField(null=True)
+    resolution = models.CharField(max_length=1, choices=RESOLUTIONS, blank=True, null=True)
+
+    def approve(self, manager):
+        if not self.resolution:
+            self.resolution = OrderVoidRequest.APPROVED
+            self.manager = manager
+            self.resolvedAt = datetime.now()
+            self.save()
+            self.order.void()
+            self.notify_waiter()
+            return True
+        else:
+            return False
+
+    def reject(self, manager):
+        if not self.resolution:
+            self.resolution = OrderVoidRequest.REJECTED
+            self.manager = manager
+            self.resolvedAt = datetime.now()
+            self.save()
+            self.notify_waiter()
+            return True
+        else:
+            return False
+
+    def notify_waiter(self):
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"notifications_user-{self.waiter.id}",
+            {
+                "type": "notification.void_request_resolved",
+                "void_request": self,
+            },
+        )
+        print(f"notified waiter {self.waiter.username}")
+
+    def clean(self):
+        if self.order.void_request_exists:
+            raise ValidationError("It appears there already is another unresolved request associated with this order.")
+        if self.order.state == ProductInTab.VOIDED:
+            raise ValidationError("The order is already voided.")
+
+        if bool(self.resolution) != bool(self.resolvedAt):
+            raise ValidationError("Resolution and resolution timestamp must either be both set or both None.")

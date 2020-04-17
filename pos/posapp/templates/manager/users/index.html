@@ -167,12 +167,12 @@
             event.stopPropagation();
             event.stopImmediatePropagation();
 
-            postData("/api/1/users/" + username + "/toggle/" + role).then(result => {
+            postData(`/api/1/users/${username}/toggle/${role}`).then(result => {
                 if (result.status === 200) {
                     if (result.now) {
-                        $("#" + role + "-indicator-" + username).removeClass().addClass("text-success fas fa-check-circle");
+                        $(`#${role}-indicator-${username}`).removeClass().addClass("text-success fas fa-check-circle");
                     } else {
-                        $("#" + role + "-indicator-" + username).removeClass().addClass("text-danger fas fa-times-circle");
+                        $(`#${role}-indicator-${username}`).removeClass().addClass("text-danger fas fa-times-circle");
                     }
                     $(document).Toasts('create', {
                         body: result.message,

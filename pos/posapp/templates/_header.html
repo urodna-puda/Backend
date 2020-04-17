@@ -1,4 +1,23 @@
 {% extends "adminlte/lib/_main_header.html" %}
 {% load static %}
 
-
+{% block header_dropdowns %}
+    <li class="nav-item dropdown">
+        <a class="nav-link" data-toggle="dropdown" href="#">
+            <i class="far fa-bell fa-2x"></i>
+            <span class="badge badge-warning navbar-badge">{{ notifications.total }}</span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+            <span class="dropdown-item dropdown-header">{{ notifications.header }}</span>
+            <div class="dropdown-divider"></div>
+            {% for notification in notifications %}
+                <a href="{{ notification.link }}" class="dropdown-item">
+                    <i class="fas fa-{{ notification.icon }} mr-2"></i> {{ notification.title }}
+                    <span class="float-right text-muted text-sm"></span>
+                </a>
+            {% empty %}
+                <span class="dropdown-item">No new notifications</span>
+            {% endfor %}
+        </div>
+    </li>
+{% endblock %}
