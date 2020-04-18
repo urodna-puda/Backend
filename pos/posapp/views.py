@@ -12,6 +12,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q, ProtectedError
 from django.shortcuts import render, redirect
 from django.urls import reverse
+from django.conf import settings
 
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet, \
     CreateItemForm, AuthenticationForm
@@ -49,6 +50,7 @@ class Context:
         self.manager_role = request.user.is_manager
         self.admin_role = request.user.is_admin
         self.notifications = Notifications()
+        self.version = settings.VERSION
         self.data = {}
         self.request = request
         self.template_name = template_name
@@ -114,7 +116,7 @@ class Context:
         self.data[key] = value
 
     def __len__(self):
-        return 5 + len(self.data)
+        return 6 + len(self.data)
 
     def __contains__(self, item):
         return item in self.data
@@ -125,6 +127,7 @@ class Context:
         yield 'manager_role', self.manager_role
         yield 'admin_role', self.admin_role
         yield 'notifications', self.notifications
+        yield 'version', self.version
         for key in self.data:
             yield key, self.data[key]
 

@@ -148,3 +148,5 @@ LOGOUT_REDIRECT_URL = "/"
 AUTH_USER_MODEL = 'posapp.User'
 
 PHONENUMBER_DEFAULT_REGION = 'CZ'
+
+VERSION = os.environ.get("VERSION", default="dev")
