@@ -788,7 +788,7 @@ class Admin:
                 enabled_filter = request.GET.get('enabled', '')
 
                 currencies = Currency.objects.filter(
-                    Q(name__contains=search) | Q(code__contains=search) | Q(symbol__contains=search)).order_by('code')
+                    Q(name__icontains=search) | Q(code__icontains=search) | Q(symbol__icontains=search)).order_by('code')
                 if enabled_filter:
                     if enabled_filter == "yes":
                         currencies = currencies.filter(enabled=True)
@@ -816,8 +816,8 @@ class Admin:
                 currency_filter = int(request.GET['currency']) if 'currency' in request.GET else None
 
                 methods = PaymentMethod.objects.filter(
-                    Q(name__contains=search) | Q(currency__name__contains=search)).filter(
-                    currency__enabled=True)
+                    Q(name__icontains=search) | Q(currency__name__icontains=search)).filter(
+                    currency__ienabled=True)
                 if currency_filter:
                     methods = methods.filter(currency__pk=currency_filter)
 
@@ -914,7 +914,7 @@ class Admin:
                 search = request.GET.get('search', '')
                 enabled_filter = request.GET.get('enabled', '')
 
-                products = Product.objects.filter(name__contains=search).order_by('name')
+                products = Product.objects.filter(name__icontains=search).order_by('name')
                 if enabled_filter:
                     if enabled_filter == "yes":
                         products = products.filter(enabled=True)
@@ -1026,7 +1026,7 @@ class Admin:
                 search = request.GET.get('search', '')
                 unit_group_id = uuid.UUID(request.GET['unit_group']) \
                     if "unit_group" in request.GET and request.GET["unit_group"] else None
-                items = Item.objects.filter(name__contains=search)
+                items = Item.objects.filter(name__icontains=search)
                 if unit_group_id:
                     try:
                         unit_group = UnitGroup.objects.get(id=unit_group_id)
