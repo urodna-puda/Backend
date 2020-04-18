@@ -296,6 +296,7 @@ ENV/
 env.bak/
 venv.bak/
 pip-selfcheck.json
+!/.env
 
 ### Windows ###
 # Windows thumbnail cache files

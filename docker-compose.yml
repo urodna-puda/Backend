@@ -3,36 +3,49 @@ version: '3.7'
 services:
   web:
     build: ./pos
-    command: python manage.py startweb 0.0.0.0:8000
+    image: pudapos:${VERSION}
+    command: python manage.py runserver 0.0.0.0:8000
     volumes:
-      - static_volume:/usr/src/pos/static
-    env_file:
-      - ./.env.dev
+      - static_volume:/usr/src/pos/static/
     depends_on:
       - db
       - redis
     networks:
       - puda
+    env_file:
+      - .env
   db:
     image: postgres:12.0-alpine
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data/
     environment:
       - POSTGRES_USER=puda
       - POSTGRES_PASSWORD=puda
-      - PUSTGRES_DB=puda_django
+      - PUSTGRES_DB=puda
     networks:
       - puda
   nginx:
     build: ./nginx
+    image: pudapos-nginx-proxy:${VERSION}
     volumes:
-      - static_volume:/var/www/static
-    ports:
-      - 1337:80
+      - static_volume:/var/www/static/
     depends_on:
       - web
     networks:
       - puda
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${TRAEFIK_NAME}_insecure.rule=Host(`${HOST}`)"
+      - "traefik.http.routers.${TRAEFIK_NAME}_insecure.entrypoints=http"
+      - "traefik.http.routers.${TRAEFIK_NAME}_insecure.middlewares=traefik-https-redirect"
+      - "traefik.http.routers.${TRAEFIK_NAME}_insecure.service=${TRAEFIK_NAME}"
+      - "traefik.http.routers.${TRAEFIK_NAME}.rule=Host(`${HOST}`)"
+      - "traefik.http.routers.${TRAEFIK_NAME}.entrypoints=https"
+      - "traefik.http.routers.${TRAEFIK_NAME}.tls.certresolver=http"
+      - "traefik.http.routers.${TRAEFIK_NAME}.service=${TRAEFIK_NAME}"
+      - "traefik.http.services.${TRAEFIK_NAME}.loadbalancer.server.port=80"
+      - "traefik.http.services.${TRAEFIK_NAME}.loadbalancer.server.scheme=http"
   redis:
     image: redis:alpine
     networks:
@@ -44,3 +57,5 @@ volumes:
 
 networks:
   puda:
+  proxy:
+    external: true
