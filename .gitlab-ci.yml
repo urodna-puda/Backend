@@ -1,0 +1,19 @@
+image: debian:buster
+
+before_script:
+  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+  - eval $(ssh-agent -s)
+  - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+  - mkdir -p ~/.ssh
+  - chmod 700 ~/.ssh
+  - echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+  - chmod 600 ~/.ssh/known_hosts
+
+deploy:
+  stage: deploy
+  script:
+    - tar -czf /tmp/backend.tar.gz .
+    - scp /tmp/backend.tar.gz pudapos@10.1.1.1:~/beta/backend.tar.gz
+    - ssh pudapos@10.1.1.1 ~/deploy_pudapos_beta.sh
+#  only:
+#    - master
