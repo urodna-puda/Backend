@@ -8,7 +8,8 @@ ENV PYTHONUNBUFFERED 1
 COPY ./Pipfile /usr/src/pos/Pipfile
 COPY ./Pipfile.lock /usr/src/pos/Pipfile.lock
 RUN apk update &&\
-    apk add postgresql-dev gcc python3-dev musl-dev &&\
+    apk add postgresql-dev gcc python3-dev musl-dev libffi-dev &&\
+    pip install --upgrade pip &&\
     pip install pipenv &&\
     pipenv install
 
