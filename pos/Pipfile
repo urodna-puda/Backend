@@ -14,6 +14,8 @@ django-phonenumber-field = "*"
 phonenumbers = "*"
 django-adminlte3 = "*"
 psycopg2-binary = "*"
+channels = "*"
+channels-redis = "*"
 
 [requires]
 python_version = "3.8"

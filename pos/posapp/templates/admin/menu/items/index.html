@@ -44,7 +44,7 @@
                                     </div>
                                 </div>
                                 <div class="col">
-                                    <form>
+                                    <form id="searchForm">
                                         <div class="input-group mb-3 input-group-sm">
                                             <input type="text" class="form-control border-right-0 border-secondary"
                                                    placeholder="Search" aria-label="Search"
@@ -199,8 +199,7 @@
     <script>
         $('#searchForm').bind('submit', function () {
             let search = $('#searchField').val();
-            window.location = "?page={{ items.pages.page }}&page_length={{ items.pages.page_length.value }}"{% if unit_group %}
-                + '&unit_group={{ unit_group }}'{% endif %} + (search ? "&search=" + search : "");
+            window.location = `?page={{ items.pages.page }}&page_length={{ items.pages.page_length.value }}{% if unit_group %}&unit_group={{ unit_group }}{% endif %}${search ? `&search=${search}` : ""}`;
             return false;
         });
     </script>

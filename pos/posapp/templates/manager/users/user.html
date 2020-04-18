@@ -1,0 +1,99 @@
+{% extends "_base.html" %}
+{% load static %}
+
+{% block page_name %}
+    <i class="nav-icon fas fa-user"></i>
+    {{ user.name }}
+{% endblock %}
+
+{% block no_description %}{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager" %}">Manager</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager/users" %}">Users</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ user.username }}</li>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12 col-sm-6 col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-key"></i>
+                            &nbsp;Password reset
+                        </h2>
+                    </div>
+                    {% if password_change_blocked == 0 %}
+                        <div class="card-body">
+                            <form method="post" action="{% url "manager/users/user" user.username %}"
+                                  id="passwordResetForm" onsubmit="return checkPasswordsMatch();">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    <label for="password">Password</label>
+                                    <input class="form-control" type="password" name="new_password" id="password"
+                                           required/>
+                                </div>
+                                <div class="form-group">
+                                    <label for="password-verification">Password verification</label>
+                                    <input class="form-control" type="password" id="password-verification" required/>
+                                    <div class="invalid-feedback hidden" id="passwordMismatchFeedback">
+                                        Both passwords must match
+                                    </div>
+                                </div>
+                        </div>
+                        <div class="card-footer text-right">
+                            <button class="btn btn-primary" type="submit" id="checkAndSubmitPasswordFormButton"
+                                    form="passwordResetForm">
+                                Change password
+                            </button>
+                        </div>
+                    {% elif password_change_blocked == 1 %}
+                        <div class="card-body text-danger">
+                            You can't change your own password. To do so, please follow
+                            <a href="{% url "password_change" %}">this link</a>.
+                        </div>
+                    {% elif password_change_blocked == 2 %}
+                        <div class="card-body text-danger">
+                            For security reasons, you can't change this user's password.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script>
+        let password = $('#password');
+        let verification = $('#password-verification');
+        let form = $('#passwordResetForm');
+        let passwordMismatchFeedback = $('#passwordMismatchFeedback');
+        let verificationReached = false;
+
+        function checkPasswordsMatch() {
+            if (password.val() === verification.val()) {
+                password.removeClass('is-invalid');
+                verification.removeClass('is-invalid');
+                passwordMismatchFeedback.hide();
+                return true;
+            } else {
+                if (verificationReached) {
+                    password.addClass('is-invalid');
+                    verification.addClass('is-invalid');
+                    passwordMismatchFeedback.show();
+                }
+                return false;
+            }
+        }
+
+        password.change(checkPasswordsMatch);
+        verification.change(checkPasswordsMatch).focus(function () {
+            verificationReached = true;
+        });
+    </script>
+{% endblock %}

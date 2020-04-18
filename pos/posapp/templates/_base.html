@@ -1,14 +1,33 @@
 {% extends "adminlte/base.html" %}
+{% load static %}
 
 {% block javascript %}
     <script type="text/javascript">
-        window.FontAwesomeConfig = { autoReplaceSvg: false }
+        window.FontAwesomeConfig = {autoReplaceSvg: false}
     </script>
     <script src="https://kit.fontawesome.com/7635efe91d.js" crossorigin="anonymous"></script>
     {{ block.super }}
     <script>
         $(function () {
-            $('[data-toggle="tooltip"]').tooltip()
+            $('[data-toggle="tooltip"]').tooltip({sanitize: false})
+        });
+
+        $('[data-toggle="collapse-toggle"]').each(function () {
+            let button = $(this);
+            let target = $(`${button.data('target')}`);
+            button.on('click', function () {
+                target.collapse('toggle');
+            });
+            target.on('show.bs.collapse', function () {
+                let icon = button.children('i').first();
+                icon.removeClass('fa-plus');
+                icon.addClass('fa-minus');
+            });
+            target.on('hide.bs.collapse', function () {
+                let icon = button.children('i').first();
+                icon.removeClass('fa-minus');
+                icon.addClass('fa-plus');
+            });
         });
 
         function getCookie(name) {
@@ -52,6 +71,36 @@
         jQuery.fn.invisible = function () {
             return this.css('visibility', 'hidden');
         };
+
+        const userNotificationsSocket = new WebSocket(`ws://${window.location.host}/ws/posapp/notifications/user`);
+        userNotificationsSocket.onmessage = function (e) {
+            const data = JSON.parse(e.data);
+            if (data.notification_type === "void_request_resolved") {
+                $(document).Toasts('create', {
+                    body: `<a id="toast"></a>Manager ${data.manager.username} has ${data.resolution === 'A' ? 'approved' : 'rejected'} your void request of product ${data.order.product_name} in tab ${data.order.tab_name}. <a href="/waiter/tabs/${data.order.tab_id}">Review it now</a>.`,
+                    title: 'Void request resolved',
+                    icon: data.resolution === 'A' ? 'text-success fas fa-check fa-lg' : 'text-danger fas fa-times fa-lg',
+                    autohide: false,
+                    close: true,
+                });
+            }
+        }
+
+        {% if manager_role %}
+            const managerNotificationsSocket = new WebSocket(`ws://${window.location.host}/ws/posapp/notifications/manager`);
+            managerNotificationsSocket.onmessage = function (e) {
+                const data = JSON.parse(e.data);
+                if (data.notification_type === "void_request") {
+                    $(document).Toasts('create', {
+                        body: `<a id="toast"></a>User ${data.user.username} is requesting void of product ${data.order.product_name} in tab ${data.order.tab_name}. <a href="{% url "manager/voidrequests" %}">Resolve it now</a>.`,
+                        title: 'Void request',
+                        icon: 'fas fa-trash fa-lg',
+                        autohide: false,
+                        close: true,
+                    });
+                }
+            };
+        {% endif %}
     </script>
 {% endblock %}
 
@@ -93,27 +142,27 @@
             {% if message.level == DEFAULT_MESSAGE_LEVELS.DEBUG %}
                 <div class="alert alert-primary alert-dismissible fade show">
                     <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                    <i class="fas fa-bug"></i>&nbsp;{{ message }}
+                    <i class="fas fa-bug"></i>&nbsp;{{ message|safe }}
                 </div>
             {% elif message.level == DEFAULT_MESSAGE_LEVELS.INFO %}
                 <div class="alert alert-info alert-dismissible fade show">
                     <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                    <i class="fas fa-info-circle"></i>&nbsp;{{ message }}
+                    <i class="fas fa-info-circle"></i>&nbsp;{{ message|safe }}
                 </div>
             {% elif message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}
                 <div class="alert alert-success alert-dismissible fade show">
                     <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                    <i class="fas fa-check"></i>&nbsp;{{ message }}
+                    <i class="fas fa-check"></i>&nbsp;{{ message|safe }}
                 </div>
             {% elif message.level == DEFAULT_MESSAGE_LEVELS.WARNING %}
                 <div class="alert alert-warning alert-dismissible fade show">
                     <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                    <i class="fas fa-exclamation-triangle"></i>&nbsp;{{ message }}
+                    <i class="fas fa-exclamation-triangle"></i>&nbsp;{{ message|safe }}
                 </div>
             {% elif message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}
                 <div class="alert alert-danger alert-dismissible fade show">
                     <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                    <i class="fas fa-times-circle"></i>&nbsp;{{ message }}
+                    <i class="fas fa-times-circle"></i>&nbsp;{{ message|safe }}
                 </div>
             {% else %}
                 <div class="alert alert-info alert-dismissible">
@@ -123,4 +172,16 @@
             {% endif %}
         {% endfor %}
     {% endif %}
+{% endblock %}
+
+{% block extra_head %}
+    <style>
+        .container-fluid-striped > .row:nth-child(odd) {
+            background-color: rgba(0, 0, 0, .05);
+        }
+
+        .container-fluid-hover > .row:hover {
+            background-color: rgba(0, 0, 0, .075);
+        }
+    </style>
 {% endblock %}

@@ -2,18 +2,44 @@ import decimal
 import uuid
 
 # Create your views here.
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django import views
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.db.models import Q, ProtectedError
 from django.shortcuts import render, redirect
 from django.urls import reverse
 
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet, \
-    CreateItemForm
+    CreateItemForm, AuthenticationForm
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
-    PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item
+    PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest
 from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, AdminLoginRequiredMixin
+
+
+class Notification:
+    def __init__(self, count, title, icon, link):
+        self.count = count
+        self.title = title
+        self.icon = icon
+        self.link = link
+
+
+class Notifications(list):
+    def __init__(self):
+        super(Notifications, self).__init__()
+
+    @property
+    def total(self):
+        return sum(n.count for n in self)
+
+    @property
+    def header(self):
+        total = self.total
+        return "1 Notification" if total == 1 else f"{total} Notifications"
 
 
 class Context:
@@ -22,10 +48,22 @@ class Context:
         self.waiter_role = request.user.is_waiter
         self.manager_role = request.user.is_manager
         self.admin_role = request.user.is_admin
-        self.notifications = []
+        self.notifications = Notifications()
         self.data = {}
         self.request = request
         self.template_name = template_name
+
+        if self.manager_role:
+            unresolved_requests = OrderVoidRequest.objects.filter(resolution__isnull=True)
+            count = len(unresolved_requests)
+            if count == 1:
+                self.notifications.append(
+                    Notification(count, "1 Void request", "trash", reverse("manager/voidrequests"))
+                )
+            elif count > 1:
+                self.notifications.append(
+                    Notification(count, f"{count} void requests", "trash", reverse("manager/voidrequests"))
+                )
 
     def add_pagination_context(self, manager, key, page_get_name="page", page_length_get_name="page_length"):
         count = manager.count()
@@ -132,19 +170,19 @@ def prepare_tab_dict(tab):
         'products': []
     }
 
-    products_list = ProductInTab.objects.filter(tab=tab)
+    order_list = ProductInTab.objects.filter(tab=tab)
     products = {}
-    for product in products_list:
-        if product.product.id not in products:
-            products[product.product.id] = {
-                'id': product.product.id,
-                'name': product.product.name,
+    for order in order_list:
+        if order.product.id not in products:
+            products[order.product.id] = {
+                'id': order.product.id,
+                'name': order.product.name,
                 'variants': {},
             }
 
-        if product.note not in products[product.product.id]['variants']:
-            products[product.product.id]['variants'][product.note] = {
-                'note': product.note,
+        if order.note not in products[order.product.id]['variants']:
+            products[order.product.id]['variants'][order.note] = {
+                'note': order.note,
                 'orderedCount': 0,
                 'preparingCount': 0,
                 'toServeCount': 0,
@@ -154,31 +192,33 @@ def prepare_tab_dict(tab):
                 'showToServe': False,
                 'showServed': False,
                 'total': 0,
+                'orders': [],
             }
 
-        if product.state == ProductInTab.ORDERED:
-            products[product.product.id]['variants'][product.note]['orderedCount'] += 1
-            products[product.product.id]['variants'][product.note]['showOrdered'] = True
-        elif product.state == ProductInTab.PREPARING:
-            products[product.product.id]['variants'][product.note]['preparingCount'] += 1
-            products[product.product.id]['variants'][product.note]['showPreparing'] = True
-        elif product.state == ProductInTab.TO_SERVE:
-            products[product.product.id]['variants'][product.note]['toServeCount'] += 1
-            products[product.product.id]['variants'][product.note]['showToServe'] = True
-        elif product.state == ProductInTab.SERVED:
-            products[product.product.id]['variants'][product.note]['servedCount'] += 1
-            products[product.product.id]['variants'][product.note]['showServed'] = True
+        if order.state == ProductInTab.ORDERED:
+            products[order.product.id]['variants'][order.note]['orderedCount'] += 1
+            products[order.product.id]['variants'][order.note]['showOrdered'] = True
+        elif order.state == ProductInTab.PREPARING:
+            products[order.product.id]['variants'][order.note]['preparingCount'] += 1
+            products[order.product.id]['variants'][order.note]['showPreparing'] = True
+        elif order.state == ProductInTab.TO_SERVE:
+            products[order.product.id]['variants'][order.note]['toServeCount'] += 1
+            products[order.product.id]['variants'][order.note]['showToServe'] = True
+        elif order.state == ProductInTab.SERVED:
+            products[order.product.id]['variants'][order.note]['servedCount'] += 1
+            products[order.product.id]['variants'][order.note]['showServed'] = True
 
-        products[product.product.id]['variants'][product.note]['total'] += product.price
+        products[order.product.id]['variants'][order.note]['orders'].append(order)
+        products[order.product.id]['variants'][order.note]['total'] += order.price
 
-    for product in products:
+    for product_id in products:
         variants = []
-        for variant in products[product]['variants']:
-            variants.append(products[product]['variants'][variant])
+        for variant in products[product_id]['variants']:
+            variants.append(products[product_id]['variants'][variant])
 
         out['products'].append({
-            'id': products[product]['id'],
-            'name': products[product]['name'],
+            'id': products[product_id]['id'],
+            'name': products[product_id]['name'],
             'variants': variants,
         })
 
@@ -284,7 +324,7 @@ class Waiter:
 
     class Orders(WaiterLoginRequiredMixin, views.View):
         def get(self, request):
-            context = Context(request, "waiter/orders.html")
+            context = Context(request, "waiter/orders/index.html")
             context["waiting"] = ProductInTab.objects.filter(state=ProductInTab.ORDERED).order_by("orderedAt")
             context["preparing"] = ProductInTab.objects.filter(state=ProductInTab.PREPARING).order_by("preparingAt")
             context["prepared"] = ProductInTab.objects.filter(state=ProductInTab.TO_SERVE).order_by("preparedAt")
@@ -309,6 +349,72 @@ class Waiter:
                         messages.error(request, "The Product order can't be found and thus wasn't bumped.")
                     return redirect(reverse("waiter/orders"))
 
+            class RequestVoid(WaiterLoginRequiredMixin, views.View):
+                def get(self, request, id, format=None):
+                    try:
+                        order = ProductInTab.objects.get(id=id)
+                        void_request = OrderVoidRequest(order=order, waiter=request.user)
+                        void_request.clean()
+                        void_request.save()
+                        channel_layer = get_channel_layer()
+                        async_to_sync(channel_layer.group_send)(
+                            "notifications_manager",
+                            {
+                                "type": "notification.void_request",
+                                "void_request": void_request,
+                            },
+                        )
+                        messages.success(request, f"Void of a {order.product.name} requested")
+                    except ValidationError as err:
+                        messages.error(request, err.message)
+                    except ProductInTab.DoesNotExist:
+                        messages.error(request, "The Product order can't be found and thus void wasn't requested.")
+                    return redirect(request.GET["next"] if "next" in request.GET else reverse("waiter/orders"))
+
+            class Void(ManagerLoginRequiredMixin, views.View):
+                def get(self, request, id):
+                    try:
+                        order = ProductInTab.objects.get(id=id)
+                        order.void()
+                        messages.success(request, f"Order of a {order.product.name} voided")
+                    except ProductInTab.DoesNotExist:
+                        messages.error(request, "The Product order can't be found and thus wasn't voided.")
+                    return redirect(request.GET["next"] if "next" in request.GET else reverse("waiter/orders"))
+
+            class AuthenticateAndVoid(WaiterLoginRequiredMixin, views.View):
+                def get(self, request, id):
+                    context = Context(request, "waiter/orders/order/authenticateAndVoid.html")
+                    try:
+                        context["id"] = id
+                        context["order"] = ProductInTab.objects.get(id=id)
+                        context["form"] = AuthenticationForm()
+                        if "next" in request.GET:
+                            context["next"] = request.GET["next"]
+                        return context.render()
+                    except ProductInTab.DoesNotExist:
+                        messages.error(request, "The Product order can't be found and thus wasn't voided.")
+                    return redirect(request.GET["next"] if "next" in request.GET else reverse("waiter/orders"))
+
+                def post(self, request, id):
+                    if check_dict(request.POST, ["username", "password"]):
+                        try:
+                            order = ProductInTab.objects.get(id=id)
+                            form = AuthenticationForm(data=request.POST)
+                            if form.is_valid() and (user := form.authenticate()):
+                                if user.is_manager:
+                                    order.void()
+                                    messages.success(request, f"Order of a {order.product.name} voided")
+                                else:
+                                    messages.warning(request, "Only managers can directly void items. "
+                                                              "Please enter credentials of a manager.")
+                            else:
+                                messages.warning(request, "Wrong username/password")
+                        except ProductInTab.DoesNotExist:
+                            messages.error(request, "The Product order can't be found and thus wasn't voided.")
+                    else:
+                        messages.error(request, "Username or password was missing in the request")
+
+                    return redirect(request.GET["next"] if "next" in request.GET else reverse("waiter/orders"))
 
 
 class Manager:
@@ -321,6 +427,57 @@ class Manager:
             context.add_pagination_context(users, 'users')
 
             return context.render()
+
+        class User(ManagerLoginRequiredMixin, views.View):
+            def get(self, request, username):
+                context = Context(request, "manager/users/user.html")
+                try:
+                    user = User.objects.get(username=username)
+                    context["user"] = user
+                    if username == request.user.username:
+                        context["password_change_blocked"] = 1
+                    elif not request.user.can_change_password(user):
+                        context["password_change_blocked"] = 2
+                    else:
+                        context["password_change_blocked"] = 0
+                except User.DoesNotExist:
+                    context["user"] = False
+                return context.render()
+
+            def post(self, request, username):
+                context = Context(request, "manager/users/user.html")
+                try:
+                    user = User.objects.get(username=username)
+                    if username == request.user.username:
+                        context["password_change_blocked"] = 1
+                    elif not request.user.can_change_password(user):
+                        context["password_change_blocked"] = 2
+                    else:
+                        context["password_change_blocked"] = 0
+                    if "new_password" in request.POST:
+                        if username == request.user.username:
+                            messages.error(request, 'You can\'t change your own password. To do so, '
+                                                    f'please follow <a href="{reverse("password_change")}"> '
+                                                    'this link</a>.')
+                        elif request.user.can_change_password(user):
+                            new_password = request.POST["new_password"]
+                            try:
+                                validate_password(new_password)
+                                user.set_password(new_password)
+                                user.save()
+                                messages.success(request, "Password changed")
+                            except ValidationError as err:
+                                message = "Password change failed: <ul>"
+                                for emsg in err.messages:
+                                    message += f"<li>{emsg}</li>"
+                                message += "</ul>"
+                                messages.warning(request, message)
+                        else:
+                            messages.warning(request, "You can't change password of this user")
+                    context["user"] = user
+                except User.DoesNotExist:
+                    context["user"] = False
+                return context.render()
 
         class Create(ManagerLoginRequiredMixin, views.View):
             def get(self, request):
@@ -586,6 +743,36 @@ class Manager:
                                        'is in a state that does not allow edits.')
 
                     return context.render()
+
+    class VoidRequests(ManagerLoginRequiredMixin, views.View):
+        def get(self, request):
+            context = Context(request, "manager/voidrequests.html")
+            context["open_requests"] = OrderVoidRequest.objects.filter(resolution__isnull=True)
+            context.add_pagination_context(OrderVoidRequest.objects.exclude(resolution__isnull=True), "closed_requests")
+            return context.render()
+
+        class Resolve(ManagerLoginRequiredMixin, views.View):
+            def get(self, request, id, resolution):
+                if resolution not in ["approve", "reject"]:
+                    messages.error(request, f"The specified resolution '{resolution}' is not valid. "
+                                            "It must be either approve or reject.")
+                else:
+                    try:
+                        void_request = OrderVoidRequest.objects.get(id=id)
+                        if resolution == "approve" and void_request.approve(request.user):
+                            messages.success(request, f"The request from {void_request.waiter.name} "
+                                                      f"to void {void_request.order.product.name} was approved.")
+                        elif resolution == "reject" and void_request.reject(request.user):
+                            messages.success(request, f"The request from {void_request.waiter.name} "
+                                                      f"to void {void_request.order.product.name} was rejected.")
+                        else:
+                            messages.warning(request, f"The request from {void_request.waiter.name} "
+                                                      f"to void {void_request.order.product.name} was already "
+                                                      f"{void_request.get_resolution_display().lower()} earlier.")
+                    except OrderVoidRequest.DoesNotExist:
+                        messages.error(request, "The specified Void request does not exist.")
+
+                return redirect(reverse("manager/voidrequests"))
 
 
 class Admin:

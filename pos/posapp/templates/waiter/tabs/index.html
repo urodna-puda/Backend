@@ -249,7 +249,7 @@
                 else if ($("#orderStateP").is(":checked")) state = "P";
                 else if ($("#orderStateT").is(":checked")) state = "T";
                 else if ($("#orderStateS").is(":checked")) state = "S";
-                postData("/api/1/tabs/" + tab + "/order", {
+                postData(`/api/1/tabs/${tab}/order`, {
                     "product": product,
                     "amount": Number(amount),
                     "note": note,

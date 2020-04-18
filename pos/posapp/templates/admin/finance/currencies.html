@@ -202,12 +202,12 @@
             event.stopPropagation();
             event.stopImmediatePropagation();
 
-            postData("/api/1/currencies/" + id + "/toggleEnabled").then(result => {
+            postData(`/api/1/currencies/${id}/toggleEnabled`).then(result => {
                 if (result.status === 200) {
                     if (result.now) {
-                        $("#enabled-indicator-" + id).removeClass().addClass("text-success fas fa-check-circle");
+                        $(`#enabled-indicator-${id}`).removeClass().addClass("text-success fas fa-check-circle");
                     } else {
-                        $("#enabled-indicator-" + id).removeClass().addClass("text-danger fas fa-times-circle");
+                        $(`#enabled-indicator-${id}`).removeClass().addClass("text-danger fas fa-times-circle");
                     }
                     $(document).Toasts('create', {
                         body: result.message,

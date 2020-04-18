@@ -1,4 +1,54 @@
 {% extends "adminlte/lib/_main_header.html" %}
 {% load static %}
+{% load adminlte_helpers i18n %}
 
+{% block header_dropdowns %}
+    <li class="nav-item dropdown">
+        <a class="nav-link" data-toggle="dropdown" href="#">
+            <i class="far fa-bell fa-2x"></i>
+            <span class="badge badge-warning navbar-badge">{{ notifications.total }}</span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+            <span class="dropdown-item dropdown-header">{{ notifications.header }}</span>
+            <div class="dropdown-divider"></div>
+            {% for notification in notifications %}
+                <a href="{{ notification.link }}" class="dropdown-item">
+                    <i class="fas fa-{{ notification.icon }} mr-2"></i> {{ notification.title }}
+                    <span class="float-right text-muted text-sm"></span>
+                </a>
+            {% empty %}
+                <span class="dropdown-item">No new notifications</span>
+            {% endfor %}
+        </div>
+    </li>
+    {% if request.user.is_authenticated %}
+        <li class="nav-item dropdown">
+            <a class="nav-link" data-toggle="dropdown" href="#">
+                <i class="far fa-user fa-2x"></i>
+            </a>
+            <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+                <a href="#" class="dropdown-item">
+                    <!-- Message Start -->
+                    <div class="media">
+                        <img src="{%avatar_url size=128 %}" alt="User Avatar" class="img-size-50 mr-3 img-circle">
+                        <div class="media-body">
+                            <h3 class="dropdown-item-title">
+                                {% firstof request.user.get_short_name request.user.get_username %}
+                                <span class="float-right text-sm text-danger"><i class="fas fa-online"></i></span>
+                            </h3>
+                            <p class="text-sm"><small>Member since :</small></p>
+                            <p class="text-sm text-muted"><i class="far fa-clock mr-1"></i>  <small>{{ request.user.date_joined }}</small></p>
+                        </div>
+                    </div>
+                    <!-- Message End -->
+                </a>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-footer">
+                    <a href="{% url 'password_change' %}" class="btn btn-primary btn-sm">{% trans 'Change password' %}</a>
+                    <a  href="{% url 'logout' %}" class="btn btn-danger btn-sm">{%trans 'Sign out'%}</a>
+                </div>
 
+            </div>
+        </li>
+    {% endif %}
+{% endblock %}
