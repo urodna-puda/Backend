@@ -17,5 +17,5 @@ deploy:
     - tar -czf /tmp/backend.tar.gz .
     - scp /tmp/backend.tar.gz pudapos@10.1.1.1:~/beta/backend.tar.gz
     - ssh pudapos@10.1.1.1 "bash ~/deploy_pudapos_beta.sh"
-#  only:
-#    - master
+  only:
+    - master
