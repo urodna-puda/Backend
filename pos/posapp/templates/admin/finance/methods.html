@@ -36,7 +36,8 @@
                                                        aria-describedby="search-addon-button" id="searchField"
                                                        name="search"{% if search %} value="{{ search }}"{% endif %}>
                                                 <div class="input-group-append">
-                                                    <button class="btn btn-outline-secondary border-left-0" type="submit"
+                                                    <button class="btn btn-outline-secondary border-left-0"
+                                                            type="submit"
                                                             id="search-addon-button"><i
                                                             class="fas fa-search"></i></button>
                                                 </div>
@@ -60,8 +61,15 @@
                             <tr>
                                 <th scope="col">Name</th>
                                 <th scope="col">Currency</th>
-                                <th scope="col">Change allowed</th>
-                                <th scope="col">Currency enabled</th>
+                                <th scope="col">Change status</th>
+                                <th scope="col">
+                                    Status<br>
+                                    <small class="text-muted">
+                                        <span class="hint" data-toggle="tooltip" title="Currency status">C</span>&nbsp;
+                                        <span class="hint" data-toggle="tooltip" title="Method status">M</span>&nbsp;
+                                        <span class="hint" data-toggle="tooltip" title="Resulting status">R</span>&nbsp;
+                                    </small>
+                                </th>
                                 <th scope="col">Actions</th>
                             </tr>
                             </thead>
@@ -71,25 +79,51 @@
                                     <td>{{ method.name }}</td>
                                     <td>{{ method.currency.name }}</td>
                                     <td>
-                                        <button type="button" class="btn btn-tool toggle-manager"
-                                                onclick="toggleChange('{{ method.id }}')">
-                                            {% if method.changeAllowed %}
-                                                <i class="text-success fas fa-check-circle"
-                                                   id="change-indicator-{{ method.id }}"></i>
-                                            {% else %}
-                                                <i class="text-danger fas fa-times-circle"
-                                                   id="change-indicator-{{ method.id }}"></i>
-                                            {% endif %}
+                                        <button type="button" class="btn btn-tool"
+                                                onclick="toggleProperty('{{ method.id }}', 'change');">
+                                            <i class="text-success fas fa-check-circle"
+                                               {% if not method.changeAllowed %}style="display:none;"{% endif %}
+                                               id="change-indicator-{{ method.id }}-enabled"
+                                               data-toggle="tooltip" title="Change allowed"></i>
+                                            <i class="text-danger fas fa-times-circle"
+                                               {% if method.changeAllowed %}style="display:none;"{% endif %}
+                                               id="change-indicator-{{ method.id }}-disabled"
+                                               data-toggle="tooltip" title="Change not allowed"></i>
                                         </button>
                                     </td>
                                     <td>
-                                        {% if method.currency.enabled %}
+                                        <div class="btn btn-tool">
+                                            {% if method.currency.enabled %}
+                                                <i class="text-success fas fa-check-circle"
+                                                   id="currency-indicator-{{ method.id }}"
+                                                   data-toggle="tooltip" title="Currency enabled"></i>
+                                            {% else %}
+                                                <i class="text-danger fas fa-times-circle"
+                                                   id="currency-indicator-{{ method.id }}"
+                                                   data-toggle="tooltip" title="Currency disabled"></i>
+                                            {% endif %}
+                                        </div>
+                                        <button type="button" class="btn btn-tool"
+                                                onclick="toggleProperty('{{ method.id }}', 'enabled');">
                                             <i class="text-success fas fa-check-circle"
-                                               id="change-indicator-{{ method.id }}"></i>
-                                        {% else %}
+                                               {% if not method.enabled_own %}style="display:none;"{% endif %}
+                                               id="enabled-own-indicator-{{ method.id }}-enabled"
+                                               data-toggle="tooltip" title="Method enabled"></i>
                                             <i class="text-danger fas fa-times-circle"
-                                               id="change-indicator-{{ method.id }}"></i>
-                                        {% endif %}
+                                               {% if method.enabled_own %}style="display:none;"{% endif %}
+                                               id="enabled-own-indicator-{{ method.id }}-disabled"
+                                               data-toggle="tooltip" title="Method disabled"></i>
+                                        </button>
+                                        <div class="btn btn-tool">
+                                            <i class="text-success fas fa-check-circle"
+                                               {% if not method.enabled %}style="display:none;"{% endif %}
+                                               id="enabled-indicator-{{ method.id }}-enabled"
+                                               data-toggle="tooltip" title="Method usable"></i>
+                                            <i class="text-danger fas fa-times-circle"
+                                               {% if method.enabled %}style="display:none;"{% endif %}
+                                               id="enabled-indicator-{{ method.id }}-disabled"
+                                               data-toggle="tooltip" title="Method unusable"></i>
+                                        </div>
                                     </td>
                                     <td>
                                         <a href="{% url "admin/finance/methods/method/delete" method.id %}"
@@ -242,16 +276,32 @@
             return false;
         });
 
-        function toggleChange(id) {
+        function toggleProperty(id, property) {
             event.stopPropagation();
             event.stopImmediatePropagation();
 
-            postData(`/api/1/methods/${id}/toggleChange`).then(result => {
+            postData(`/api/1/methods/${id}/toggle/${property}`).then(result => {
                 if (result.status === 200) {
-                    if (result.now) {
-                        $(`#change-indicator-${id}`).removeClass().addClass("text-success fas fa-check-circle");
+                    if (result.now.change) {
+                        $(`#change-indicator-${id}-enabled`).show();
+                        $(`#change-indicator-${id}-disabled`).hide();
                     } else {
-                        $(`#change-indicator-${id}`).removeClass().addClass("text-danger fas fa-times-circle");
+                        $(`#change-indicator-${id}-enabled`).hide();
+                        $(`#change-indicator-${id}-disabled`).show();
+                    }
+                    if (result.now.enabled_own) {
+                        $(`#enabled-own-indicator-${id}-enabled`).show();
+                        $(`#enabled-own-indicator-${id}-disabled`).hide();
+                    } else {
+                        $(`#enabled-own-indicator-${id}-enabled`).hide();
+                        $(`#enabled-own-indicator-${id}-disabled`).show();
+                    }
+                    if (result.now.enabled) {
+                        $(`#enabled-indicator-${id}-enabled`).show();
+                        $(`#enabled-indicator-${id}-disabled`).hide();
+                    } else {
+                        $(`#enabled-indicator-${id}-enabled`).hide();
+                        $(`#enabled-indicator-${id}-disabled`).show();
                     }
                     $(document).Toasts('create', {
                         body: result.message,
