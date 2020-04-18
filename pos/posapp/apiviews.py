@@ -1,14 +1,10 @@
-import uuid
-
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from posapp.models import Tab, Product, User, PaymentMethod, Currency, ProductInTab, OrderVoidRequest
-from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin
+from posapp.models import Tab, Product, User, PaymentMethod, Currency, ProductInTab
+from posapp.security.role_decorators import ManagerLoginRequiredMixin
 from posapp.serializers import TabListSerializer
 
 
@@ -149,25 +145,42 @@ class CurrencyToggleEnabled(APIView):
             }, status.HTTP_404_NOT_FOUND)
 
 
-class MethodToggleChange(APIView):
+class MethodToggles(APIView):
     is_text = "success\">is"
     isnt_text = "danger\">isn't"
 
-    def post(self, request, id, format=None):
+    def post(self, request, id, property, format=None):
         if not request.user.is_admin:
             return Response({
                 'status': 404,
                 'error': 'Only admins can access this view',
             }, status.HTTP_403_FORBIDDEN)
 
+        if property not in ["change", "enabled"]:
+            return Response({
+                'status': 400,
+                'error': f'property must be one of change/enabled, was {property}',
+            }, status.HTTP_400_BAD_REQUEST)
+
         try:
             method = PaymentMethod.objects.get(id=id)
-            method.changeAllowed = not method.changeAllowed
+            message = ""
+            if property == "change":
+                method.changeAllowed = not method.changeAllowed
+                message = f"The method now <span class=\"badge badge-{self.is_text if method.changeAllowed else self.isnt_text}</span> allowed as change."
+            elif property == "enabled":
+                method.enabled_own = not method.enabled_own
+                message = f"The method now <span class=\"badge badge-{self.is_text if method.enabled_own else self.isnt_text}</span> enabled."
+
             method.save()
             return Response({
                 'status': 200,
-                'now': method.changeAllowed,
-                'message': f"The method now <span class=\"badge badge-{self.is_text if method.changeAllowed else self.isnt_text}</span> allowed as change.",
+                'now': {
+                    'change': method.changeAllowed,
+                    'enabled_own': method.enabled_own,
+                    'enabled': method.enabled,
+                },
+                'message': message,
             }, status.HTTP_200_OK)
 
         except PaymentMethod.DoesNotExist:

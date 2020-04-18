@@ -260,7 +260,8 @@ class Waiter:
                 context["id"] = id
                 current_till = request.user.current_till
                 if current_till:
-                    context["money_counts"] = current_till.tillmoneycount_set.all()
+                    context["money_counts"] = [method for method in current_till.tillmoneycount_set.all()
+                                               if method.paymentMethod.enabled]
                     try:
                         tab = Tab.objects.get(id=id)
                         context["tab_open"] = tab.state == Tab.OPEN
@@ -300,10 +301,13 @@ class Waiter:
                                     payment.tab = tab
                                     payment.method = money_count
                                     payment.amount = amount
+                                    payment.clean()
                                     payment.save()
                                     messages.success(request, "Payment created successfully")
                             except TillMoneyCount.DoesNotExist:
                                 messages.warning(request, "Invalid request: Payment method does not exist")
+                            except ValidationError as err:
+                                messages.warning(request, f"Creating the payment failed: {err.message}")
                         if check_dict(request.POST, ["paymentId", "delete"]) and tab:
                             try:
                                 payment_id = uuid.UUID(request.POST["paymentId"])
@@ -816,8 +820,7 @@ class Admin:
                 currency_filter = int(request.GET['currency']) if 'currency' in request.GET else None
 
                 methods = PaymentMethod.objects.filter(
-                    Q(name__icontains=search) | Q(currency__name__icontains=search)).filter(
-                    currency__enabled=True)
+                    Q(name__icontains=search) | Q(currency__name__icontains=search))
                 if currency_filter:
                     methods = methods.filter(currency__pk=currency_filter)
 

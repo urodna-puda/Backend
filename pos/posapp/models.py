@@ -323,6 +323,19 @@ class PaymentMethod(models.Model):
     name = models.CharField(max_length=1024, null=False)
     currency = models.ForeignKey(Currency, on_delete=models.PROTECT, limit_choices_to={"enabled": True})
     changeAllowed = models.BooleanField(default=False)
+    _enabled = models.BooleanField(default=False, db_column='enabled')
+
+    @property
+    def enabled(self):
+        return self._enabled and self.currency.enabled
+
+    @property
+    def enabled_own(self):
+        return self._enabled
+
+    @enabled_own.setter
+    def enabled_own(self, value):
+        self._enabled = value
 
     def __str__(self):
         return self.name
@@ -476,6 +489,13 @@ class PaymentInTab(models.Model):
     def converted_value(self):
         return round(float(self.amount) * self.method.paymentMethod.currency.ratio, 3)
 
+    def clean(self):
+        super(PaymentInTab, self).clean()
+
+        if not self.method.paymentMethod.enabled:
+            raise ValidationError(f"You can't create payments with payment method {self.method.paymentMethod.name}, "
+                                  f"it is currently disabled.")
+
 
 class OrderVoidRequest(models.Model):
     APPROVED = 'A'
@@ -528,6 +548,8 @@ class OrderVoidRequest(models.Model):
         print(f"notified waiter {self.waiter.username}")
 
     def clean(self):
+        super(OrderVoidRequest, self).clean()
+
         if self.order.void_request_exists:
             raise ValidationError("It appears there already is another unresolved request associated with this order.")
         if self.order.state == ProductInTab.VOIDED:
