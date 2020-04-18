@@ -816,8 +816,7 @@ class Admin:
                 currency_filter = int(request.GET['currency']) if 'currency' in request.GET else None
 
                 methods = PaymentMethod.objects.filter(
-                    Q(name__icontains=search) | Q(currency__name__icontains=search)).filter(
-                    currency__enabled=True)
+                    Q(name__icontains=search) | Q(currency__name__icontains=search))
                 if currency_filter:
                     methods = methods.filter(currency__pk=currency_filter)
 
