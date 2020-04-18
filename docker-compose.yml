@@ -27,11 +27,6 @@ services:
       - 1337:80
     depends_on:
       - web
-  node:
-    build: ./node
-    command: npm run
-    ports:
-      - 3000:3000
 
 volumes:
   postgres_data:
