@@ -323,6 +323,11 @@ class PaymentMethod(models.Model):
     name = models.CharField(max_length=1024, null=False)
     currency = models.ForeignKey(Currency, on_delete=models.PROTECT, limit_choices_to={"enabled": True})
     changeAllowed = models.BooleanField(default=False)
+    _enabled = models.BooleanField(default=False, db_column='enabled')
+
+    @property
+    def enabled(self):
+        return self._enabled and self.currency.enabled
 
     def __str__(self):
         return self.name
