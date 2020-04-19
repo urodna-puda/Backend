@@ -123,6 +123,7 @@ class Tab(models.Model):
     state = models.CharField(max_length=1, choices=ORDER_STATES, default=OPEN)
     openedAt = models.DateTimeField(editable=False, auto_now_add=True)
     closedAt = models.DateTimeField(null=True, blank=True)
+    owner = models.ForeignKey(User, on_delete=models.PROTECT, null=True)
 
     class Meta:
         permissions = [

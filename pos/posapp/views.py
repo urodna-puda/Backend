@@ -166,6 +166,7 @@ def prepare_tab_dict(tab):
         'id': tab.id,
         'total': tab.total,
         'paid': tab.paid,
+        'owner': tab.owner,
         'variance': abs(variance),
         'showVariance': variance != 0,
         'varianceLabel': 'To pay' if variance > 0 else 'To change',

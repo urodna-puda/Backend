@@ -7,7 +7,11 @@
     Tab {{ tab.name }}
 {% endblock %}
 
-{% block no_description %}{% endblock %}
+{% block description %}
+    <span class="{% if not tab.owner %}text-danger{% endif %}" data-toggle="tooltip" title="Owner">
+        {{ tab.owner.name|default:"No owner set" }}
+    </span>
+{% endblock %}
 
 {% block breadcrumbs %}
     <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
@@ -260,7 +264,8 @@
                                 Void immediately
                             </button>
                         {% else %}
-                            <button type="button" class="btn btn-success" id="confirmVoidRequestModalButtonAuthenticate">
+                            <button type="button" class="btn btn-success"
+                                    id="confirmVoidRequestModalButtonAuthenticate">
                                 Log in and void
                             </button>
                         {% endif %}
@@ -298,8 +303,8 @@
                 $('#confirmVoidRequestModalButtonVoid').off('click').on('click', function () {
                     window.location = button.data('order-void-url');
                 });
-                {% else %}
-                $('#confirmVoidRequestModalButtonAuthenticate').off('click').on('click', function() {
+            {% else %}
+                $('#confirmVoidRequestModalButtonAuthenticate').off('click').on('click', function () {
                     window.location = button.data('order-authenticate-url');
                 })
             {% endif %}
