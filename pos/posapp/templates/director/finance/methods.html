@@ -10,8 +10,8 @@
 
 {% block breadcrumbs %}
     <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
-    <li class="breadcrumb-item" aria-current="page"><a href="{% url "admin" %}">Staff</a></li>
-    <li class="breadcrumb-item" aria-current="page"><a href="{% url "admin/finance" %}">Finance</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director" %}">Director</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director/finance" %}">Finance</a></li>
     <li class="breadcrumb-item active" aria-current="page">Payment methods</li>
 {% endblock %}
 
@@ -126,7 +126,7 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <a href="{% url "admin/finance/methods/method/delete" method.id %}"
+                                        <a href="{% url "director/finance/methods/method/delete" method.id %}"
                                            class="btn btn-tool" data-toggle="tooltip" data-position="top"
                                            title="Delete">
                                             <i class="fas fa-trash"></i>
@@ -232,7 +232,7 @@
                             {{ form.non_field_errors }}
                         </div>
                     {% endif %}
-                    <form action="{% url "admin/finance/methods" %}" method="post" id="createMethodForm">
+                    <form action="{% url "director/finance/methods" %}" method="post" id="createMethodForm">
                         {% csrf_token %}
                         <div class="form-group">
                             <label for="{{ form.name.id_for_label }}">Method name</label>

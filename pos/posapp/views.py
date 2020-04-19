@@ -18,7 +18,7 @@ from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProd
     CreateItemForm, AuthenticationForm
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
     PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest
-from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, AdminLoginRequiredMixin
+from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, DirectorLoginRequiredMixin
 
 
 class Notification:
@@ -48,7 +48,7 @@ class Context:
         self.page = request.get_full_path()[1:]
         self.waiter_role = request.user.is_waiter
         self.manager_role = request.user.is_manager
-        self.admin_role = request.user.is_admin
+        self.director_role = request.user.is_director
         self.notifications = Notifications()
         self.version = settings.VERSION
         self.data = {}
@@ -125,7 +125,7 @@ class Context:
         yield 'page', self.page
         yield 'waiter_role', self.waiter_role
         yield 'manager_role', self.manager_role
-        yield 'admin_role', self.admin_role
+        yield 'director_role', self.director_role
         yield 'notifications', self.notifications
         yield 'version', self.version
         for key in self.data:
@@ -551,7 +551,7 @@ class Manager:
                     except TillPaymentOptions.DoesNotExist:
                         messages.error(request,
                                        "The selected payment options config does not exist. It may have also been "
-                                       "disabled by an administrator.")
+                                       "disabled by a director.")
                 else:
                     messages.error(request, "Some required fields are missing")
 
@@ -782,11 +782,11 @@ class Manager:
                 return redirect(reverse("manager/voidrequests"))
 
 
-class Admin:
+class Director:
     class Finance:
-        class Currencies(AdminLoginRequiredMixin, views.View):
+        class Currencies(DirectorLoginRequiredMixin, views.View):
             def get(self, request):
-                context = Context(request, "admin/finance/currencies.html")
+                context = Context(request, "director/finance/currencies.html")
                 page_length = int(request.GET.get('page_length', 20))
                 search = request.GET.get('search', '')
                 enabled_filter = request.GET.get('enabled', '')
@@ -810,9 +810,9 @@ class Admin:
 
                 return context.render()
 
-        class Methods(AdminLoginRequiredMixin, views.View):
+        class Methods(DirectorLoginRequiredMixin, views.View):
             def get(self, request, form=None, show_modal=False):
-                context = Context(request, "admin/finance/methods.html")
+                context = Context(request, "director/finance/methods.html")
 
                 form = form or CreatePaymentMethodForm()
                 context['form'] = form
@@ -843,12 +843,12 @@ class Admin:
                     show_modal = True
                 return self.get(request, form, show_modal)
 
-            class Method(AdminLoginRequiredMixin, views.View):
+            class Method(DirectorLoginRequiredMixin, views.View):
                 def get(self, request, id):
                     messages.info(request, f"Well that was disappointing...")
-                    return redirect(reverse("admin/finance/methods"))
+                    return redirect(reverse("director/finance/methods"))
 
-                class Delete(AdminLoginRequiredMixin, views.View):
+                class Delete(DirectorLoginRequiredMixin, views.View):
                     def get(self, request, id):
                         try:
                             method = PaymentMethod.objects.get(id=id)
@@ -860,17 +860,17 @@ class Admin:
                             messages.error(request, "The specified method can't be deleted as other records such as "
                                                     "payments or tills depend on it. You can remove it from the deposits "
                                                     "to prevent further use.")
-                        return redirect(reverse("admin/finance/methods"))
+                        return redirect(reverse("director/finance/methods"))
 
-    class Units(AdminLoginRequiredMixin, views.View):
+    class Units(DirectorLoginRequiredMixin, views.View):
         def get(self, request):
-            context = Context(request, 'admin/units/index.html')
+            context = Context(request, 'director/units/index.html')
             context['groups'] = UnitGroup.objects.all()
 
             return context.render()
 
         def post(self, request):
-            context = Context(request, 'admin/units/index.html')
+            context = Context(request, 'director/units/index.html')
             if check_dict(request.POST, ['newUnitGroupName', 'newUnitGroupSymbol']):
                 group = UnitGroup()
                 group.name = request.POST['newUnitGroupName']
@@ -911,9 +911,9 @@ class Admin:
             return context.render()
 
     class Menu:
-        class Products(AdminLoginRequiredMixin, views.View):
+        class Products(DirectorLoginRequiredMixin, views.View):
             def fill_data(self, request):
-                context = Context(request, 'admin/menu/products/index.html')
+                context = Context(request, 'director/menu/products/index.html')
                 search = request.GET.get('search', '')
                 enabled_filter = request.GET.get('enabled', '')
 
@@ -947,16 +947,16 @@ class Admin:
                 if form.is_valid():
                     form.save()
                     messages.success(request, "Product created successfully")
-                    return redirect("admin/menu/products/product", id=product.id)
+                    return redirect("director/menu/products/product", id=product.id)
                 else:
                     context = self.fill_data(request)
                     context["create_product_form"] = form
 
                     return context.render()
 
-            class Product(AdminLoginRequiredMixin, views.View):
+            class Product(DirectorLoginRequiredMixin, views.View):
                 def get(self, request, id, *args, **kwargs):
-                    context = Context(request, 'admin/menu/products/product.html')
+                    context = Context(request, 'director/menu/products/product.html')
                     context["id"] = id
                     try:
                         product = Product.objects.get(id=id)
@@ -970,7 +970,7 @@ class Admin:
                     return context.render()
 
                 def post(self, request, id, *args, **kwargs):
-                    context = Context(request, 'admin/menu/products/product.html')
+                    context = Context(request, 'director/menu/products/product.html')
                     context["id"] = id
                     try:
                         product = Product.objects.get(id=id)
@@ -1010,22 +1010,22 @@ class Admin:
                         context["show_does_not_exist"] = True
                     return context.render()
 
-                class Delete(AdminLoginRequiredMixin, views.View):
+                class Delete(DirectorLoginRequiredMixin, views.View):
                     def get(self, request, id, *args, **kwargs):
                         try:
                             product = Product.objects.get(id=id)
                             product.delete()
                             messages.success(request, f"Product {product.name} was deleted.")
-                            return redirect(reverse("admin/menu/products"))
+                            return redirect(reverse("director/menu/products"))
                         except Product.DoesNotExist:
-                            return redirect("admin/menu/products/product", id=id)
+                            return redirect(reverse("director/menu/products/product", id=id))
                         except ProtectedError:
                             messages.error(request, "This Product can't be deleted as it was already ordered")
-                            return redirect("admin/menu/products/product", id=id)
+                            return redirect(reverse("director/menu/products/product", id=id))
 
         class Items(views.View):
             def fill_data(self, request):
-                context = Context(request, 'admin/menu/items/index.html')
+                context = Context(request, 'director/menu/items/index.html')
                 search = request.GET.get('search', '')
                 unit_group_id = uuid.UUID(request.GET['unit_group']) \
                     if "unit_group" in request.GET and request.GET["unit_group"] else None
@@ -1061,7 +1061,7 @@ class Admin:
             class Item(views.View):
                 def get(self, request, id):
                     messages.info(request, "That link leads nowhere, you better be safe.")
-                    return redirect("admin/menu/items")
+                    return redirect(reverse("director/menu/items"))
 
                 class Delete(views.View):
                     def get(self, request, id):
@@ -1073,4 +1073,4 @@ class Admin:
                             messages.error(request, "The item wasn't deleted as it can't be found.")
                         except ProtectedError:
                             messages.error(request, "The item can't be deleted because it is used by a Product")
-                        return redirect(reverse('admin/menu/items'))
+                        return redirect(reverse('director/menu/items'))

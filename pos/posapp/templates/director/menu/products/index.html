@@ -10,8 +10,8 @@
 
 {% block breadcrumbs %}
     <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
-    <li class="breadcrumb-item" aria-current="page"><a href="{% url "admin" %}">Staff</a></li>
-    <li class="breadcrumb-item" aria-current="page"><a href="{% url "admin/menu" %}">Menu</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director" %}">Director</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director/menu" %}">Menu</a></li>
     <li class="breadcrumb-item active" aria-current="page">Products</li>
 {% endblock %}
 
@@ -103,7 +103,7 @@
                                         </button>
                                     </td>
                                     <td class="col-1 text-center"><a
-                                            href="{% url "admin/menu/products/product" product.id %}"
+                                            href="{% url "director/menu/products/product" product.id %}"
                                             class="btn btn-tool"><i class="fas fa-edit"></i></a>
                                     </td>
                                 </tr>
@@ -207,7 +207,7 @@
                             {{ create_product_form.non_field_errors }}
                         </div>
                     {% endif %}
-                    <form action="{% url "admin/menu/products" %}" method="post" id="createProductForm">
+                    <form action="{% url "director/menu/products" %}" method="post" id="createProductForm">
                         {% csrf_token %}
                         <div class="form-group">
                             <label for="{{ create_product_form.name.id_for_label }}">Name</label>

@@ -47,7 +47,7 @@
                                     Manager status
                                 </th>
                                 <th scope="col" data-toggle="tooltip" data-position="start-top" title="Click to toggle">
-                                    Admin status
+                                    Director status
                                 </th>
                                 <th scope="col" data-toggle="tooltip" data-position="start-top" title="Click to toggle">
                                     User enabled
@@ -95,19 +95,19 @@
                                     </td>
                                     <td>
                                         <button type="button" class="btn btn-tool toggle-manager"
-                                                onclick="toggleRole('admin', '{{ user.username }}')">
-                                            {% if user.is_admin %}
+                                                onclick="toggleRole('director', '{{ user.username }}')">
+                                            {% if user.is_director %}
                                                 <i class="text-success fas fa-check-circle"
-                                                   id="admin-indicator-{{ user.username }}"></i>
+                                                   id="director-indicator-{{ user.username }}"></i>
                                             {% else %}
                                                 <i class="text-danger fas fa-times-circle"
-                                                   id="admin-indicator-{{ user.username }}"></i>
+                                                   id="director-indicator-{{ user.username }}"></i>
                                             {% endif %}
                                         </button>
                                     </td>
                                     <td>
                                         <button type="button" class="btn btn-tool toggle-manager"
-                                                onclick="toggleRole('active', '{{ user.username }}', Boolean('{{ user.requires_admin_to_toggle }}'))">
+                                                onclick="toggleRole('active', '{{ user.username }}', Boolean('{{ user.requires_director_to_toggle }}'))">
                                             {% if user.is_active %}
                                                 <i class="text-success fas fa-check-circle"
                                                    id="active-indicator-{{ user.username }}"></i>
@@ -170,7 +170,7 @@
 {% block javascript %}
     {{ block.super }}
     <script>
-        function toggleRole(role, username, requiresAdmin) {
+        function toggleRole(role, username) {
             event.stopPropagation();
             event.stopImmediatePropagation();
 

@@ -93,7 +93,7 @@
                                     <div class="text-danger">{{ form.is_waiter.errors }}</div>
                                 {% endif %}
                             </div>
-                            {% if admin_role %}
+                            {% if director_role %}
                                 <div class="form-group form-check">
                                     {{ form.is_manager }}
                                     <label class="form-check-label" for="{{ form.is_manager.id_for_label }}">Is
@@ -103,11 +103,11 @@
                                     {% endif %}
                                 </div>
                                 <div class="form-group form-check">
-                                    {{ form.is_admin }}
-                                    <label class="form-check-label" for="{{ form.is_admin.id_for_label }}">Is
-                                        admin</label>
-                                    {% if form.is_admin.errors %}
-                                        <div class="text-danger">{{ form.is_admin.errors }}</div>
+                                    {{ form.is_director }}
+                                    <label class="form-check-label" for="{{ form.is_director.id_for_label }}">Is
+                                        director</label>
+                                    {% if form.is_director.errors %}
+                                        <div class="text-danger">{{ form.is_director.errors }}</div>
                                     {% endif %}
                                 </div>
                             {% endif %}
