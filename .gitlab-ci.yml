@@ -1,7 +1,6 @@
-image: debian:buster
+image: docker.gitlab.blep.cz/blep.cz/pipenv-runner
 
 before_script:
-  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
   - eval $(ssh-agent -s)
   - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
   - mkdir -p ~/.ssh
@@ -9,7 +8,17 @@ before_script:
   - echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
   - chmod 600 ~/.ssh/known_hosts
 
-deploy:
+stages:
+  - test
+  - deploy
+
+django:
+  stage: test
+  script:
+    - pipenv install
+    - pipenv run ./manage.py test
+
+beta-server:
   stage: deploy
   script:
     - echo "HOST=beta.puda.pos.beer" >> .env
