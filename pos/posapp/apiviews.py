@@ -64,10 +64,10 @@ class UserToggles(APIView):
     isnt_text = "danger\">isn't"
 
     def post(self, request, username, role, format=None):
-        if role not in ["waiter", "manager", "admin", "active"]:
+        if role not in ["waiter", "manager", "director", "active"]:
             return Response({
                 'status': 400,
-                'error': f'role must be one of waiter/manager/admin/active, was {role}',
+                'error': f'role must be one of waiter/manager/director/active, was {role}',
             }, status.HTTP_400_BAD_REQUEST)
 
         try:
@@ -99,10 +99,10 @@ class UserToggles(APIView):
             user.is_manager = not user.is_manager
             new_state = user.is_manager
             comment = "a manager"
-        elif role == "admin":
+        elif role == "director":
             user.is_director = not user.is_director
             new_state = user.is_director
-            comment = "an admin"
+            comment = "a director"
         elif role == "active":
             user.is_active = not user.is_active
             new_state = user.is_active
@@ -125,7 +125,7 @@ class CurrencyToggleEnabled(APIView):
         if not request.user.is_director:
             return Response({
                 'status': 404,
-                'error': 'Only admins can access this view',
+                'error': 'Only directors can access this view',
             }, status.HTTP_403_FORBIDDEN)
 
         try:
@@ -153,7 +153,7 @@ class MethodToggles(APIView):
         if not request.user.is_director:
             return Response({
                 'status': 404,
-                'error': 'Only admins can access this view',
+                'error': 'Only directors can access this view',
             }, status.HTTP_403_FORBIDDEN)
 
         if property not in ["change", "enabled"]:

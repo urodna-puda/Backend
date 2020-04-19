@@ -9,9 +9,9 @@
 
 {% block breadcrumbs %}
     <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
-    <li class="breadcrumb-item" aria-current="page"><a href="{% url "admin" %}">Staff</a></li>
-    <li class="breadcrumb-item" aria-current="page"><a href="{% url "admin/menu" %}">Menu</a></li>
-    <li class="breadcrumb-item" aria-current="page"><a href="{% url "admin/menu/products" %}">Products</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director" %}">Director</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director/menu" %}">Menu</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director/menu/products" %}">Products</a></li>
     <li class="breadcrumb-item active" aria-current="page">Product</li>
 {% endblock %}
 
@@ -40,7 +40,7 @@
                                     {{ form.non_field_errors }}
                                 </div>
                             {% endif %}
-                            <form action="{% url "admin/menu/products/product" id %}" method="post"
+                            <form action="{% url "director/menu/products/product" id %}" method="post"
                                   id="updateProductForm">
                                 {% csrf_token %}
                                 <input type="hidden" name="formSelector" value="product"/>
@@ -88,7 +88,7 @@
                                     {{ items_formset.non_field_errors }}
                                 </div>
                             {% endif %}
-                            <form action="{% url "admin/menu/products/product" id %}" method="post" id="itemsForm">
+                            <form action="{% url "director/menu/products/product" id %}" method="post" id="itemsForm">
                                 {% csrf_token %}
                                 <input type="hidden" name="formSelector" value="items"/>
                                 {{ items_formset.management_form }}
@@ -138,7 +138,7 @@
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                            <a href="{% url "admin/menu/products/product/delete" id %}" class="btn btn-danger">
+                            <a href="{% url "director/menu/products/product/delete" id %}" class="btn btn-danger">
                                 <i class="fas fa-trash"></i>&nbsp;
                                 Delete
                             </a>
@@ -164,9 +164,9 @@
     {{ block.super }}
     <script>
         async function deleteProduct() {
-            deleteResource("{% url "admin/menu/products/product" id %}").then(
+            deleteResource("{% url "director/menu/products/product" id %}").then(
                 function () {
-                    window.location = "{% url "admin/menu/products" %}";
+                    window.location = "{% url "director/menu/products" %}";
                 });
         }
     </script>

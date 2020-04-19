@@ -25,7 +25,7 @@ class User(AbstractUser):
     mobile_phone = PhoneNumberField()
 
     @property
-    def requires_admin_to_toggle(self):
+    def requires_director_to_toggle(self):
         return self.is_manager or self.is_director
 
     @property
@@ -33,7 +33,7 @@ class User(AbstractUser):
         return f"{self.first_name} {self.last_name}"
 
     def can_grant(self, target, role):
-        return (self.username != target.username or role not in ("admin", "active")) and \
+        return (self.username != target.username or role not in ("director", "active")) and \
                (self.is_director or (self.is_manager and role in ("waiter", "active"))) and \
                (role != "active" or (self.is_director or (self.is_manager and not target.is_director)))
 
