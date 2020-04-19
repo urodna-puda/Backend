@@ -75,14 +75,25 @@
         const userNotificationsSocket = new WebSocket(`ws://${window.location.host}/ws/posapp/notifications/user`);
         userNotificationsSocket.onmessage = function (e) {
             const data = JSON.parse(e.data);
-            if (data.notification_type === "void_request_resolved") {
-                $(document).Toasts('create', {
-                    body: `<a id="toast"></a>Manager ${data.manager.username} has ${data.resolution === 'A' ? 'approved' : 'rejected'} your void request of product ${data.order.product_name} in tab ${data.order.tab_name}. <a href="/waiter/tabs/${data.order.tab_id}">Review it now</a>.`,
-                    title: 'Void request resolved',
-                    icon: data.resolution === 'A' ? 'text-success fas fa-check fa-lg' : 'text-danger fas fa-times fa-lg',
-                    autohide: false,
-                    close: true,
-                });
+            switch (data.notification_type) {
+                case "tab_void_request_resolved":
+                    $(document).Toasts('create', {
+                        body: `<a id="toast"></a>Manager ${data.manager.username} has ${data.resolution === 'A' ? 'approved' : 'rejected'} your void request of product ${data.order.product_name} in tab ${data.order.tab_name}. <a href="/waiter/tabs/${data.order.tab_id}">Review it now</a>.`,
+                        title: 'Void request resolved',
+                        icon: data.resolution === 'A' ? 'text-success fas fa-check fa-lg' : 'text-danger fas fa-times fa-lg',
+                        autohide: false,
+                        close: true,
+                    });
+                    break;
+                case "tab_transfer_request_resolved":
+                    $(document).Toasts('create', {
+                        body: `<a id="toast"></a>${data.message}`,
+                        title: 'Transfer request resolved',
+                        icon: data.resolution ? 'text-success fas fa-check fa-lg' : 'text-danger fas fa-times fa-lg',
+                        autohide: false,
+                        close: true,
+                    });
+                    break;
             }
         }
 
@@ -90,14 +101,37 @@
             const managerNotificationsSocket = new WebSocket(`ws://${window.location.host}/ws/posapp/notifications/manager`);
             managerNotificationsSocket.onmessage = function (e) {
                 const data = JSON.parse(e.data);
-                if (data.notification_type === "void_request") {
-                    $(document).Toasts('create', {
-                        body: `<a id="toast"></a>User ${data.user.username} is requesting void of product ${data.order.product_name} in tab ${data.order.tab_name}. <a href="{% url "manager/voidrequests" %}">Resolve it now</a>.`,
-                        title: 'Void request',
-                        icon: 'fas fa-trash fa-lg',
-                        autohide: false,
-                        close: true,
-                    });
+                switch (data.notification_type) {
+                    case "void_request":
+                        $(document).Toasts('create', {
+                            body: `<a id="toast"></a>User ${data.user.username} is requesting void of product ${data.order.product_name} in tab ${data.order.tab_name}. <a href="{% url "manager/requests" %}">Resolve it now</a>.`,
+                            title: 'Void request',
+                            icon: 'fas fa-trash fa-lg',
+                            autohide: false,
+                            close: true,
+                        });
+                        break;
+                    case "tab_transfer_request":
+                        switch (data.transfer_mode) {
+                            case "transfer":
+                                $(document).Toasts('create', {
+                                    body: `<a id="toast"></a>User ${data.requester_name} is requesting transfer of their tab ${data.tab_name} to ${data.new_owner_name}. <a href="{% url "manager/requests" %}">Resolve it now</a>.`,
+                                    title: 'Transfer request',
+                                    icon: 'fas fa-people-arrows fa-lg',
+                                    autohide: false,
+                                    close: true,
+                                });
+                                break;
+                            case "claim":
+                                $(document).Toasts('create', {
+                                    body: `<a id="toast"></a>User ${data.requester_name} is requesting to claim tab ${data.tab_name}. <a href="{% url "manager/requests" %}">Resolve it now</a>.`,
+                                    title: 'Claim request',
+                                    icon: 'fas fa-people-arrows fa-lg',
+                                    autohide: false,
+                                    close: true,
+                                });
+                                break;
+                        }
                 }
             };
         {% endif %}

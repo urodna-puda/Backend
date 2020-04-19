@@ -217,6 +217,89 @@
                         </div>
                     </div>
                 </div>
+                {% if transfer_request_exists %}
+                    <div class="col-12 col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">
+                                    <i class="fas fa-people-arrows"></i>
+                                    Transfer
+                                </h2>
+                            </div>
+                            <div class="card-body">
+                                <span class="text-warning">Another transfer or claim request is currently waiting to be resolved. Please wait until then.</span>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="col-12 col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">
+                                    <i class="fas fa-people-arrows"></i>
+                                    Transfer
+                                </h2>
+                            </div>
+                            <div class="card-body">
+                                <form method="post" action="{% url "waiter/tabs/tab/requestTransfer" id %}"
+                                      id="transferRequestForm">
+                                    {% csrf_token %}
+                                    <div class="form-group">
+                                        <label for="newOwnerUsername">Target user</label>
+                                        <select id="newOwnerUsername" name="newOwnerUsername" class="form-control"
+                                                required>
+                                            {% for waiter in waiters %}
+                                                <option value="{{ waiter.username }}">
+                                                    {{ waiter.name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="card-footer">
+                                <button type="submit" form="transferRequestForm" class="btn btn-primary float-right">
+                                    <i class="fas fa-check"></i>&nbsp;
+                                    Request transfer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+            {% if tab_open and not tab_my %}
+                {% if transfer_request_exists %}
+                    <div class="col-12 col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">
+                                    <i class="fas fa-people-arrows"></i>
+                                    Claim
+                                </h2>
+                            </div>
+                            <div class="card-body">
+                                <span class="text-warning">Another transfer or claim request is currently waiting to be resolved. Please wait until then.</span>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="col-12 col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">
+                                    <i class="fas fa-people-arrows"></i>
+                                    Claim
+                                </h2>
+                            </div>
+                            <div class="card-body">
+                                You can request claim of this Tab to be able to create payments. A manager needs to
+                                review the task. By clicking the button you can create a request to claim this Tab.<br>
+                                <a href="{% url "waiter/tabs/tab/requestClaim" id %}"
+                                   class="float-right btn btn-primary">Request claim</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
             {% endif %}
         </div>
     </div>

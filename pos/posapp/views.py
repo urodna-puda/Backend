@@ -17,7 +17,7 @@ from django.urls import reverse
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet, \
     CreateItemForm, AuthenticationForm
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
-    PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest
+    PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest, TabTransferRequest
 from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, \
     DirectorLoginRequiredMixin
 
@@ -61,11 +61,11 @@ class Context:
             count = len(unresolved_requests)
             if count == 1:
                 self.notifications.append(
-                    Notification(count, "1 Void request", "trash", reverse("manager/voidrequests"))
+                    Notification(count, "1 Void request", "trash", reverse("manager/requests/void"))
                 )
             elif count > 1:
                 self.notifications.append(
-                    Notification(count, f"{count} void requests", "trash", reverse("manager/voidrequests"))
+                    Notification(count, f"{count} void requests", "trash", reverse("manager/requests/void"))
                 )
 
     def add_pagination_context(self, manager, key, page_get_name="page", page_length_get_name="page_length"):
@@ -268,6 +268,8 @@ class Waiter:
                         tab = Tab.objects.get(id=id)
                         context["tab_open"] = tab.state == Tab.OPEN
                         context["tab_my"] = tab.owner == request.user
+                        context["transfer_request_exists"] = tab.transfer_request_exists
+                        context["waiters"] = User.objects.filter(is_waiter=True)
 
                         if update_handler:
                             update_handler(context, tab)
@@ -300,7 +302,8 @@ class Waiter:
                                     if amount < 0:
                                         messages.warning(request, "Payment amount must be greater than zero.")
                                     else:
-                                        money_count = request.user.current_till.tillmoneycount_set.get(id=money_count_id)
+                                        money_count = request.user.current_till.tillmoneycount_set.get(
+                                            id=money_count_id)
                                         payment = PaymentInTab()
                                         payment.tab = tab
                                         payment.method = money_count
@@ -337,6 +340,72 @@ class Waiter:
 
                 context = self.fill_data(request, id, update_handler)
                 return context.render()
+
+            class RequestTransfer(WaiterLoginRequiredMixin, views.View):
+                def post(self, request, id):
+                    if "newOwnerUsername" in request.POST:
+                        try:
+                            tab = Tab.objects.get(id=id)
+                            if tab.owner == request.user:
+                                new_owner = User.objects.get(username=request.POST["newOwnerUsername"])
+                                transfer_request = TabTransferRequest()
+                                transfer_request.tab = tab
+                                transfer_request.requester = request.user
+                                transfer_request.new_owner = new_owner
+                                transfer_request.clean()
+                                transfer_request.save()
+                                channel_layer = get_channel_layer()
+                                async_to_sync(channel_layer.group_send)(
+                                    "notifications_manager",
+                                    {
+                                        "type": "notification.tab_transfer_request",
+                                        "transfer_request": transfer_request,
+                                        "transfer_mode": "transfer",
+                                    },
+                                )
+                                messages.success(request, f"A transfer to user {new_owner.name} was requested.")
+                            else:
+                                messages.warning(request, f"Only the tab owner can request transfers to another user.")
+                        except Tab.DoesNotExist:
+                            messages.error(request, "That tab does not exist.")
+                        except User.DoesNotExist:
+                            messages.error(request, "The requested new user does not exist.")
+                        except ValidationError as err:
+                            messages.error(request, f"Request creation failed: {err.message}")
+                    else:
+                        messages.warning(request, "newOwnerUsername parameter was missing. Please try it again.")
+                    return redirect(reverse("waiter/tabs/tab", kwargs={"id": id}))
+
+            class RequestClaim(WaiterLoginRequiredMixin, views.View):
+                def get(self, request, id):
+                    try:
+                        tab = Tab.objects.get(id=id)
+                        if tab.owner != request.user:
+                            transfer_request = TabTransferRequest()
+                            transfer_request.tab = tab
+                            transfer_request.requester = request.user
+                            transfer_request.new_owner = request.user
+                            transfer_request.clean()
+                            transfer_request.save()
+                            channel_layer = get_channel_layer()
+                            async_to_sync(channel_layer.group_send)(
+                                "notifications_manager",
+                                {
+                                    "type": "notification.tab_transfer_request",
+                                    "transfer_request": transfer_request,
+                                    "transfer_mode": "claim",
+                                },
+                            )
+                            messages.success(request, f"A claim was requested.")
+                        else:
+                            messages.warning(request, f"The tab owner can't request claims on his own tabs.")
+                    except Tab.DoesNotExist:
+                        messages.error(request, "That tab does not exist.")
+                    except User.DoesNotExist:
+                        messages.error(request, "The requested new user does not exist.")
+                    except ValidationError as err:
+                        messages.error(request, f"Request creation failed: {err.message}")
+                    return redirect(reverse("waiter/tabs/tab", kwargs={"id": id}))
 
     class Orders(WaiterLoginRequiredMixin, views.View):
         def get(self, request):
@@ -781,37 +850,74 @@ class Manager:
 
                     return context.render()
 
-    class VoidRequests(ManagerLoginRequiredMixin, views.View):
+    class Requests(ManagerLoginRequiredMixin, views.View):
         def get(self, request):
-            context = Context(request, "manager/voidrequests.html")
-            context["open_requests"] = OrderVoidRequest.objects.filter(resolution__isnull=True)
-            context.add_pagination_context(OrderVoidRequest.objects.exclude(resolution__isnull=True), "closed_requests")
+            context = Context(request, "manager/requests/index.html")
+            context["void_requests_open"] = OrderVoidRequest.objects.filter(resolution__isnull=True)
+            context["transfer_requests_open"] = TabTransferRequest.objects.all()
             return context.render()
 
-        class Resolve(ManagerLoginRequiredMixin, views.View):
-            def get(self, request, id, resolution):
-                if resolution not in ["approve", "reject"]:
-                    messages.error(request, f"The specified resolution '{resolution}' is not valid. "
-                                            "It must be either approve or reject.")
-                else:
-                    try:
-                        void_request = OrderVoidRequest.objects.get(id=id)
-                        if resolution == "approve" and void_request.approve(request.user):
-                            messages.success(request, f"The request from {void_request.waiter.name} "
-                                                      f"to void {void_request.order.product.name} was approved.")
-                        elif resolution == "reject" and void_request.reject(request.user):
-                            messages.success(request, f"The request from {void_request.waiter.name} "
-                                                      f"to void {void_request.order.product.name} was rejected.")
-                        else:
-                            messages.warning(request, f"The request from {void_request.waiter.name} "
-                                                      f"to void {void_request.order.product.name} was already "
-                                                      f"{void_request.get_resolution_display().lower()} earlier.")
-                    except OrderVoidRequest.DoesNotExist:
-                        messages.error(request, "The specified Void request does not exist.")
-                    except ValidationError as err:
-                        messages.error(request, f"Resolving void request failed: {err.message}")
+        class Void(ManagerLoginRequiredMixin, views.View):
+            def get(self, request):
+                context = Context(request, "manager/requests/void.html")
+                context["void_requests_open"] = OrderVoidRequest.objects.filter(resolution__isnull=True)
+                context.add_pagination_context(OrderVoidRequest.objects.exclude(resolution__isnull=True),
+                                               "closed_requests")
+                return context.render()
 
-                return redirect(reverse("manager/voidrequests"))
+            class Resolve(ManagerLoginRequiredMixin, views.View):
+                def get(self, request, id, resolution):
+                    if resolution not in ["approve", "reject"]:
+                        messages.error(request, f"The specified resolution '{resolution}' is not valid. "
+                                                "It must be either approve or reject.")
+                    else:
+                        try:
+                            void_request = OrderVoidRequest.objects.get(id=id)
+                            if resolution == "approve" and void_request.approve(request.user):
+                                messages.success(request, f"The request from {void_request.waiter.name} "
+                                                          f"to void {void_request.order.product.name} was approved.")
+                            elif resolution == "reject" and void_request.reject(request.user):
+                                messages.success(request, f"The request from {void_request.waiter.name} "
+                                                          f"to void {void_request.order.product.name} was rejected.")
+                            else:
+                                messages.warning(request, f"The request from {void_request.waiter.name} "
+                                                          f"to void {void_request.order.product.name} was already "
+                                                          f"{void_request.get_resolution_display().lower()} earlier.")
+                        except OrderVoidRequest.DoesNotExist:
+                            messages.error(request, "The specified Void request does not exist.")
+                        except ValidationError as err:
+                            messages.error(request, f"Resolving void request failed: {err.message}")
+
+                    return redirect(reverse("manager/requests/void"))
+
+        class Transfer(ManagerLoginRequiredMixin, views.View):
+            def get(self, request):
+                return redirect(reverse("manager/requests"))
+
+            class Resolve(ManagerLoginRequiredMixin, views.View):
+                def get(self, request, id, resolution):
+                    if resolution not in ["approve", "reject"]:
+                        messages.error(request, f"The specified resolution '{resolution}' is not valid. "
+                                                "It must be either approve or reject.")
+                    else:
+                        try:
+                            transfer_request = TabTransferRequest.objects.get(id=id)
+                            if resolution == "approve":
+                                transfer_request.approve(request.user)
+                                messages.success(request, f"The request from {transfer_request.requester.name} "
+                                                          f"to transfer tab {transfer_request.tab.name} to "
+                                                          f"{transfer_request.new_owner.name} was approved.")
+                            elif resolution == "reject":
+                                transfer_request.reject(request.user)
+                                messages.success(request, f"The request from {transfer_request.requester.name} "
+                                                          f"to transfer tab {transfer_request.tab.name} to "
+                                                          f"{transfer_request.new_owner.name} was rejected.")
+                        except TabTransferRequest.DoesNotExist:
+                            messages.error(request, "The specified Transfer request does not exist.")
+                        except ValidationError as err:
+                            messages.error(request, f"Resolving transfer request failed: {err.message}")
+
+                    return redirect(reverse("manager/requests/transfer"))
 
 
 class Director:
