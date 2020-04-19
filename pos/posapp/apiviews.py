@@ -1,4 +1,4 @@
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -18,8 +18,12 @@ class OpenTabs(APIView):
         created = []
         for tab in request.data:
             new = Tab(name=tab)
-            new.save()
-            created.append(new)
+            try:
+                tab.clean()
+                new.save()
+                created.append(new)
+            except ValidationError:
+                pass # TODO better handling
         return Response(TabListSerializer(created, many=True).data)
 
 
@@ -43,7 +47,10 @@ class TabOrder(APIView):
         product = Product.objects.get(id=request.data['product'])
         if product is None:
             return Response("Product not found", status.HTTP_404_NOT_FOUND)
-        tab.order_product(product, request.data['amount'], request.data['note'], request.data['state'])
+        try:
+            tab.order_product(product, request.data['amount'], request.data['note'], request.data['state'])
+        except ValidationError as err:
+            return Response(err.message, status.HTTP_406_NOT_ACCEPTABLE)
         return Response("", status.HTTP_201_CREATED)
 
 
@@ -57,6 +64,8 @@ class Orders:
                     return Response(status=status.HTTP_200_OK)
                 except ProductInTab.DoesNotExist:
                     return Response(status=status.HTTP_404_NOT_FOUND)
+                except ValidationError as err:
+                    return Response(err.message, status=status.HTTP_406_NOT_ACCEPTABLE)
 
 
 class UserToggles(APIView):
@@ -74,8 +83,15 @@ class UserToggles(APIView):
             user = User.objects.get(username=username)
 
             if request.user.can_grant(user, role):
-                response = self.update_user(user, role)
-                user.save()
+                try:
+                    response = self.update_user(user, role)
+                    user.clean()
+                    user.save()
+                except ValidationError as err:
+                    return Response({
+                        'status': 406,
+                        'error': err.message,
+                    }, status.HTTP_406_NOT_ACCEPTABLE)
             else:
                 return Response({
                     'status': 403,
@@ -131,6 +147,7 @@ class CurrencyToggleEnabled(APIView):
         try:
             currency = Currency.objects.get(id=id)
             currency.enabled = not currency.enabled
+            currency.clean()
             currency.save()
             return Response({
                 'status': 200,
@@ -143,6 +160,11 @@ class CurrencyToggleEnabled(APIView):
                 'status': 404,
                 'error': 'Currency with this id was not found',
             }, status.HTTP_404_NOT_FOUND)
+        except ValidationError as err:
+            return Response({
+                'status': 406,
+                'error': err.message,
+            }, status.HTTP_406_NOT_ACCEPTABLE)
 
 
 class MethodToggles(APIView):
@@ -172,6 +194,7 @@ class MethodToggles(APIView):
                 method.enabled_own = not method.enabled_own
                 message = f"The method now <span class=\"badge badge-{self.is_text if method.enabled_own else self.isnt_text}</span> enabled."
 
+            method.clean()
             method.save()
             return Response({
                 'status': 200,
@@ -188,6 +211,11 @@ class MethodToggles(APIView):
                 'status': 404,
                 'error': 'Payment method with this id was not found',
             }, status.HTTP_404_NOT_FOUND)
+        except ValidationError as err:
+            return Response({
+                'status': 46,
+                'error': err.message,
+            }, status.HTTP_406_NOT_ACCEPTABLE)
 
 
 class ProductToggleEnabled(APIView):
@@ -204,6 +232,7 @@ class ProductToggleEnabled(APIView):
         try:
             product = Product.objects.get(id=id)
             product.enabled = not product.enabled
+            product.clean()
             product.save()
             return Response({
                 'status': 200,
@@ -216,3 +245,8 @@ class ProductToggleEnabled(APIView):
                 'status': 404,
                 'error': 'Product with this id was not found',
             }, status.HTTP_404_NOT_FOUND)
+        except ValidationError as err:
+            return Response({
+                'status': 406,
+                'error': err.message,
+            }, status.HTTP_406_NOT_ACCEPTABLE)
