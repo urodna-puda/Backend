@@ -5,6 +5,7 @@ import uuid
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django import views
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.password_validation import validate_password
@@ -12,13 +13,13 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q, ProtectedError
 from django.shortcuts import render, redirect
 from django.urls import reverse
-from django.conf import settings
 
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet, \
     CreateItemForm, AuthenticationForm
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
     PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest
-from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, DirectorLoginRequiredMixin
+from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, \
+    DirectorLoginRequiredMixin
 
 
 class Notification:
@@ -318,11 +319,14 @@ class Waiter:
                                 messages.warning(request,
                                                  "The specified payment can't be deleted as it does not exist.")
                         if check_dict(request.POST, ["close"]) and tab:
-                            change_payment = tab.mark_paid(request.user)
-                            messages.success(request, "The Tab was marked as paid.")
-                            if change_payment:
-                                messages.info(request, f"The remaining variance of {change_payment.amount} was "
-                                                       f"returned via {change_payment.method.paymentMethod.name}")
+                            try:
+                                change_payment = tab.mark_paid(request.user)
+                                messages.success(request, "The Tab was marked as paid.")
+                                if change_payment:
+                                    messages.info(request, f"The remaining variance of {change_payment.amount} was "
+                                                           f"returned via {change_payment.method.paymentMethod.name}")
+                            except ValidationError as err:
+                                messages.warning(request, f"Closing this Tab failed: {err.message}")
                     else:
                         messages.error(request, "This Tab is closed and cannot be edited")
 
@@ -354,6 +358,8 @@ class Waiter:
                                 break
                     except ProductInTab.DoesNotExist:
                         messages.error(request, "The Product order can't be found and thus wasn't bumped.")
+                    except ValidationError as err:
+                        messages.error(request, f"An error occurred while bumping the product: {err.message}")
                     return redirect(reverse("waiter/orders"))
 
             class RequestVoid(WaiterLoginRequiredMixin, views.View):
@@ -386,6 +392,8 @@ class Waiter:
                         messages.success(request, f"Order of a {order.product.name} voided")
                     except ProductInTab.DoesNotExist:
                         messages.error(request, "The Product order can't be found and thus wasn't voided.")
+                    except ValidationError as err:
+                        messages.error(request, f"Failed voiding order of {order.product.name}: {err.message}")
                     return redirect(request.GET["next"] if "next" in request.GET else reverse("waiter/orders"))
 
             class AuthenticateAndVoid(WaiterLoginRequiredMixin, views.View):
@@ -418,6 +426,8 @@ class Waiter:
                                 messages.warning(request, "Wrong username/password")
                         except ProductInTab.DoesNotExist:
                             messages.error(request, "The Product order can't be found and thus wasn't voided.")
+                        except ValidationError as err:
+                            messages.error(request, f"Failed voiding order of {order.product.name}: {err.message}")
                     else:
                         messages.error(request, "Username or password was missing in the request")
 
@@ -471,6 +481,7 @@ class Manager:
                             try:
                                 validate_password(new_password)
                                 user.set_password(new_password)
+                                user.clean()
                                 user.save()
                                 messages.success(request, "Password changed")
                             except ValidationError as err:
@@ -542,9 +553,14 @@ class Manager:
                                                  f"The user {user} was excluded from this Till "
                                                  f"as they already have another Till assigned.")
                             else:
-                                user.current_till = till
-                                user.save()
-                                till.cashiers.add(user)
+                                try:
+                                    user.current_till = till
+                                    user.clean()
+                                    user.save()
+                                    till.cashiers.add(user)
+                                except ValidationError as err:
+                                    messages.warning(request, f"The user {user} was not added to this Till: "
+                                                              f"{err.message}")
                         messages.success(request, "The till was assigned successfully")
                     except User.DoesNotExist:
                         messages.error(request, "One of the selected users does not exist")
@@ -552,6 +568,8 @@ class Manager:
                         messages.error(request,
                                        "The selected payment options config does not exist. It may have also been "
                                        "disabled by a director.")
+                    except ValidationError as err:
+                        messages.error(request, f"Failed creating the Till: {err.message}")
                 else:
                     messages.error(request, "Some required fields are missing")
 
@@ -613,17 +631,16 @@ class Manager:
                 def get(self, request, id):
                     try:
                         till = Till.objects.get(id=id)
-                        if till.state == Till.OPEN:
-                            if till.stop():
-                                messages.success(request,
-                                                 'The till was stopped successfully. It is now available for counting.')
-                            else:
-                                messages.error(request, 'An error occured during stopping. Please try again.')
+                        if till.stop():
+                            messages.success(request,
+                                             'The till was stopped successfully. It is now available for counting.')
                         else:
                             messages.warning(request,
                                              f'The till is in a state from which it cannot be closed: {till.state}')
                     except Till.DoesNotExist:
                         messages.error(request, 'The specified till does not exist.')
+                    except ValidationError as err:
+                        messages.error(request, f"Failed stopping Till: {err.message}")
                     return redirect(reverse("manager/tills"))
 
             class Count(ManagerLoginRequiredMixin, views.View):
@@ -686,7 +703,12 @@ class Manager:
                         if count.amount < 0:
                             zeroed.append(count.id)
                             count.amount = 0
-                        count.save()
+                        try:
+                            count.clean()
+                            count.save()
+                        except ValidationError as err:
+                            messages.warning(request, f"Count {count.paymentMethod.name} was not saved due to error: "
+                                                      f"{err.message}")
 
                     return self.get(request, id, zeroed)
 
@@ -694,14 +716,15 @@ class Manager:
                 def get(self, request, id):
                     try:
                         till = Till.objects.get(id=id)
-                        if till.state == Till.STOPPED:
-                            till.close(request)
+                        if till.close(request):
                             messages.success(request, "The till was closed successfully")
                         else:
                             messages.warning(request,
                                              f'The till is in a state from which it cannot be closed: {till.state}')
                     except Till.DoesNotExist:
                         messages.error(request, 'The specified till does not exist.')
+                    except ValidationError as err:
+                        messages.error(request, f"Failed closing Till: {err.message}")
                     return redirect(reverse("manager/tills"))
 
             class Edit(ManagerLoginRequiredMixin, views.View):
@@ -742,6 +765,8 @@ class Manager:
                                 messages.warning(request,
                                                  'The specified payment method does not exist in this till. Please try again.'
                                                  )
+                            except ValidationError as err:
+                                messages.error(request, f"Creating Till edit failed: {err.message}")
                         context["id"] = id
                         context["counts"] = till.tillmoneycount_set.all()
                     except Till.DoesNotExist:
@@ -778,6 +803,8 @@ class Manager:
                                                       f"{void_request.get_resolution_display().lower()} earlier.")
                     except OrderVoidRequest.DoesNotExist:
                         messages.error(request, "The specified Void request does not exist.")
+                    except ValidationError as err:
+                        messages.error(request, f"Resolving void request failed: {err.message}")
 
                 return redirect(reverse("manager/voidrequests"))
 
@@ -792,7 +819,8 @@ class Director:
                 enabled_filter = request.GET.get('enabled', '')
 
                 currencies = Currency.objects.filter(
-                    Q(name__icontains=search) | Q(code__icontains=search) | Q(symbol__icontains=search)).order_by('code')
+                    Q(name__icontains=search) | Q(code__icontains=search) | Q(symbol__icontains=search)).order_by(
+                    'code')
                 if enabled_filter:
                     if enabled_filter == "yes":
                         currencies = currencies.filter(enabled=True)
@@ -875,8 +903,12 @@ class Director:
                 group = UnitGroup()
                 group.name = request.POST['newUnitGroupName']
                 group.symbol = request.POST['newUnitGroupSymbol']
-                group.save()
-                messages.success(request, "The unit group was created successfully")
+                try:
+                    group.clean()
+                    group.save()
+                    messages.success(request, "The unit group was created successfully")
+                except ValidationError as err:
+                    messages.warning(request, f"An error occurred during saving of the group: {err.message}")
             if check_dict(request.POST, ['groupId', 'newUnitName', 'newUnitSymbol', 'newUnitRatio']):
                 group_id = uuid.UUID(request.POST['groupId'])
                 try:
@@ -885,8 +917,12 @@ class Director:
                     unit.symbol = request.POST['newUnitSymbol']
                     unit.ratio = float(request.POST['newUnitRatio'])
                     unit.group = UnitGroup.objects.get(id=group_id)
-                    unit.save()
-                    messages.success(request, "The unit was created successfully")
+                    try:
+                        unit.clean()
+                        unit.save()
+                        messages.success(request, "The unit was created successfully")
+                    except ValidationError as err:
+                        messages.warning(request, f"An error occurred during saving of the unit: {err.message}")
                 except UnitGroup.DoesNotExist:
                     messages.error(request, "Creation failed: Unit Group does not exist!")
 

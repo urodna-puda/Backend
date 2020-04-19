@@ -171,6 +171,7 @@ class Tab(models.Model):
             elif state == ProductInTab.PREPARING:
                 new.preparingAt = time
 
+            new.clean()
             new.save()
 
     def mark_paid(self, by: User):
@@ -182,9 +183,11 @@ class Tab(models.Model):
             change_payment.method = TillMoneyCount.objects.get(till=by.current_till,
                                                                paymentMethod=by.current_till.changeMethod)
             change_payment.amount = variance
+            change_payment.clean()
             change_payment.save()
         self.state = self.PAID
         self.closedAt = datetime.now()
+        self.clean()
         self.save()
         return change_payment
 
@@ -237,6 +240,7 @@ class ProductInTab(models.Model):
             self.servedAt = datetime.utcnow()
         else:
             return False
+        self.clean()
         self.save()
         return True
 
@@ -261,6 +265,7 @@ class ProductInTab(models.Model):
         if self.state != ProductInTab.VOIDED:
             self.state = ProductInTab.VOIDED
             self.voidedAt = datetime.utcnow()
+            self.clean()
             self.save()
 
     def clean(self):
@@ -357,11 +362,13 @@ class TillPaymentOptions(models.Model):
         till = Till()
         till.changeMethod = self.changeMethod
         till.depositAmount = self.depositAmount
+        till.clean()
         till.save()
         for method in self.methods.all():
             count = TillMoneyCount()
             count.till = till
             count.paymentMethod = method
+            count.clean()
             count.save()
         return till
 
@@ -411,9 +418,11 @@ class Till(models.Model):
         if self.state == Till.OPEN:
             self.state = Till.STOPPED
             self.stoppedAt = datetime.now()
+            self.clean()
             self.save()
             for cashier in self.cashiers.all():
                 cashier.current_till = None
+                cashier.clean()
                 cashier.save()
             return True
         else:
@@ -424,6 +433,7 @@ class Till(models.Model):
             self.state = Till.COUNTED
             self.countedAt = datetime.now()
             self.countedBy = request.user
+            self.clean()
             self.save()
             return True
         else:
@@ -464,6 +474,7 @@ class TillMoneyCount(models.Model):
         edit.count = self
         edit.amount = amount
         edit.reason = reason
+        edit.clean()
         edit.save()
         return edit
 
@@ -518,6 +529,7 @@ class OrderVoidRequest(models.Model):
             self.resolution = OrderVoidRequest.APPROVED
             self.manager = manager
             self.resolvedAt = datetime.now()
+            self.clean()
             self.save()
             self.order.void()
             self.notify_waiter()
@@ -530,6 +542,7 @@ class OrderVoidRequest(models.Model):
             self.resolution = OrderVoidRequest.REJECTED
             self.manager = manager
             self.resolvedAt = datetime.now()
+            self.clean()
             self.save()
             self.notify_waiter()
             return True
