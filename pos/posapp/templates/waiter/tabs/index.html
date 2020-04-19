@@ -74,7 +74,8 @@
                     <div class="card-header">
                         <h2 class="card-title">
                             {{ tab.name }}<br>
-                            <small class="text-xs {% if not tab.owner %}text-danger{% endif %}" data-toggle="tooltip" title="Owner">
+                            <small class="text-xs {% if not tab.owner %}text-danger{% endif %}" data-toggle="tooltip"
+                                   title="Owner">
                                 {{ tab.owner.name|default:"No owner set" }}
                             </small>
                         </h2>
@@ -150,14 +151,17 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <div class="form-group">
-                        <label for="newTabName" class="col-form-label">New tab name:</label>
-                        <input type="text" class="form-control" id="newTabName"/>
-                    </div>
+                    <form method="post" id="newTabForm">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="newTabName" class="col-form-label">New tab name:</label>
+                            <input type="text" class="form-control" id="newTabName" name="newTabName"/>
+                        </div>
+                    </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" id="createNewTabButton">Create</button>
+                    <button type="submit" class="btn btn-primary" form="newTabForm">Create</button>
                 </div>
             </div>
         </div>
@@ -228,12 +232,6 @@
     <script>
         $("input[type='number']").inputSpinner();
         $(document).ready(() => {
-            $('#createNewTabButton').click(() => {
-                let name = $("#newTabName").val();
-                postData("/api/1/tabs", [name]).then(() => {
-                    location.reload();
-                });
-            });
             $('#orderModal').on('show.bs.modal', function (event) {
                 var button = $(event.relatedTarget); // Button that triggered the modal
                 var tabId = button.data('tab-id'); // Extract info from data-* attributes

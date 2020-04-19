@@ -215,7 +215,7 @@ class ProductInTab(models.Model):
     tab = models.ForeignKey(Tab, on_delete=models.CASCADE)
     state = models.CharField(max_length=1, choices=SERVING_STATES, default=ORDERED)
     _price = models.DecimalField(max_digits=15, decimal_places=3, db_column="price")
-    orderedAt = models.DateTimeField(editable=False, auto_now_add=True)
+    orderedAt = models.DateTimeField(editable=False, default=datetime.now)
     preparingAt = models.DateTimeField(null=True, blank=True)
     preparedAt = models.DateTimeField(null=True, blank=True)
     servedAt = models.DateTimeField(null=True, blank=True)

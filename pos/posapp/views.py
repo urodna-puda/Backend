@@ -256,6 +256,18 @@ class Waiter:
                 context['paid_tabs'] = Tab.objects.filter(state=Tab.PAID)
             return context.render()
 
+        def post(self, request):
+            if "newTabName" in request.POST:
+                try:
+                    tab = Tab()
+                    tab.name = request.POST["newTabName"]
+                    tab.owner = request.user
+                    tab.clean()
+                    tab.save()
+                except ValueError as err:
+                    messages.warning(request, f"Creating Tab failed: {err.message}")
+            return self.get(request)
+
         class Tab(WaiterLoginRequiredMixin, views.View):
             def fill_data(self, request, id, update_handler=None):
                 context = Context(request, "waiter/tabs/tab.html")
