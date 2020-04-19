@@ -18,7 +18,7 @@ from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProd
     CreateItemForm, AuthenticationForm
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
     PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest
-from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, AdminLoginRequiredMixin
+from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, DirectorLoginRequiredMixin
 
 
 class Notification:
@@ -48,7 +48,7 @@ class Context:
         self.page = request.get_full_path()[1:]
         self.waiter_role = request.user.is_waiter
         self.manager_role = request.user.is_manager
-        self.admin_role = request.user.is_admin
+        self.admin_role = request.user.is_director
         self.notifications = Notifications()
         self.version = settings.VERSION
         self.data = {}
@@ -784,7 +784,7 @@ class Manager:
 
 class Admin:
     class Finance:
-        class Currencies(AdminLoginRequiredMixin, views.View):
+        class Currencies(DirectorLoginRequiredMixin, views.View):
             def get(self, request):
                 context = Context(request, "admin/finance/currencies.html")
                 page_length = int(request.GET.get('page_length', 20))
@@ -810,7 +810,7 @@ class Admin:
 
                 return context.render()
 
-        class Methods(AdminLoginRequiredMixin, views.View):
+        class Methods(DirectorLoginRequiredMixin, views.View):
             def get(self, request, form=None, show_modal=False):
                 context = Context(request, "admin/finance/methods.html")
 
@@ -843,12 +843,12 @@ class Admin:
                     show_modal = True
                 return self.get(request, form, show_modal)
 
-            class Method(AdminLoginRequiredMixin, views.View):
+            class Method(DirectorLoginRequiredMixin, views.View):
                 def get(self, request, id):
                     messages.info(request, f"Well that was disappointing...")
                     return redirect(reverse("admin/finance/methods"))
 
-                class Delete(AdminLoginRequiredMixin, views.View):
+                class Delete(DirectorLoginRequiredMixin, views.View):
                     def get(self, request, id):
                         try:
                             method = PaymentMethod.objects.get(id=id)
@@ -862,7 +862,7 @@ class Admin:
                                                     "to prevent further use.")
                         return redirect(reverse("admin/finance/methods"))
 
-    class Units(AdminLoginRequiredMixin, views.View):
+    class Units(DirectorLoginRequiredMixin, views.View):
         def get(self, request):
             context = Context(request, 'admin/units/index.html')
             context['groups'] = UnitGroup.objects.all()
@@ -911,7 +911,7 @@ class Admin:
             return context.render()
 
     class Menu:
-        class Products(AdminLoginRequiredMixin, views.View):
+        class Products(DirectorLoginRequiredMixin, views.View):
             def fill_data(self, request):
                 context = Context(request, 'admin/menu/products/index.html')
                 search = request.GET.get('search', '')
@@ -954,7 +954,7 @@ class Admin:
 
                     return context.render()
 
-            class Product(AdminLoginRequiredMixin, views.View):
+            class Product(DirectorLoginRequiredMixin, views.View):
                 def get(self, request, id, *args, **kwargs):
                     context = Context(request, 'admin/menu/products/product.html')
                     context["id"] = id
@@ -1010,7 +1010,7 @@ class Admin:
                         context["show_does_not_exist"] = True
                     return context.render()
 
-                class Delete(AdminLoginRequiredMixin, views.View):
+                class Delete(DirectorLoginRequiredMixin, views.View):
                     def get(self, request, id, *args, **kwargs):
                         try:
                             product = Product.objects.get(id=id)

@@ -100,8 +100,8 @@ class UserToggles(APIView):
             new_state = user.is_manager
             comment = "a manager"
         elif role == "admin":
-            user.is_admin = not user.is_admin
-            new_state = user.is_admin
+            user.is_director = not user.is_director
+            new_state = user.is_director
             comment = "an admin"
         elif role == "active":
             user.is_active = not user.is_active
@@ -122,7 +122,7 @@ class CurrencyToggleEnabled(APIView):
     isnt_text = "danger\">isn't"
 
     def post(self, request, id, format=None):
-        if not request.user.is_admin:
+        if not request.user.is_director:
             return Response({
                 'status': 404,
                 'error': 'Only admins can access this view',
@@ -150,7 +150,7 @@ class MethodToggles(APIView):
     isnt_text = "danger\">isn't"
 
     def post(self, request, id, property, format=None):
-        if not request.user.is_admin:
+        if not request.user.is_director:
             return Response({
                 'status': 404,
                 'error': 'Only admins can access this view',
@@ -195,7 +195,7 @@ class ProductToggleEnabled(APIView):
     isnt_text = "danger\">isn't"
 
     def post(self, request, id, format=None):
-        if not request.user.is_admin:
+        if not request.user.is_director:
             return Response({
                 'status': 404,
                 'error': 'Only admins can access this view',

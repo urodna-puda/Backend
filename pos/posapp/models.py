@@ -15,18 +15,18 @@ from phonenumber_field.modelfields import PhoneNumberField
 class User(AbstractUser):
     WAITER = "waiter"
     MANAGER = "manager"
-    ADMIN = "admin"
+    DIRECTOR = "director"
 
     is_waiter = models.BooleanField(default=False)
     is_manager = models.BooleanField(default=False)
-    is_admin = models.BooleanField(default=False)
+    is_director = models.BooleanField(default=False)
     current_till = models.ForeignKey("Till", null=True, on_delete=models.SET_NULL)
     current_temp_tab = models.ForeignKey("Tab", null=True, on_delete=models.SET_NULL)
     mobile_phone = PhoneNumberField()
 
     @property
     def requires_admin_to_toggle(self):
-        return self.is_manager or self.is_admin
+        return self.is_manager or self.is_director
 
     @property
     def name(self):
@@ -34,12 +34,12 @@ class User(AbstractUser):
 
     def can_grant(self, target, role):
         return (self.username != target.username or role not in ("admin", "active")) and \
-               (self.is_admin or (self.is_manager and role in ("waiter", "active"))) and \
-               (role != "active" or (self.is_admin or (self.is_manager and not target.is_admin)))
+               (self.is_director or (self.is_manager and role in ("waiter", "active"))) and \
+               (role != "active" or (self.is_director or (self.is_manager and not target.is_director)))
 
     def can_change_password(self, target):
         return self.can_grant(target,
-                              User.ADMIN if target.is_admin else User.MANAGER if target.is_manager else User.WAITER)
+                              User.DIRECTOR if target.is_director else User.MANAGER if target.is_manager else User.WAITER)
 
     def __str__(self):
         return f"{self.name} ({self.username})"
