@@ -267,6 +267,7 @@ class Waiter:
                     try:
                         tab = Tab.objects.get(id=id)
                         context["tab_open"] = tab.state == Tab.OPEN
+                        context["tab_my"] = tab.owner == request.user
 
                         if update_handler:
                             update_handler(context, tab)
@@ -291,25 +292,28 @@ class Waiter:
                 def update_handler(context, tab):
                     if context["tab_open"]:
                         if check_dict(request.POST, ["moneyCountId", "amount"]) and tab:
-                            try:
-                                money_count_id = uuid.UUID(request.POST["moneyCountId"])
-                                context["last_used_method"] = money_count_id
-                                amount = decimal.Decimal(request.POST["amount"])
-                                if amount < 0:
-                                    messages.warning(request, "Payment amount must be greater than zero.")
-                                else:
-                                    money_count = request.user.current_till.tillmoneycount_set.get(id=money_count_id)
-                                    payment = PaymentInTab()
-                                    payment.tab = tab
-                                    payment.method = money_count
-                                    payment.amount = amount
-                                    payment.clean()
-                                    payment.save()
-                                    messages.success(request, "Payment created successfully")
-                            except TillMoneyCount.DoesNotExist:
-                                messages.warning(request, "Invalid request: Payment method does not exist")
-                            except ValidationError as err:
-                                messages.warning(request, f"Creating the payment failed: {err.message}")
+                            if context["tab_my"]:
+                                try:
+                                    money_count_id = uuid.UUID(request.POST["moneyCountId"])
+                                    context["last_used_method"] = money_count_id
+                                    amount = decimal.Decimal(request.POST["amount"])
+                                    if amount < 0:
+                                        messages.warning(request, "Payment amount must be greater than zero.")
+                                    else:
+                                        money_count = request.user.current_till.tillmoneycount_set.get(id=money_count_id)
+                                        payment = PaymentInTab()
+                                        payment.tab = tab
+                                        payment.method = money_count
+                                        payment.amount = amount
+                                        payment.clean()
+                                        payment.save()
+                                        messages.success(request, "Payment created successfully")
+                                except TillMoneyCount.DoesNotExist:
+                                    messages.warning(request, "Invalid request: Payment method does not exist")
+                                except ValidationError as err:
+                                    messages.warning(request, f"Creating the payment failed: {err.message}")
+                            else:
+                                messages.warning(request, f"Only the tab owner can create payments")
                         if check_dict(request.POST, ["paymentId", "delete"]) and tab:
                             try:
                                 payment_id = uuid.UUID(request.POST["paymentId"])
