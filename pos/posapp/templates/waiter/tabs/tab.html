@@ -301,6 +301,41 @@
                     </div>
                 {% endif %}
             {% endif %}
+            {% if tab_open and manager_role %}
+                <div class="col-12 col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">
+                                <i class="fas fa-people-arrows"></i>
+                                Change owner
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" action="{% url "waiter/tabs/tab/changeOwner" id %}"
+                                  id="ownerChangeForm">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    <label for="newOwnerUsername">Target user</label>
+                                    <select id="newOwnerUsername" name="newOwnerUsername" class="form-control"
+                                            required>
+                                        {% for waiter in waiters %}
+                                            <option value="{{ waiter.username }}">
+                                                {{ waiter.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit" form="ownerChangeForm" class="btn btn-primary float-right">
+                                <i class="fas fa-check"></i>&nbsp;
+                                Change owner
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
         </div>
     </div>
     {% if tab_open %}

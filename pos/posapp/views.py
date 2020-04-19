@@ -407,6 +407,26 @@ class Waiter:
                         messages.error(request, f"Request creation failed: {err.message}")
                     return redirect(reverse("waiter/tabs/tab", kwargs={"id": id}))
 
+            class ChangeOwner(ManagerLoginRequiredMixin, views.View):
+                def post(self, request, id):
+                    if "newOwnerUsername" in request.POST:
+                        try:
+                            tab = Tab.objects.get(id=id)
+                            new_owner = User.objects.get(username=request.POST["newOwnerUsername"])
+                            tab.owner = new_owner
+                            tab.clean()
+                            tab.save()
+                            messages.success(request, f"Owner was changed.")
+                        except Tab.DoesNotExist:
+                            messages.error(request, "That tab does not exist.")
+                        except User.DoesNotExist:
+                            messages.error(request, "The requested new owbner does not exist.")
+                        except ValidationError as err:
+                            messages.error(request, f"Owner change failed: {err.message}")
+                    else:
+                        messages.warning(request, "newOwnerUsername parameter was missing. Please try it again.")
+                    return redirect(reverse("waiter/tabs/tab", kwargs={"id": id}))
+
     class Orders(WaiterLoginRequiredMixin, views.View):
         def get(self, request):
             context = Context(request, "waiter/orders/index.html")

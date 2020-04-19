@@ -12,6 +12,8 @@ urlpatterns = [
          name='waiter/tabs/tab/requestTransfer'),
     path('waiter/tabs/<uuid:id>/requestClaim', views.Waiter.Tabs.Tab.RequestClaim.as_view(),
          name='waiter/tabs/tab/requestClaim'),
+    path('waiter/tabs/<uuid:id>/changeOwner', views.Waiter.Tabs.Tab.ChangeOwner.as_view(),
+         name='waiter/tabs/tab/changeOwner'),
     path('waiter/orders', views.Waiter.Orders.as_view(), name='waiter/orders'),
     path('waiter/orders/<uuid:id>', views.Waiter.Orders.Order.as_view(), name='waiter/orders/order'),
     path('waiter/orders/<uuid:id>/bump/<int:count>', views.Waiter.Orders.Order.Bump.as_view(),
