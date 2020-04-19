@@ -72,7 +72,12 @@
             {% for tab in tabs %}
                 <div class="card card-default bg-light">
                     <div class="card-header">
-                        <h2 class="card-title">{{ tab.name }}</h2>
+                        <h2 class="card-title">
+                            {{ tab.name }}<br>
+                            <small class="text-xs {% if not tab.owner %}text-danger{% endif %}" data-toggle="tooltip" title="Owner">
+                                {{ tab.owner.name|default:"No owner set" }}
+                            </small>
+                        </h2>
                         <div class="card-tools">
                             <button type="button" class="btn btn-tool" data-toggle="modal" data-target="#orderModal"
                                     data-tab-id="{{ tab.id }}" data-tab-name="{{ tab.name }}">

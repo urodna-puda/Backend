@@ -123,6 +123,7 @@ class Tab(models.Model):
     state = models.CharField(max_length=1, choices=ORDER_STATES, default=OPEN)
     openedAt = models.DateTimeField(editable=False, auto_now_add=True)
     closedAt = models.DateTimeField(null=True, blank=True)
+    owner = models.ForeignKey(User, on_delete=models.PROTECT, null=True)
 
     class Meta:
         permissions = [
@@ -149,6 +150,10 @@ class Tab(models.Model):
     @property
     def variance(self):
         return round(float(self.total) - self.paid, 3)
+
+    @property
+    def transfer_request_exists(self):
+        return self.tabtransferrequest_set.count() > 0
 
     def order_product(self, product, count, note, state):
         for i in range(count):
@@ -558,7 +563,6 @@ class OrderVoidRequest(models.Model):
                 "void_request": self,
             },
         )
-        print(f"notified waiter {self.waiter.username}")
 
     def clean(self):
         super(OrderVoidRequest, self).clean()
@@ -570,3 +574,97 @@ class OrderVoidRequest(models.Model):
 
         if bool(self.resolution) != bool(self.resolvedAt):
             raise ValidationError("Resolution and resolution timestamp must either be both set or both None.")
+
+
+class TabTransferRequest(models.Model):
+    id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
+    tab = models.ForeignKey(Tab, on_delete=models.CASCADE)
+    requester = models.ForeignKey(User, on_delete=models.PROTECT, related_name="tab_transfers_requested")
+    new_owner = models.ForeignKey(User, on_delete=models.PROTECT, related_name="tab_transfers_gaining")
+    requestedAt = models.DateTimeField(auto_now_add=True, editable=False)
+
+    def approve(self, manager):
+        old_owner = self.tab.owner
+        self.tab.owner = self.new_owner
+        self.tab.clean()
+        self.tab.save()
+        self.notify_waiter(manager, old_owner)
+        self.delete()
+
+    def reject(self, manager):
+        self.notify_waiter(manager)
+        self.delete()
+
+    def notify_waiter(self, manager, old_owner=False):
+        is_claim = self.requester == self.new_owner
+        channel_layer = get_channel_layer()
+        if old_owner != False:
+            if is_claim:
+                message_old = f"{self.requester}'s claim request on tab {self.tab.name} was approved by {manager.name}."
+                message_new = f"Your claim request on tab {self.tab.name} was approved by {manager.name}."
+            else:
+                message_old = f"Your request to transfer tab {self.tab.name} to {self.new_owner.name} was approved by " \
+                              f"{manager.name}."
+                message_new = f"{self.requester}'s request to transfer tab {self.tab.name} to you was approved by " \
+                              f"{manager.name}"
+
+            if old_owner:
+                async_to_sync(channel_layer.group_send)(
+                    f"notifications_user-{old_owner.id}",
+                    {
+                        "type": "notification.tab_transfer_request_resolved",
+                        "message": message_old,
+                        "resolution": True,
+                    },
+                )
+            async_to_sync(channel_layer.group_send)(
+                f"notifications_user-{self.new_owner.id}",
+                {
+                    "type": "notification.tab_transfer_request_resolved",
+                    "message": message_new,
+                    "resolution": True,
+                },
+            )
+        else:
+            if is_claim:
+                message = f"Your claim request on tab {self.tab.name} was rejected by {manager.name}."
+            else:
+                message = f"Your request to transfer tab {self.tab.name} to {self.new_owner.name} was rejected by" \
+                          f"{manager.name}."
+
+            async_to_sync(channel_layer.group_send)(
+                f"notifications_user-{self.requester.id}",
+                {
+                    "type": "notification.tab_transfer_request_resolved",
+                    "message": message,
+                    "resolution": False,
+                },
+            )
+
+    @property
+    def is_transfer(self):
+        return self.tab.owner == self.requester and self.requester != self.new_owner
+
+    @property
+    def is_claim(self):
+        return self.tab.owner != self.requester and self.requester == self.new_owner
+
+    def clean(self):
+        super(TabTransferRequest, self).clean()
+
+        if self.tab.transfer_request_exists:
+            raise ValidationError("It appears there already is another unresolved request associated with this tab.")
+        if not (self.is_transfer or self.is_claim):
+            raise ValidationError("The user references don't conform to a valid pattern.")
+        if not self.new_owner.is_waiter:
+            raise ValidationError("The requested new owner is not a waiter. "
+                                  "Grant him waiter role or select another new owner.")
+
+    @property
+    def type(self):
+        if self.is_transfer:
+            return "Transfer"
+        elif self.is_claim:
+            return "Claim"
+        else:
+            return "Nonsense"

@@ -1,5 +1,5 @@
 from asgiref.sync import async_to_sync
-from channels.generic.websocket import AsyncJsonWebsocketConsumer, JsonWebsocketConsumer
+from channels.generic.websocket import JsonWebsocketConsumer
 
 
 class Notifications:
@@ -41,7 +41,13 @@ class Notifications:
                 },
                 "resolution": void_request.resolution,
             })
-            print("sending json")
+
+        def notification_tab_transfer_request_resolved(self, event):
+            self.send_json({
+                "notification_type": "tab_transfer_request_resolved",
+                "message": event["message"],
+                "resolution": event["resolution"],
+            })
 
     class Manager(JsonWebsocketConsumer):
         groups = ["notifications_manager"]
@@ -82,3 +88,15 @@ class Notifications:
                     "tab_name": void_request.order.tab.name,
                 }
             })
+
+        def notification_tab_transfer_request(self, event):
+            transfer_request = event["transfer_request"]
+            self.send_json({
+                "notification_type": "tab_transfer_request",
+                "request_id": str(transfer_request.id),
+                "tab_name": transfer_request.tab.name,
+                "requester_name": transfer_request.requester.name,
+                "new_owner_name": transfer_request.new_owner.name,
+                "transfer_mode": event["transfer_mode"],
+            })
+            print("sent manager notification")

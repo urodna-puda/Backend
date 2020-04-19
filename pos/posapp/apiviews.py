@@ -4,11 +4,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from posapp.models import Tab, Product, User, PaymentMethod, Currency, ProductInTab
-from posapp.security.role_decorators import ManagerLoginRequiredMixin
+from posapp.security.role_decorators import ManagerLoginRequiredMixin, WaiterLoginRequiredMixin
 from posapp.serializers import TabListSerializer
 
 
-class OpenTabs(APIView):
+class OpenTabs(WaiterLoginRequiredMixin, APIView):
     def get(self, request, format=None):
         tabs = Tab.objects.filter(state=Tab.OPEN)
         serializer = TabListSerializer(tabs, many=True)
@@ -18,8 +18,9 @@ class OpenTabs(APIView):
         created = []
         for tab in request.data:
             new = Tab(name=tab)
+            new.owner = request.user
             try:
-                tab.clean()
+                new.clean()
                 new.save()
                 created.append(new)
             except ValidationError:
@@ -27,7 +28,7 @@ class OpenTabs(APIView):
         return Response(TabListSerializer(created, many=True).data)
 
 
-class AllTabs(APIView):
+class AllTabs(WaiterLoginRequiredMixin, APIView):
     def get(self, request, format=None):
         tabs = Tab.objects.all()
         serializer = TabListSerializer(tabs, many=True)

@@ -7,7 +7,11 @@
     Tab {{ tab.name }}
 {% endblock %}
 
-{% block no_description %}{% endblock %}
+{% block description %}
+    <span class="{% if not tab.owner %}text-danger{% endif %}" data-toggle="tooltip" title="Owner">
+        {{ tab.owner.name|default:"No owner set" }}
+    </span>
+{% endblock %}
 
 {% block breadcrumbs %}
     <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
@@ -175,7 +179,7 @@
                     </div>
                 </div>
             </div>
-            {% if tab_open %}
+            {% if tab_open and tab_my %}
                 <div class="col-12 col-md-5">
                     <div class="card">
                         <div class="card-header">
@@ -209,6 +213,124 @@
                             <button type="submit" form="paymentForm" class="btn btn-primary float-right">
                                 <i class="fas fa-check"></i>&nbsp;
                                 Pay
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% if transfer_request_exists %}
+                    <div class="col-12 col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">
+                                    <i class="fas fa-people-arrows"></i>
+                                    Transfer
+                                </h2>
+                            </div>
+                            <div class="card-body">
+                                <span class="text-warning">Another transfer or claim request is currently waiting to be resolved. Please wait until then.</span>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="col-12 col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">
+                                    <i class="fas fa-people-arrows"></i>
+                                    Transfer
+                                </h2>
+                            </div>
+                            <div class="card-body">
+                                <form method="post" action="{% url "waiter/tabs/tab/requestTransfer" id %}"
+                                      id="transferRequestForm">
+                                    {% csrf_token %}
+                                    <div class="form-group">
+                                        <label for="newOwnerUsername">Target user</label>
+                                        <select id="newOwnerUsername" name="newOwnerUsername" class="form-control"
+                                                required>
+                                            {% for waiter in waiters %}
+                                                <option value="{{ waiter.username }}">
+                                                    {{ waiter.name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="card-footer">
+                                <button type="submit" form="transferRequestForm" class="btn btn-primary float-right">
+                                    <i class="fas fa-check"></i>&nbsp;
+                                    Request transfer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+            {% if tab_open and not tab_my %}
+                {% if transfer_request_exists %}
+                    <div class="col-12 col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">
+                                    <i class="fas fa-people-arrows"></i>
+                                    Claim
+                                </h2>
+                            </div>
+                            <div class="card-body">
+                                <span class="text-warning">Another transfer or claim request is currently waiting to be resolved. Please wait until then.</span>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="col-12 col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">
+                                    <i class="fas fa-people-arrows"></i>
+                                    Claim
+                                </h2>
+                            </div>
+                            <div class="card-body">
+                                You can request claim of this Tab to be able to create payments. A manager needs to
+                                review the task. By clicking the button you can create a request to claim this Tab.<br>
+                                <a href="{% url "waiter/tabs/tab/requestClaim" id %}"
+                                   class="float-right btn btn-primary">Request claim</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+            {% if tab_open and manager_role %}
+                <div class="col-12 col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">
+                                <i class="fas fa-people-arrows"></i>
+                                Change owner
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" action="{% url "waiter/tabs/tab/changeOwner" id %}"
+                                  id="ownerChangeForm">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    <label for="newOwnerUsername">Target user</label>
+                                    <select id="newOwnerUsername" name="newOwnerUsername" class="form-control"
+                                            required>
+                                        {% for waiter in waiters %}
+                                            <option value="{{ waiter.username }}">
+                                                {{ waiter.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit" form="ownerChangeForm" class="btn btn-primary float-right">
+                                <i class="fas fa-check"></i>&nbsp;
+                                Change owner
                             </button>
                         </div>
                     </div>
@@ -260,7 +382,8 @@
                                 Void immediately
                             </button>
                         {% else %}
-                            <button type="button" class="btn btn-success" id="confirmVoidRequestModalButtonAuthenticate">
+                            <button type="button" class="btn btn-success"
+                                    id="confirmVoidRequestModalButtonAuthenticate">
                                 Log in and void
                             </button>
                         {% endif %}
@@ -298,8 +421,8 @@
                 $('#confirmVoidRequestModalButtonVoid').off('click').on('click', function () {
                     window.location = button.data('order-void-url');
                 });
-                {% else %}
-                $('#confirmVoidRequestModalButtonAuthenticate').off('click').on('click', function() {
+            {% else %}
+                $('#confirmVoidRequestModalButtonAuthenticate').off('click').on('click', function () {
                     window.location = button.data('order-authenticate-url');
                 })
             {% endif %}
