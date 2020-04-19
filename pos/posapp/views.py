@@ -782,7 +782,7 @@ class Manager:
                 return redirect(reverse("manager/voidrequests"))
 
 
-class Admin:
+class Director:
     class Finance:
         class Currencies(DirectorLoginRequiredMixin, views.View):
             def get(self, request):
