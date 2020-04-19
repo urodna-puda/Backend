@@ -16,8 +16,14 @@ class UserChangeForm(BaseUserChangeForm):
 
 class UserAdmin(BaseUserAdmin):
     form = UserChangeForm
-    list_display = BaseUserAdmin.list_display + ('is_waiter', 'is_manager',)
-    actions = BaseUserAdmin.actions + ['make_waiter', 'make_manager', 'strip_waiter', 'strip_manager', ]
+    list_display = BaseUserAdmin.list_display + ('is_waiter', 'is_manager', 'is_director', )
+    actions = BaseUserAdmin.actions + ['make_waiter', 'make_manager', 'make_director',
+                                       'strip_waiter', 'strip_manager', 'strip_director', ]
+
+    def make_director(self, request, queryset):
+        queryset.update(is_director=True)
+
+    make_director.short_description = 'Make director'
 
     def make_waiter(self, request, queryset):
         queryset.update(is_waiter=True)
@@ -28,6 +34,11 @@ class UserAdmin(BaseUserAdmin):
         queryset.update(is_manager=True)
 
     make_manager.short_description = 'Make manager'
+
+    def strip_director(self, request, queryset):
+        queryset.update(is_director=False)
+
+    strip_director.short_description = 'Make not director'
 
     def strip_waiter(self, request, queryset):
         queryset.update(is_waiter=False)
@@ -40,7 +51,7 @@ class UserAdmin(BaseUserAdmin):
     strip_manager.short_description = 'Make not manager'
 
     fieldsets = BaseUserAdmin.fieldsets + (
-        ("POS Abilities", {'fields': ('is_waiter', 'is_manager', 'is_admin',)}),
+        ("POS Abilities", {'fields': ('is_waiter', 'is_manager', 'is_director',)}),
         ("Contact info", {'fields': ('mobile_phone',)})
     )
 
