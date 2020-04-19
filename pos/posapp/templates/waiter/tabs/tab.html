@@ -188,33 +188,43 @@
                                 Payment
                             </h2>
                         </div>
-                        <div class="card-body">
-                            <form method="post" action="{% url "waiter/tabs/tab" id %}" id="paymentForm">
-                                {% csrf_token %}
-                                <div class="form-group">
-                                    <label for="moneyCount">Payment method</label>
-                                    <select id="moneyCount" name="moneyCountId" class="form-control" required>
-                                        {% for count in money_counts %}
-                                            <option value="{{ count.id }}"
-                                                    {% ifequal count.id last_used_method %} selected{% endifequal %}>
-                                                {{ count.paymentMethod.name }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="paymentAmount">Amount paid</label>
-                                    <input type="number" id="paymentAmount" name="amount" class="form-control"
-                                           required min="0" step="0.01"/>
-                                </div>
-                            </form>
-                        </div>
-                        <div class="card-footer">
-                            <button type="submit" form="paymentForm" class="btn btn-primary float-right">
-                                <i class="fas fa-check"></i>&nbsp;
-                                Pay
-                            </button>
-                        </div>
+                        {% if money_counts %}
+                            <div class="card-body">
+                                <form method="post" action="{% url "waiter/tabs/tab" id %}" id="paymentForm">
+                                    {% csrf_token %}
+                                    <div class="form-group">
+                                        <label for="moneyCount">Payment method</label>
+                                        <select id="moneyCount" name="moneyCountId" class="form-control" required>
+                                            {% for count in money_counts %}
+                                                <option value="{{ count.id }}"
+                                                        {% ifequal count.id last_used_method %}
+                                                        selected{% endifequal %}>
+                                                    {{ count.paymentMethod.name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="paymentAmount">Amount paid</label>
+                                        <input type="number" id="paymentAmount" name="amount" class="form-control"
+                                               required min="0" step="0.01"/>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="card-footer">
+                                <button type="submit" form="paymentForm" class="btn btn-primary float-right">
+                                    <i class="fas fa-check"></i>&nbsp;
+                                    Pay
+                                </button>
+                            </div>
+                        {% else %}
+                            <div class="card-body">
+                                <p class="text-danger">
+                                    You don't have a till assigned. If you want to accept payment,
+                                    ask a manager to assign you a till.
+                                </p>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
                 {% if transfer_request_exists %}
