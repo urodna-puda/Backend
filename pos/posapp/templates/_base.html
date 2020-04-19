@@ -72,7 +72,7 @@
             return this.css('visibility', 'hidden');
         };
 
-        const wsProtocol = loc.protocol === "https:" ? "wss://" : "ws://";
+        const wsProtocol = location.protocol === "https:" ? "wss://" : "ws://";
 
         const userNotificationsSocket = new WebSocket(`${wsProtocol}${window.location.host}/ws/posapp/notifications/user`);
         userNotificationsSocket.onmessage = function (e) {

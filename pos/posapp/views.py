@@ -272,30 +272,27 @@ class Waiter:
             def fill_data(self, request, id, update_handler=None):
                 context = Context(request, "waiter/tabs/tab.html")
                 context["id"] = id
-                current_till = request.user.current_till
-                if current_till:
-                    context["money_counts"] = [method for method in current_till.tillmoneycount_set.all()
-                                               if method.paymentMethod.enabled]
-                    try:
-                        tab = Tab.objects.get(id=id)
-                        context["tab_open"] = tab.state == Tab.OPEN
-                        context["tab_my"] = tab.owner == request.user
-                        context["transfer_request_exists"] = tab.transfer_request_exists
-                        context["waiters"] = User.objects.filter(is_waiter=True)
+                try:
+                    tab = Tab.objects.get(id=id)
+                    context["tab_open"] = tab.state == Tab.OPEN
+                    context["tab_my"] = tab.owner == request.user
+                    context["transfer_request_exists"] = tab.transfer_request_exists
+                    context["waiters"] = User.objects.filter(is_waiter=True).exclude(username=tab.owner.username)
 
-                        if update_handler:
-                            update_handler(context, tab)
+                    if update_handler:
+                        update_handler(context, tab)
 
-                        context["tab"] = prepare_tab_dict(tab)
-                        context["payments"] = tab.payments.all()
+                    current_till = request.user.current_till
+                    if current_till:
+                        context["money_counts"] = [method for method in current_till.tillmoneycount_set.all()
+                                                   if method.paymentMethod.enabled]
                         context["change_method_name"] = current_till.changeMethod.name
-                    except Tab.DoesNotExist:
-                        messages.error(request, "Invalid request: specified Tab does not exist. "
-                                                "Go back to previous page and try it again.")
-                else:
-                    messages.error(request,
-                                   "You don't have a till assigned. If you want to accept payment, "
-                                   "ask a manager to assign you a till.")
+
+                    context["tab"] = prepare_tab_dict(tab)
+                    context["payments"] = tab.payments.all()
+                except Tab.DoesNotExist:
+                    messages.error(request, "Invalid request: specified Tab does not exist. "
+                                            "Go back to previous page and try it again.")
                 return context
 
             def get(self, request, id):
