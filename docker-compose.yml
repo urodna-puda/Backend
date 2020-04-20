@@ -9,7 +9,6 @@ services:
       - static_volume:/usr/src/pos/static/
     depends_on:
       - db
-      - redis
     networks:
       - puda
     env_file:
@@ -45,7 +44,8 @@ services:
     volumes:
       - static_volume:/var/www/static/
     depends_on:
-      - web
+      - django_wsgi
+      - django_asgi
     networks:
       - puda
       - proxy
