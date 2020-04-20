@@ -52,5 +52,5 @@ class Notifications:
         def notification_tab_transfer_request(self, event):
             print(f"notification received by channel {self.channel_name}")
             transfer_request = event["tab_transfer_request"]
-            self.send_json()
+            self.send_json(transfer_request)
             print("notification sent to client")

@@ -11,8 +11,8 @@ class CreateUserForm(forms.ModelForm):
         fields = ['username', 'first_name', 'last_name', 'password1', 'password2', 'email', 'mobile_phone', 'is_waiter',
                   'is_manager', 'is_director', 'is_active']
 
-    password1 = forms.CharField(label="Password", widget=forms.PasswordInput)
-    password2 = forms.CharField(label="Password confirmation", widget=forms.PasswordInput,
+    password1 = forms.CharField(label="Password", widget=forms.PasswordInput(render_value=True))
+    password2 = forms.CharField(label="Password confirmation", widget=forms.PasswordInput(render_value=True),
                                 help_text="Enter the same password as above, for verification.")
 
     def __init__(self, *args, **kwargs):

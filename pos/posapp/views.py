@@ -1290,7 +1290,18 @@ class Debug:
     class CreateUser(views.View):
         def get(self, request, form=None):
             if settings.DEBUG:
-                return render(request, template_name="debug/create_user.html", context={"form": form or CreateUserForm()})
+                form = form or CreateUserForm(initial={
+                    "username": "test",
+                    "first_name": "Test",
+                    "last_name": "Test",
+                    "email": "test@puda.pos.beer",
+                    "mobile_phone": "603123456",
+                    "password1": "pudapos123",
+                    "password2": "pudapos123",
+                    "is_waiter": True,
+                })
+                return render(request, template_name="debug/create_user.html",
+                              context={"form": form or CreateUserForm()})
             else:
                 return HttpResponseForbidden()
 
@@ -1300,7 +1311,7 @@ class Debug:
                 if form.is_valid():
                     form.save()
                     messages.success(request, "User created")
-                    form = CreateUserForm()
+                    form = None
                 return self.get(request, form)
             else:
                 return HttpResponseForbidden()
