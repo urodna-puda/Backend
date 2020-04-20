@@ -3,7 +3,7 @@ version: '3.7'
 services:
   django_wsgi:
     build: ./pos
-    image: pudapos_wsgi:${VERSION}
+    image: pudapos:${VERSION}
     command: gunicorn puda.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - static_volume:/usr/src/pos/static/
@@ -17,7 +17,7 @@ services:
       - DJANGO_TASKS=yes
   django_asgi:
     build: ./pos
-    image: pudapos_asgi:${VERSION}
+    image: pudapos:${VERSION}
     command: daphne -b 0.0.0.0 -p 8000 puda.asgi:application
     depends_on:
       - db
