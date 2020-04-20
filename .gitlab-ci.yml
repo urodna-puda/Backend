@@ -33,7 +33,7 @@ beta-server:
 test-server:
   stage: deploy
   script:
-    - echo "HOST=beta.puda.pos.beer" >> .env
+    - echo "HOST=test.puda.pos.beer" >> .env
     - echo "TRAEFIK_NAME=pudapos-test" >> .env
     - sed -ie 's~^VERSION=\(.*\)$~VERSION=\1-'"$CI_COMMIT_SHORT_SHA"'~g' .env
     - tar -czf /tmp/backend.tar.gz .
