@@ -69,6 +69,17 @@ class Context:
                     Notification(count, f"{count} void requests", "trash", reverse("manager/requests/void"))
                 )
 
+            unresolved_requests = TabTransferRequest.objects.all()
+            count = len(unresolved_requests)
+            if count == 1:
+                self.notifications.append(
+                    Notification(count, "1 Tab transfer request", "people-arrows", reverse("manager/requests"))
+                )
+            elif count > 1:
+                self.notifications.append(
+                    Notification(count, f"{count} Tab transfer requests", "people-arrows", reverse("manager/requests"))
+                )
+
     def add_pagination_context(self, manager, key, page_get_name="page", page_length_get_name="page_length"):
         count = manager.count()
         page_length = int(self.request.GET.get(page_length_get_name, 20))
@@ -642,7 +653,16 @@ class Manager:
                 user = User()
                 form = CreateUserForm(request.POST, instance=user)
                 if form.is_valid():
-                    form.save()
+                    if request.user.is_director:
+                        form.save()
+                    else:
+                        form.save(commit=False)
+                        if user.is_manager or user.is_director:
+                            messages.warning(request, "As a manager, you can only grant other users the waiter role. "
+                                                      "Other roles were removed.")
+                            user.is_manager = False
+                            user.is_director = False
+                        user.save()
                     messages.success(request, f"The user {form.cleaned_data['username']} was created successfully")
                     return redirect(reverse("manager/users"))
 
