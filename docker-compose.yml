@@ -1,12 +1,24 @@
 version: '3.7'
 
 services:
-  web:
+  django_wsgi:
     build: ./pos
     image: pudapos:${VERSION}
-    command: python manage.py runserver 0.0.0.0:8000
+    command: gunicorn puda.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - static_volume:/usr/src/pos/static/
+    depends_on:
+      - db
+    networks:
+      - puda
+    env_file:
+      - .env
+    environment:
+      - DJANGO_TASKS=yes
+  django_asgi:
+    build: ./pos
+    image: pudapos:${VERSION}
+    command: daphne -b 0.0.0.0 -p 8000 puda.asgi:application
     depends_on:
       - db
       - redis
@@ -14,6 +26,8 @@ services:
       - puda
     env_file:
       - .env
+    environment:
+      - DJANGO_TASKS=no
   db:
     image: postgres:12.0-alpine
     volumes:
@@ -30,7 +44,8 @@ services:
     volumes:
       - static_volume:/var/www/static/
     depends_on:
-      - web
+      - django_wsgi
+      - django_asgi
     networks:
       - puda
       - proxy

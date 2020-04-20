@@ -63,4 +63,5 @@ urlpatterns = [
          name='director/menu/items/item'),
     path('director/menu/items/<uuid:id>/delete', views.Director.Menu.Items.Item.Delete.as_view(),
          name='director/menu/items/item/delete'),
+    path('debug/createUser', views.Debug.CreateUser.as_view(), name="debug/createUser"),
 ]

@@ -11,7 +11,10 @@ then
     echo "PostgreSQL started"
 fi
 
-pipenv run python manage.py migrate
-pipenv run python manage.py collectstatic --no-input --clear
+if [ "$DJANGO_TASKS" = "yes" ]
+then
+  python manage.py migrate
+  python manage.py collectstatic --no-input --clear
+fi
 
-pipenv run $@
+exec "$@"

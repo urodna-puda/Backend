@@ -16,6 +16,7 @@ django-adminlte3 = "*"
 psycopg2-binary = "*"
 channels = "*"
 channels-redis = "*"
+daphne = "*"
 
 [requires]
 python_version = "3.8"

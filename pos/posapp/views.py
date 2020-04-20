@@ -11,6 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db.models import Q, ProtectedError
+from django.http import HttpResponseForbidden
 from django.shortcuts import render, redirect
 from django.urls import reverse
 
@@ -368,8 +369,14 @@ class Waiter:
                                     "notifications_manager",
                                     {
                                         "type": "notification.tab_transfer_request",
-                                        "transfer_request": transfer_request,
-                                        "transfer_mode": "transfer",
+                                        "tab_transfer_request": {
+                                            "notification_type": "tab_transfer_request",
+                                            "request_id": str(transfer_request.id),
+                                            "tab_name": transfer_request.tab.name,
+                                            "requester_name": transfer_request.requester.name,
+                                            "new_owner_name": transfer_request.new_owner.name,
+                                            "transfer_mode": "transfer",
+                                        },
                                     },
                                 )
                                 messages.success(request, f"A transfer to user {new_owner.name} was requested.")
@@ -401,8 +408,14 @@ class Waiter:
                                 "notifications_manager",
                                 {
                                     "type": "notification.tab_transfer_request",
-                                    "transfer_request": transfer_request,
-                                    "transfer_mode": "claim",
+                                    "tab_transfer_request": {
+                                        "notification_type": "tab_transfer_request",
+                                        "request_id": str(transfer_request.id),
+                                        "tab_name": transfer_request.tab.name,
+                                        "requester_name": transfer_request.requester.name,
+                                        "new_owner_name": transfer_request.new_owner.name,
+                                        "transfer_mode": "claim",
+                                    },
                                 },
                             )
                             messages.success(request, f"A claim was requested.")
@@ -477,7 +490,26 @@ class Waiter:
                             "notifications_manager",
                             {
                                 "type": "notification.void_request",
-                                "void_request": void_request,
+                                "void_request": {
+                                    "notification_type": "void_request",
+                                    "request_id": str(void_request.id),
+                                    "user": {
+                                        "first_name": void_request.waiter.first_name,
+                                        "last_name": void_request.waiter.last_name,
+                                        "username": void_request.waiter.username,
+                                    },
+                                    "order": {
+                                        "id": str(void_request.order.id),
+                                        "product_name": void_request.order.product.name,
+                                        "state": void_request.order.state,
+                                        "ordered_at": str(void_request.order.orderedAt),
+                                        "preparing_at": str(void_request.order.preparingAt),
+                                        "prepared_at": str(void_request.order.preparedAt),
+                                        "served_at": str(void_request.order.servedAt),
+                                        "note": void_request.order.note,
+                                        "tab_name": void_request.order.tab.name,
+                                    }
+                                }
                             },
                         )
                         messages.success(request, f"Void of a {order.product.name} requested")
@@ -1250,3 +1282,34 @@ class Director:
                         except ProtectedError:
                             messages.error(request, "The item can't be deleted because it is used by a Product")
                         return redirect(reverse('director/menu/items'))
+
+
+class Debug:
+    class CreateUser(views.View):
+        def get(self, request, form=None):
+            if settings.DEBUG:
+                form = form or CreateUserForm(initial={
+                    "username": "test",
+                    "first_name": "Test",
+                    "last_name": "Test",
+                    "email": "test@puda.pos.beer",
+                    "mobile_phone": "603123456",
+                    "password1": "pudapos123",
+                    "password2": "pudapos123",
+                    "is_waiter": True,
+                })
+                return render(request, template_name="debug/create_user.html",
+                              context={"form": form or CreateUserForm()})
+            else:
+                return HttpResponseForbidden()
+
+        def post(self, request):
+            if settings.DEBUG:
+                form = CreateUserForm(request.POST)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, "User created")
+                    form = None
+                return self.get(request, form)
+            else:
+                return HttpResponseForbidden()
