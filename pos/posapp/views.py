@@ -1263,7 +1263,7 @@ class Debug:
 
         def post(self, request):
             if settings.DEBUG:
-                form = CreateUserForm(request.DATA)
+                form = CreateUserForm(request.POST)
                 if form.is_valid():
                     form.save()
                     messages.success(request, "User created")
