@@ -642,7 +642,16 @@ class Manager:
                 user = User()
                 form = CreateUserForm(request.POST, instance=user)
                 if form.is_valid():
-                    form.save()
+                    if request.user.is_director:
+                        form.save()
+                    else:
+                        form.save(commit=False)
+                        if user.is_manager or user.is_director:
+                            messages.warning(request, "As a manager, you can only grant other users the waiter role. "
+                                                      "Other roles were removed.")
+                            user.is_manager = False
+                            user.is_director = False
+                        user.save()
                     messages.success(request, f"The user {form.cleaned_data['username']} was created successfully")
                     return redirect(reverse("manager/users"))
 
