@@ -90,6 +90,7 @@ class Notifications:
             })
 
         def notification_tab_transfer_request(self, event):
+            print(f"notification received by channel {self.channel_name}")
             transfer_request = event["tab_transfer_request"]
             self.send_json({
                 "notification_type": "tab_transfer_request",
@@ -99,3 +100,4 @@ class Notifications:
                 "new_owner_name": transfer_request.new_owner.name,
                 "transfer_mode": event["transfer_mode"],
             })
+            print("notification sent to client")

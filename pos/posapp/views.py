@@ -364,6 +364,7 @@ class Waiter:
                                 transfer_request.new_owner = new_owner
                                 transfer_request.clean()
                                 transfer_request.save()
+                                print("request saved")
                                 channel_layer = get_channel_layer()
                                 async_to_sync(channel_layer.group_send)(
                                     "notifications_manager",
@@ -373,6 +374,7 @@ class Waiter:
                                         "transfer_mode": "transfer",
                                     },
                                 )
+                                print("notification passed to group")
                                 messages.success(request, f"A transfer to user {new_owner.name} was requested.")
                             else:
                                 messages.warning(request, f"Only the tab owner can request transfers to another user.")
