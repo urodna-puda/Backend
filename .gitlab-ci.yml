@@ -16,8 +16,8 @@ django:
   stage: test
   script:
     - cd pos
-    - pipenv install
-    - pipenv run ./manage.py test
+    - pip install -r requirements.txt
+    - python manage.py test
 
 beta-server:
   stage: deploy
