@@ -90,7 +90,7 @@ class Notifications:
             })
 
         def notification_tab_transfer_request(self, event):
-            transfer_request = event["transfer_request"]
+            transfer_request = event["tab_transfer_request"]
             self.send_json({
                 "notification_type": "tab_transfer_request",
                 "request_id": str(transfer_request.id),
@@ -99,4 +99,3 @@ class Notifications:
                 "new_owner_name": transfer_request.new_owner.name,
                 "transfer_mode": event["transfer_mode"],
             })
-            print("sent manager notification")

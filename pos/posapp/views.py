@@ -369,7 +369,7 @@ class Waiter:
                                     "notifications_manager",
                                     {
                                         "type": "notification.tab_transfer_request",
-                                        "transfer_request": transfer_request,
+                                        "tab_transfer_request": transfer_request,
                                         "transfer_mode": "transfer",
                                     },
                                 )
