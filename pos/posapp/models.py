@@ -560,7 +560,28 @@ class OrderVoidRequest(models.Model):
             f"notifications_user-{self.waiter.id}",
             {
                 "type": "notification.void_request_resolved",
-                "void_request": self,
+                "void_request": {
+                    "notification_type": "void_request_resolved",
+                    "request_id": str(self.id),
+                    "manager": {
+                        "first_name": self.manager.first_name,
+                        "last_name": self.manager.last_name,
+                        "username": self.manager.username,
+                    },
+                    "order": {
+                        "id": str(self.order.id),
+                        "product_name": self.order.product.name,
+                        "state": self.order.state,
+                        "ordered_at": str(self.order.orderedAt),
+                        "preparing_at": str(self.order.preparingAt),
+                        "prepared_at": str(self.order.preparedAt),
+                        "served_at": str(self.order.servedAt),
+                        "note": self.order.note,
+                        "tab_name": self.order.tab.name,
+                        "tab_id": str(self.order.tab.id),
+                    },
+                    "resolution": self.resolution,
+                },
             },
         )
 
