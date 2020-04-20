@@ -11,6 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db.models import Q, ProtectedError
+from django.http import HttpResponseForbidden
 from django.shortcuts import render, redirect
 from django.urls import reverse
 
@@ -1250,3 +1251,23 @@ class Director:
                         except ProtectedError:
                             messages.error(request, "The item can't be deleted because it is used by a Product")
                         return redirect(reverse('director/menu/items'))
+
+
+class Debug:
+    class CreateUser(views.View):
+        def get(self, request, form=None):
+            if settings.DEBUG:
+                return render(request, template_name="debug/create_user.html", context={"form": form or CreateUserForm()})
+            else:
+                return HttpResponseForbidden()
+
+        def post(self, request):
+            if settings.DEBUG:
+                form = CreateUserForm(request.DATA)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, "User created")
+                    form = CreateUserForm()
+                return self.get(request, form)
+            else:
+                return HttpResponseForbidden()
