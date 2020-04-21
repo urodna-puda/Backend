@@ -78,7 +78,7 @@
         userNotificationsSocket.onmessage = function (e) {
             const data = JSON.parse(e.data);
             switch (data.notification_type) {
-                case "tab_void_request_resolved":
+                case "void_request_resolved":
                     $(document).Toasts('create', {
                         body: `<a id="toast"></a>Manager ${data.manager.username} has ${data.resolution === 'A' ? 'approved' : 'rejected'} your void request of product ${data.order.product_name} in tab ${data.order.tab_name}. <a href="/waiter/tabs/${data.order.tab_id}">Review it now</a>.`,
                         title: 'Void request resolved',

@@ -37,6 +37,7 @@ class Notifications:
 
         def notification_void_request_resolved(self, event):
             void_request = event["void_request"]
+            print(f"sent resolution to {self.user.username}")
             self.send_json(void_request)
 
         def notification_tab_transfer_request_resolved(self, event):

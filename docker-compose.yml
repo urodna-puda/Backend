@@ -5,6 +5,7 @@ services:
     build: ./pos
     image: pudapos:${VERSION}
     command: gunicorn puda.wsgi:application --bind 0.0.0.0:8000
+    restart: unless-stopped
     volumes:
       - static_volume:/usr/src/pos/static/
     depends_on:
@@ -19,6 +20,7 @@ services:
     build: ./pos
     image: pudapos:${VERSION}
     command: daphne -b 0.0.0.0 -p 8000 puda.asgi:application
+    restart: unless-stopped
     depends_on:
       - db
       - redis
@@ -30,6 +32,7 @@ services:
       - DJANGO_TASKS=no
   db:
     image: postgres:12.0-alpine
+    restart: unless-stopped
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
@@ -41,6 +44,7 @@ services:
   nginx:
     build: ./nginx
     image: pudapos-nginx-proxy:${VERSION}
+    restart: unless-stopped
     volumes:
       - static_volume:/var/www/static/
     depends_on:
@@ -63,6 +67,7 @@ services:
       - "traefik.http.services.${TRAEFIK_NAME}.loadbalancer.server.scheme=http"
   redis:
     image: redis:alpine
+    restart: unless-stopped
     networks:
       - puda
 
