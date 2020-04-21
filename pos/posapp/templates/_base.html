@@ -96,6 +96,19 @@
                         close: true,
                     });
                     break;
+                {% if manager_role %}
+                    case "online_status_update":
+                        let username = data.update.username;
+                        let count = data.update.new_count;
+
+                        let indicator = $(`#online-indicator-${username}`);
+                        if (count > 0) {
+                            indicator.removeClass().addClass("text-success fas fa-circle").attr('title', `Online on ${count} devices`).tooltip('dispose').tooltip('enable');
+                        } else {
+                            indicator.removeClass().addClass("text-secondary far fa-circle").attr('title', `Offline`).tooltip('dispose').tooltip('enable');
+                        }
+                        break;
+                {% endif %}
             }
         }
 

@@ -60,10 +60,11 @@
                                     <td>
                                         {% if user.online_counter %}
                                             <i class="text-success fas fa-circle" data-toggle="tooltip"
-                                               title="Online on {{ user.online_counter }} devices"></i>
-                                            {% else %}
+                                               title="Online on {{ user.online_counter }} devices"
+                                               id="online-indicator-{{ user.username }}"></i>
+                                        {% else %}
                                             <i class="text-secondary far fa-circle" data-toggle="tooltip"
-                                               title="Offline"></i>
+                                               title="Offline" id="online-indicator-{{ user.username }}"></i>
                                         {% endif %}
                                         <a href="{% url "manager/users/user" user.username %}">
                                             {{ user.username }}
