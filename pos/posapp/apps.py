@@ -9,5 +9,5 @@ class PosappConfig(AppConfig):
         User = self.get_model('User')
         try:
             User.objects.all().update(online_counter=0)
-        except OperationalError or ProgrammingError:
+        except (OperationalError, ProgrammingError):
             print("Database is not yet created. We can ignore this, as the counters will start at zero anyway.")
