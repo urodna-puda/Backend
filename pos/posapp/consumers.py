@@ -22,8 +22,7 @@ class Notifications:
 
             async_to_sync(self.channel_layer.group_add)(f"notifications_user-{self.user.id}", self.channel_name)
             try:
-                self.user.online_counter += F('online_counter') + 1
-                self.user.save()
+                User.objects.filter(pk=self.user.pk).update(online_counter=F('online_counter') + 1)
                 self.user.refresh_from_db()
             except ValidationError as err:
                 logger.error(f"Failed to increase user online count: {err.message}")
@@ -31,9 +30,7 @@ class Notifications:
         def disconnect(self, code):
             async_to_sync(self.channel_layer.group_discard)(f"notifications_user-{self.user.id}", self.channel_name)
             try:
-                self.user.online_counter = F('online_counter') - 1
-                self.user.clean()
-                self.user.save()
+                User.objects.filter(pk=self.user.pk).update(online_counter=F('online_counter') - 1)
                 self.user.refresh_from_db()
             except ValidationError as err:
                 logger.error(f"Failed to decrease user online count: {err.message}")
