@@ -289,7 +289,9 @@ class Waiter:
                     context["tab_open"] = tab.state == Tab.OPEN
                     context["tab_my"] = tab.owner == request.user
                     context["transfer_request_exists"] = tab.transfer_request_exists
-                    context["waiters"] = User.objects.filter(is_waiter=True).exclude(username=tab.owner.username)
+                    context["waiters"] = User.objects.filter(is_waiter=True)
+                    if tab.owner:
+                        context["waiters"] = context["waiters"].exclude(username=tab.owner.username)
 
                     if update_handler:
                         update_handler(context, tab)
