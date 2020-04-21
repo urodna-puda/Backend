@@ -5,6 +5,7 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models
 from django_countries.fields import CountryField
 from phonenumber_field.modelfields import PhoneNumberField
@@ -23,6 +24,7 @@ class User(AbstractUser):
     current_till = models.ForeignKey("Till", null=True, on_delete=models.SET_NULL)
     current_temp_tab = models.ForeignKey("Tab", null=True, on_delete=models.SET_NULL)
     mobile_phone = PhoneNumberField()
+    online_counter = models.IntegerField(validators=[MinValueValidator(0)])
 
     @property
     def requires_director_to_toggle(self):
