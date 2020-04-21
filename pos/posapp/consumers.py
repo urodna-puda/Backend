@@ -1,5 +1,13 @@
+import logging
+
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import JsonWebsocketConsumer
+from django.core.exceptions import ValidationError
+from django.db.models import F
+
+from posapp.models import User
+
+logger = logging.getLogger(__name__)
 
 
 class Notifications:
@@ -13,9 +21,22 @@ class Notifications:
                 self.accept()
 
             async_to_sync(self.channel_layer.group_add)(f"notifications_user-{self.user.id}", self.channel_name)
+            try:
+                self.user.online_counter += F('online_counter') + 1
+                self.user.save()
+                self.user.refresh_from_db()
+            except ValidationError as err:
+                logger.error(f"Failed to increase user online count: {err.message}")
 
         def disconnect(self, code):
             async_to_sync(self.channel_layer.group_discard)(f"notifications_user-{self.user.id}", self.channel_name)
+            try:
+                self.user.online_counter = F('online_counter') - 1
+                self.user.clean()
+                self.user.save()
+                self.user.refresh_from_db()
+            except ValidationError as err:
+                logger.error(f"Failed to decrease user online count: {err.message}")
 
         def notification_void_request_resolved(self, event):
             void_request = event["void_request"]
