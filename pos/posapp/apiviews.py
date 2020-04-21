@@ -1,13 +1,14 @@
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from posapp.models import Tab, Product, User, PaymentMethod, Currency
+from posapp.models import Tab, Product, User, PaymentMethod, Currency, ProductInTab
+from posapp.security.role_decorators import ManagerLoginRequiredMixin, WaiterLoginRequiredMixin
 from posapp.serializers import TabListSerializer
 
 
-class OpenTabs(APIView):
+class OpenTabs(WaiterLoginRequiredMixin, APIView):
     def get(self, request, format=None):
         tabs = Tab.objects.filter(state=Tab.OPEN)
         serializer = TabListSerializer(tabs, many=True)
@@ -17,12 +18,17 @@ class OpenTabs(APIView):
         created = []
         for tab in request.data:
             new = Tab(name=tab)
-            new.save()
-            created.append(new)
+            new.owner = request.user
+            try:
+                new.clean()
+                new.save()
+                created.append(new)
+            except ValidationError:
+                pass # TODO better handling
         return Response(TabListSerializer(created, many=True).data)
 
 
-class AllTabs(APIView):
+class AllTabs(WaiterLoginRequiredMixin, APIView):
     def get(self, request, format=None):
         tabs = Tab.objects.all()
         serializer = TabListSerializer(tabs, many=True)
@@ -42,8 +48,25 @@ class TabOrder(APIView):
         product = Product.objects.get(id=request.data['product'])
         if product is None:
             return Response("Product not found", status.HTTP_404_NOT_FOUND)
-        tab.order_product(product, request.data['amount'], request.data['note'], request.data['state'])
+        try:
+            tab.order_product(product, request.data['amount'], request.data['note'], request.data['state'])
+        except ValidationError as err:
+            return Response(err.message, status.HTTP_406_NOT_ACCEPTABLE)
         return Response("", status.HTTP_201_CREATED)
+
+
+class Orders:
+    class Order:
+        class Void(ManagerLoginRequiredMixin, APIView):
+            def get(self, request, id, format=None):
+                try:
+                    order = ProductInTab.objects.get(id=id)
+                    order.void()
+                    return Response(status=status.HTTP_200_OK)
+                except ProductInTab.DoesNotExist:
+                    return Response(status=status.HTTP_404_NOT_FOUND)
+                except ValidationError as err:
+                    return Response(err.message, status=status.HTTP_406_NOT_ACCEPTABLE)
 
 
 class UserToggles(APIView):
@@ -51,18 +74,25 @@ class UserToggles(APIView):
     isnt_text = "danger\">isn't"
 
     def post(self, request, username, role, format=None):
-        if role not in ["waiter", "manager", "admin", "active"]:
+        if role not in ["waiter", "manager", "director", "active"]:
             return Response({
                 'status': 400,
-                'error': f'role must be one of waiter/manager/admin/active, was {role}',
+                'error': f'role must be one of waiter/manager/director/active, was {role}',
             }, status.HTTP_400_BAD_REQUEST)
 
         try:
             user = User.objects.get(username=username)
 
             if request.user.can_grant(user, role):
-                response = self.update_user(user, role)
-                user.save()
+                try:
+                    response = self.update_user(user, role)
+                    user.clean()
+                    user.save()
+                except ValidationError as err:
+                    return Response({
+                        'status': 406,
+                        'error': err.message,
+                    }, status.HTTP_406_NOT_ACCEPTABLE)
             else:
                 return Response({
                     'status': 403,
@@ -86,10 +116,10 @@ class UserToggles(APIView):
             user.is_manager = not user.is_manager
             new_state = user.is_manager
             comment = "a manager"
-        elif role == "admin":
-            user.is_admin = not user.is_admin
-            new_state = user.is_admin
-            comment = "an admin"
+        elif role == "director":
+            user.is_director = not user.is_director
+            new_state = user.is_director
+            comment = "a director"
         elif role == "active":
             user.is_active = not user.is_active
             new_state = user.is_active
@@ -109,15 +139,16 @@ class CurrencyToggleEnabled(APIView):
     isnt_text = "danger\">isn't"
 
     def post(self, request, id, format=None):
-        if not request.user.is_admin:
+        if not request.user.is_director:
             return Response({
                 'status': 404,
-                'error': 'Only admins can access this view',
+                'error': 'Only directors can access this view',
             }, status.HTTP_403_FORBIDDEN)
 
         try:
             currency = Currency.objects.get(id=id)
             currency.enabled = not currency.enabled
+            currency.clean()
             currency.save()
             return Response({
                 'status': 200,
@@ -130,27 +161,50 @@ class CurrencyToggleEnabled(APIView):
                 'status': 404,
                 'error': 'Currency with this id was not found',
             }, status.HTTP_404_NOT_FOUND)
+        except ValidationError as err:
+            return Response({
+                'status': 406,
+                'error': err.message,
+            }, status.HTTP_406_NOT_ACCEPTABLE)
 
 
-class MethodToggleChange(APIView):
+class MethodToggles(APIView):
     is_text = "success\">is"
     isnt_text = "danger\">isn't"
 
-    def post(self, request, id, format=None):
-        if not request.user.is_admin:
+    def post(self, request, id, property, format=None):
+        if not request.user.is_director:
             return Response({
                 'status': 404,
-                'error': 'Only admins can access this view',
+                'error': 'Only directors can access this view',
             }, status.HTTP_403_FORBIDDEN)
+
+        if property not in ["change", "enabled"]:
+            return Response({
+                'status': 400,
+                'error': f'property must be one of change/enabled, was {property}',
+            }, status.HTTP_400_BAD_REQUEST)
 
         try:
             method = PaymentMethod.objects.get(id=id)
-            method.changeAllowed = not method.changeAllowed
+            message = ""
+            if property == "change":
+                method.changeAllowed = not method.changeAllowed
+                message = f"The method now <span class=\"badge badge-{self.is_text if method.changeAllowed else self.isnt_text}</span> allowed as change."
+            elif property == "enabled":
+                method.enabled_own = not method.enabled_own
+                message = f"The method now <span class=\"badge badge-{self.is_text if method.enabled_own else self.isnt_text}</span> enabled."
+
+            method.clean()
             method.save()
             return Response({
                 'status': 200,
-                'now': method.changeAllowed,
-                'message': f"The method now <span class=\"badge badge-{self.is_text if method.changeAllowed else self.isnt_text}</span> allowed as change.",
+                'now': {
+                    'change': method.changeAllowed,
+                    'enabled_own': method.enabled_own,
+                    'enabled': method.enabled,
+                },
+                'message': message,
             }, status.HTTP_200_OK)
 
         except PaymentMethod.DoesNotExist:
@@ -158,6 +212,11 @@ class MethodToggleChange(APIView):
                 'status': 404,
                 'error': 'Payment method with this id was not found',
             }, status.HTTP_404_NOT_FOUND)
+        except ValidationError as err:
+            return Response({
+                'status': 46,
+                'error': err.message,
+            }, status.HTTP_406_NOT_ACCEPTABLE)
 
 
 class ProductToggleEnabled(APIView):
@@ -165,7 +224,7 @@ class ProductToggleEnabled(APIView):
     isnt_text = "danger\">isn't"
 
     def post(self, request, id, format=None):
-        if not request.user.is_admin:
+        if not request.user.is_director:
             return Response({
                 'status': 404,
                 'error': 'Only admins can access this view',
@@ -174,6 +233,7 @@ class ProductToggleEnabled(APIView):
         try:
             product = Product.objects.get(id=id)
             product.enabled = not product.enabled
+            product.clean()
             product.save()
             return Response({
                 'status': 200,
@@ -186,3 +246,8 @@ class ProductToggleEnabled(APIView):
                 'status': 404,
                 'error': 'Product with this id was not found',
             }, status.HTTP_404_NOT_FOUND)
+        except ValidationError as err:
+            return Response({
+                'status': 406,
+                'error': err.message,
+            }, status.HTTP_406_NOT_ACCEPTABLE)

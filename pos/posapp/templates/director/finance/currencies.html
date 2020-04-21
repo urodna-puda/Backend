@@ -10,8 +10,8 @@
 
 {% block breadcrumbs %}
     <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
-    <li class="breadcrumb-item" aria-current="page"><a href="{% url "admin" %}">Staff</a></li>
-    <li class="breadcrumb-item" aria-current="page"><a href="{% url "admin/finance" %}">Finance</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director" %}">Director</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director/finance" %}">Finance</a></li>
     <li class="breadcrumb-item active" aria-current="page">Currencies</li>
 {% endblock %}
 
@@ -75,6 +75,7 @@
                                 <th scope="col">Symbol</th>
                                 <th scope="col">Subunit</th>
                                 <th scope="col">Enabled</th>
+                                <th scope="col">&nbsp;</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -98,7 +99,7 @@
                                     </td>
                                     <td>
                                         <button type="button" class="btn btn-tool"
-                                                onclick="window.location = '{% url "admin/finance/methods" %}?currency={{ currency.pk }}'"
+                                                onclick="window.location = '{% url "director/finance/methods" %}?currency={{ currency.pk }}'"
                                                 data-toggle="tooltip" data-position="top"
                                                 title="Payment methods using this currency">
                                             <i class="fas fa-money-check-alt"></i>
@@ -202,12 +203,12 @@
             event.stopPropagation();
             event.stopImmediatePropagation();
 
-            postData("/api/1/currencies/" + id + "/toggleEnabled").then(result => {
+            postData(`/api/1/currencies/${id}/toggleEnabled`).then(result => {
                 if (result.status === 200) {
                     if (result.now) {
-                        $("#enabled-indicator-" + id).removeClass().addClass("text-success fas fa-check-circle");
+                        $(`#enabled-indicator-${id}`).removeClass().addClass("text-success fas fa-check-circle");
                     } else {
-                        $("#enabled-indicator-" + id).removeClass().addClass("text-danger fas fa-times-circle");
+                        $(`#enabled-indicator-${id}`).removeClass().addClass("text-danger fas fa-times-circle");
                     }
                     $(document).Toasts('create', {
                         body: result.message,

@@ -1,33 +1,76 @@
 version: '3.7'
 
 services:
-  web:
+  django_wsgi:
     build: ./pos
+    image: pudapos:${VERSION}
     command: gunicorn puda.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - static_volume:/usr/src/pos/static/
-      - ./pos/:/usr/src/pos/
-    expose:
-      - 8000
+    depends_on:
+      - db
+    networks:
+      - puda
     env_file:
-      - ./.env.dev
+      - .env
+    environment:
+      - DJANGO_TASKS=yes
+  django_asgi:
+    build: ./pos
+    image: pudapos:${VERSION}
+    command: daphne -b 0.0.0.0 -p 8000 puda.asgi:application
+    depends_on:
+      - db
+      - redis
+    networks:
+      - puda
+    env_file:
+      - .env
+    environment:
+      - DJANGO_TASKS=no
   db:
     image: postgres:12.0-alpine
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-    enevironment:
+    environment:
       - POSTGRES_USER=puda
       - POSTGRES_PASSWORD=puda
-      - PUSTGRES_DB=puda_django
+      - PUSTGRES_DB=puda
+    networks:
+      - puda
   nginx:
     build: ./nginx
-    vokumes:
+    image: pudapos-nginx-proxy:${VERSION}
+    volumes:
       - static_volume:/var/www/static/
-    ports:
-      - 1337:80
-    depends:
-      - web
+    depends_on:
+      - django_wsgi
+      - django_asgi
+    networks:
+      - puda
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${TRAEFIK_NAME}_insecure.rule=Host(`${HOST}`)"
+      - "traefik.http.routers.${TRAEFIK_NAME}_insecure.entrypoints=http"
+      - "traefik.http.routers.${TRAEFIK_NAME}_insecure.middlewares=traefik-https-redirect"
+      - "traefik.http.routers.${TRAEFIK_NAME}_insecure.service=${TRAEFIK_NAME}"
+      - "traefik.http.routers.${TRAEFIK_NAME}.rule=Host(`${HOST}`)"
+      - "traefik.http.routers.${TRAEFIK_NAME}.entrypoints=https"
+      - "traefik.http.routers.${TRAEFIK_NAME}.tls.certresolver=http"
+      - "traefik.http.routers.${TRAEFIK_NAME}.service=${TRAEFIK_NAME}"
+      - "traefik.http.services.${TRAEFIK_NAME}.loadbalancer.server.port=80"
+      - "traefik.http.services.${TRAEFIK_NAME}.loadbalancer.server.scheme=http"
+  redis:
+    image: redis:alpine
+    networks:
+      - puda
 
 volumes:
   postgres_data:
   static_volume:
+
+networks:
+  puda:
+  proxy:
+    external: true

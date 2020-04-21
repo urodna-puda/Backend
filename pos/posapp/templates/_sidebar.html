@@ -31,7 +31,7 @@
                 </a>
             </li>
         {% endif %}
-        {% if manager_role or admin_role %}
+        {% if manager_role or director_role %}
             <li class="nav-header">Manager tasks</li>
             <li class="nav-item has-treeview {% isopen page "manager/users" %}">
                 <a href="{% url "manager/users" %}" class="nav-link {% isactive page "manager/users"%}">
@@ -84,12 +84,18 @@
                         </li>
                     </ul>
                 </li>
+                <li class="nav-item">
+                    <a href="{% url "manager/requests" %}" class="nav-link {% isactive page "manager/requests" %}">
+                        <i class="nav-icon fas fa-comment-dots"></i>
+                        <p>Requests</p>
+                    </a>
+                </li>
             {% endif %}
         {% endif %}
-        {% if admin_role %}
-            <li class="nav-header">Staff tasks</li>
-            <li class="nav-item has-treeview {% isopen page "admin/finance" %}">
-                <a href="{% url "admin/finance" %}" class="nav-link {% isactive page "admin/finance" %}">
+        {% if director_role %}
+            <li class="nav-header">Director tasks</li>
+            <li class="nav-item has-treeview {% isopen page "director/finance" %}">
+                <a href="{% url "director/finance" %}" class="nav-link {% isactive page "director/finance" %}">
                     <i class="nav-icon fas fa-coins"></i>
                     <p>
                         Finance
@@ -98,15 +104,15 @@
                 </a>
                 <ul class="nav nav-treeview">
                     <li class="nav-item">
-                        <a href="{% url "admin/finance/currencies" %}"
-                           class="nav-link {% isactive page "admin/finance/currencies" %}">
+                        <a href="{% url "director/finance/currencies" %}"
+                           class="nav-link {% isactive page "director/finance/currencies" %}">
                             <i class="nav-icon fas fa-euro-sign"></i>
                             <p>Currencies</p>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{% url "admin/finance/methods" %}"
-                           class="nav-link {% isactive page "admin/finance/methods" %}">
+                        <a href="{% url "director/finance/methods" %}"
+                           class="nav-link {% isactive page "director/finance/methods" %}">
                             <i class="nav-icon fas fa-money-check-alt"></i>
                             <p>Payment methods</p>
                         </a>
@@ -124,13 +130,13 @@
                 </ul>
             </li>
             <li class="nav-item">
-                <a href="{% url "admin/units" %}" class="nav-link {% isactive page "admin/units" %}">
+                <a href="{% url "director/units" %}" class="nav-link {% isactive page "director/units" %}">
                     <i class="nav-icon fas fa-balance-scale"></i>
                     <p>Units</p>
                 </a>
             </li>
-            <li class="nav-item has-treeview {% isopen page "admin/menu" %}">
-                <a href="{% url "admin/menu" %}" class="nav-link {% isactive page "admin/menu" %}">
+            <li class="nav-item has-treeview {% isopen page "director/menu" %}">
+                <a href="{% url "director/menu" %}" class="nav-link {% isactive page "director/menu" %}">
                     <i class="nav-icon fas fa-book-open"></i>
                     <p>
                         Menu
@@ -139,8 +145,8 @@
                 </a>
                 <ul class="nav nav-treeview">
                     <li class="nav-item">
-                        <a href="{% url "admin/menu/products" %}"
-                           class="nav-link {% isactive page "admin/menu/products" %}">
+                        <a href="{% url "director/menu/products" %}"
+                           class="nav-link {% isactive page "director/menu/products" %}">
                             <i class="nav-icon fas fa-utensils"></i>
                             <p>Products</p>
                         </a>
@@ -148,8 +154,8 @@
                 </ul>
                 <ul class="nav nav-treeview">
                     <li class="nav-item">
-                        <a href="{% url "admin/menu/items" %}"
-                           class="nav-link {% isactive page "admin/menu/items" %}">
+                        <a href="{% url "director/menu/items" %}"
+                           class="nav-link {% isactive page "director/menu/items" %}">
                             <i class="nav-icon fas fa-cheese"></i>
                             <p>Items</p>
                         </a>

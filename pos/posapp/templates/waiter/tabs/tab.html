@@ -1,12 +1,17 @@
 {% extends "_base.html" %}
 {% load static %}
+{% load generic %}
 
 {% block page_name %}
     <i class="fas fa-receipt"></i>
     Tab {{ tab.name }}
 {% endblock %}
 
-{% block no_description %}{% endblock %}
+{% block description %}
+    <span class="{% if not tab.owner %}text-danger{% endif %}" data-toggle="tooltip" title="Owner">
+        {{ tab.owner.name|default:"No owner set" }}
+    </span>
+{% endblock %}
 
 {% block breadcrumbs %}
     <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
@@ -27,58 +32,102 @@
                         </h2>
                     </div>
                     <div class="card-body p-0">
-                        <table class="table table-striped table-hover table-valign-middle border-top-0">
+                        <div class="container-fluid container-fluid-striped container-fluid-hover">
                             {% for product in tab.products %}
                                 {% for variant in product.variants %}
-                                    <tr>
-                                        <td>{{ product.name }}</td>
-                                        <td class="text-center">
-                                            {% if variant.showOrdered %}
-                                                <span class="badge badge-warning" data-toggle="tooltip"
-                                                      data-placement="top"
-                                                      title="Waiting">{{ variant.orderedCount }}</span>
-                                            {% endif %}
-                                            {% if variant.showPreparing %}
-                                                <span class="badge badge-secondary" data-toggle="tooltip"
-                                                      data-placement="top"
-                                                      title="In preparation">{{ variant.preparingCount }}</span>
-                                            {% endif %}
-                                            {% if variant.showToServe %}
-                                                <span class="badge badge-info" data-toggle="tooltip"
-                                                      data-placement="top"
-                                                      title="To be served">{{ variant.toServeCount }}</span>
-                                            {% endif %}
-                                            {% if variant.showServed %}
-                                                <span class="badge badge-success" data-toggle="tooltip"
-                                                      data-placement="top"
-                                                      title="Finished">{{ variant.servedCount }}</span>
-                                            {% endif %}
-                                        </td>
-                                        <td class="text-right">{{ variant.total }}</td>
-                                    </tr>
+                                    <div class="row align-items-center{% if not forloop.parentloop.last or not forloop.last %} border-bottom{% endif %}">
+                                        <div class="col-5 p-2">
+                                            {{ product.name }}<br>
+                                            <span class="text-muted text-xs">{{ variant.note }}</span>
+                                        </div>
+                                        <div class="col-3 text-center">
+                                            <span class="badge badge-warning{% if not variant.showOrdered %} invisible{% endif %}"
+                                                  data-toggle="tooltip" data-placement="top" title="Waiting">
+                                                {{ variant.orderedCount }}
+                                            </span>
+                                            <span class="badge badge-secondary{% if not variant.showPreparing %} invisible{% endif %}"
+                                                  data-toggle="tooltip" data-placement="top" title="Waiting">
+                                                {{ variant.preparingCount }}
+                                            </span>
+                                            <span class="badge badge-info{% if not variant.showToServe %} invisible{% endif %}"
+                                                  data-toggle="tooltip" data-placement="top" title="Waiting">
+                                                {{ variant.toServeCount }}
+                                            </span>
+                                            <span class="badge badge-success{% if not variant.showServed %} invisible{% endif %}"
+                                                  data-toggle="tooltip" data-placement="top" title="Waiting">
+                                                {{ variant.servedCount }}
+                                            </span>
+                                        </div>
+                                        <div class="col-3 text-right">{{ variant.total }}</div>
+                                        <div class="col-1 text-center">
+                                            <button type="button" class="btn btn-tool" data-toggle="collapse-toggle"
+                                                    data-target="#collapsible-{{ product.id }}-{{ variant.note|replace_spaces }}">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                        <div class="col-12 collapse in p-0 mt-0"
+                                             id="collapsible-{{ product.id }}-{{ variant.note|replace_spaces }}">
+                                            <table class="table table-valign-middle m-0">
+                                                <thead>
+                                                <tr class="d-flex">
+                                                    <th scope="col" class="col border-top-0">Ordered at</th>
+                                                    <th scope="col" class="col border-top-0">Started at</th>
+                                                    <th scope="col" class="col border-top-0">Prepared at</th>
+                                                    <th scope="col" class="col border-top-0">Served at</th>
+                                                    <th scope="col" class="col-1 border-top-0"></th>
+                                                </tr>
+                                                </thead>
+                                                {% for order in variant.orders %}
+                                                    <tr class="bg-{{ order.color }} d-flex">
+                                                        <td class="col">{{ order.orderedAt|empty_none }}</td>
+                                                        <td class="col">{{ order.preparingAt|empty_none }}</td>
+                                                        <td class="col">{{ order.preparedAt|empty_none }}</td>
+                                                        <td class="col">{{ order.servedAt|empty_none }}</td>
+                                                        <td class="col-1 text-center">
+                                                            {% if order.state != 'V' %}
+                                                                {% if order.void_request_exists %}
+                                                                    <i class="fas fa-ellipsis-h" data-toggle="tooltip"
+                                                                       title="Request in progress"></i>
+                                                                {% else %}
+                                                                    <button type="button"
+                                                                            class="btn btn-tool void-order-button"
+                                                                            data-order-id="{{ order.id }}"
+                                                                            data-order-state="{{ order.get_state_display }}"
+                                                                            data-order-product-name="{{ product.name }}"
+                                                                            {% if manager_role %}data-order-void-url="{% url "waiter/orders/order/void" order.id %}?next={% url "waiter/tabs/tab" id %}"{% endif %}
+                                                                            data-order-request-url="{% url "waiter/orders/order/requestVoid" order.id %}?next={% url "waiter/tabs/tab" id %}"
+                                                                            data-order-authenticate-url="{% url "waiter/orders/order/authenticateAndVoid" order.id %}?next={% url "waiter/tabs/tab" id %}">
+                                                                        <i class="fas fa-trash" data-toggle="tooltip"
+                                                                           data-position="top"
+                                                                           title="Void item"></i>
+                                                                    </button>
+                                                                {% endif %}
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </table>
+                                        </div>
+                                    </div>
                                 {% endfor %}
                             {% endfor %}
-                            <tr>
-                                <td>&nbsp;</td>
-                                <td>&nbsp;</td>
-                                <td>&nbsp;</td>
-                            </tr>
                             {% for payment in payments %}
-                                <tr>
-                                    <td>{{ payment.method.paymentMethod.name }}</td>
-                                    <td></td>
-                                    <td class="text-right">
-                                        {{ payment.amount }}&nbsp;
-                                        {% if tab_open %}
+                                <div class="row align-items-center border-top {% if forloop.first %} border-dark{% endif %} ">
+                                    <div class="col p-2">{{ payment.method.paymentMethod.name }}</div>
+                                    <div class="col text-right">
+                                        {{ payment.amount }}
+                                    </div>
+                                    {% if tab_open %}
+                                        <div class="col-1 text-center">
                                             <button type="submit" form="deletePayment{{ payment.id }}Form"
                                                     class="btn btn-tool" name="delete">
                                                 <i class="fas fa-trash"></i>
                                             </button>
-                                        {% endif %}
-                                    </td>
-                                </tr>
+                                        </div>
+                                    {% endif %}
+                                </div>
                             {% endfor %}
-                        </table>
+                        </div>
                     </div>
                     <div class="card-footer">
                         {% if tab_open %}
@@ -130,7 +179,7 @@
                     </div>
                 </div>
             </div>
-            {% if tab_open %}
+            {% if tab_open and tab_my %}
                 <div class="col-12 col-md-5">
                     <div class="card">
                         <div class="card-header">
@@ -139,31 +188,159 @@
                                 Payment
                             </h2>
                         </div>
+                        {% if money_counts %}
+                            <div class="card-body">
+                                <form method="post" action="{% url "waiter/tabs/tab" id %}" id="paymentForm">
+                                    {% csrf_token %}
+                                    <div class="form-group">
+                                        <label for="moneyCount">Payment method</label>
+                                        <select id="moneyCount" name="moneyCountId" class="form-control" required>
+                                            {% for count in money_counts %}
+                                                <option value="{{ count.id }}"
+                                                        {% ifequal count.id last_used_method %}
+                                                        selected{% endifequal %}>
+                                                    {{ count.paymentMethod.name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="paymentAmount">Amount paid</label>
+                                        <input type="number" id="paymentAmount" name="amount" class="form-control"
+                                               required min="0" step="0.01"/>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="card-footer">
+                                <button type="submit" form="paymentForm" class="btn btn-primary float-right">
+                                    <i class="fas fa-check"></i>&nbsp;
+                                    Pay
+                                </button>
+                            </div>
+                        {% else %}
+                            <div class="card-body">
+                                <p class="text-danger">
+                                    You don't have a till assigned. If you want to accept payment,
+                                    ask a manager to assign you a till.
+                                </p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if transfer_request_exists %}
+                    <div class="col-12 col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">
+                                    <i class="fas fa-people-arrows"></i>
+                                    Transfer
+                                </h2>
+                            </div>
+                            <div class="card-body">
+                                <span class="text-warning">Another transfer or claim request is currently waiting to be resolved. Please wait until then.</span>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="col-12 col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">
+                                    <i class="fas fa-people-arrows"></i>
+                                    Transfer
+                                </h2>
+                            </div>
+                            <div class="card-body">
+                                <form method="post" action="{% url "waiter/tabs/tab/requestTransfer" id %}"
+                                      id="transferRequestForm">
+                                    {% csrf_token %}
+                                    <div class="form-group">
+                                        <label for="newOwnerUsername">Target user</label>
+                                        <select id="newOwnerUsername" name="newOwnerUsername" class="form-control"
+                                                required>
+                                            {% for waiter in waiters %}
+                                                <option value="{{ waiter.username }}">
+                                                    {{ waiter.name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="card-footer">
+                                <button type="submit" form="transferRequestForm" class="btn btn-primary float-right">
+                                    <i class="fas fa-check"></i>&nbsp;
+                                    Request transfer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+            {% if tab_open and not tab_my %}
+                {% if transfer_request_exists %}
+                    <div class="col-12 col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">
+                                    <i class="fas fa-people-arrows"></i>
+                                    Claim
+                                </h2>
+                            </div>
+                            <div class="card-body">
+                                <span class="text-warning">Another transfer or claim request is currently waiting to be resolved. Please wait until then.</span>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="col-12 col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">
+                                    <i class="fas fa-people-arrows"></i>
+                                    Claim
+                                </h2>
+                            </div>
+                            <div class="card-body">
+                                You can request claim of this Tab to be able to create payments. A manager needs to
+                                review the task. By clicking the button you can create a request to claim this Tab.<br>
+                                <a href="{% url "waiter/tabs/tab/requestClaim" id %}"
+                                   class="float-right btn btn-primary">Request claim</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+            {% if tab_open and manager_role %}
+                <div class="col-12 col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">
+                                <i class="fas fa-people-arrows"></i>
+                                Change owner
+                            </h2>
+                        </div>
                         <div class="card-body">
-                            <form method="post" action="{% url "waiter/tabs/tab" id %}" id="paymentForm">
+                            <form method="post" action="{% url "waiter/tabs/tab/changeOwner" id %}"
+                                  id="ownerChangeForm">
                                 {% csrf_token %}
                                 <div class="form-group">
-                                    <label for="moneyCount">Payment method</label>
-                                    <select id="moneyCount" name="moneyCountId" class="form-control" required>
-                                        {% for count in money_counts %}
-                                            <option value="{{ count.id }}"
-                                                    {% ifequal count.id last_used_method %} selected{% endifequal %}>
-                                                {{ count.paymentMethod.name }}
+                                    <label for="newOwnerUsername">Target user</label>
+                                    <select id="newOwnerUsername" name="newOwnerUsername" class="form-control"
+                                            required>
+                                        {% for waiter in waiters %}
+                                            <option value="{{ waiter.username }}">
+                                                {{ waiter.name }}
                                             </option>
                                         {% endfor %}
                                     </select>
                                 </div>
-                                <div class="form-group">
-                                    <label for="paymentAmount">Amount paid</label>
-                                    <input type="number" id="paymentAmount" name="amount" class="form-control"
-                                           required min="0" step="0.01"/>
-                                </div>
                             </form>
                         </div>
                         <div class="card-footer">
-                            <button type="submit" form="paymentForm" class="btn btn-primary float-right">
+                            <button type="submit" form="ownerChangeForm" class="btn btn-primary float-right">
                                 <i class="fas fa-check"></i>&nbsp;
-                                Pay
+                                Change owner
                             </button>
                         </div>
                     </div>
@@ -195,6 +372,38 @@
                 </div>
             </div>
         </div>
+        <div class="modal fade" id="confirmVoidRequestModal" tabindex="-1" role="dialog"
+             aria-labelledby="confirmVoidRequestModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmVoidRequestModalLabel">Confirm void request</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="confirmVoidRequestModalBody">
+                        ...
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        {% if manager_role %}
+                            <button type="button" class="btn btn-warning" id="confirmVoidRequestModalButtonVoid">
+                                Void immediately
+                            </button>
+                        {% else %}
+                            <button type="button" class="btn btn-success"
+                                    id="confirmVoidRequestModalButtonAuthenticate">
+                                Log in and void
+                            </button>
+                        {% endif %}
+                        <button type="button" class="btn btn-primary" id="confirmVoidRequestModalButtonRequest">
+                            Request void
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <!--FAKE FORMS-->
         {% for payment in payments %}
             <form action="{% url "waiter/tabs/tab" id %}" method="post" id="deletePayment{{ payment.id }}Form">
@@ -207,4 +416,29 @@
             <input type="hidden" name="close" value="true"/>
         </form>
     {% endif %}
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script>
+        $(".void-order-button").on('click', function () {
+            let button = $(this);
+            let productName = button.data('order-product-name'),
+                state = button.data('order-state');
+            $('#confirmVoidRequestModalBody').html(`Are you sure you want to request void of product ${productName} currently in state ${state}?`)
+            $('#confirmVoidRequestModal').modal('show');
+            {% if manager_role %}
+                $('#confirmVoidRequestModalButtonVoid').off('click').on('click', function () {
+                    window.location = button.data('order-void-url');
+                });
+            {% else %}
+                $('#confirmVoidRequestModalButtonAuthenticate').off('click').on('click', function () {
+                    window.location = button.data('order-authenticate-url');
+                })
+            {% endif %}
+            $('#confirmVoidRequestModalButtonRequest').off('click').on('click', function () {
+                window.location = button.data('order-request-url');
+            });
+        })
+    </script>
 {% endblock %}

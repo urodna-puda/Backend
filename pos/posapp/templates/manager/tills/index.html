@@ -397,9 +397,9 @@
     <script>
         $('.stopTillButton').click(function () {
             let id = $(this).data('till-id');
-            let cashiers = $('#till-' + id + '-cashiers').html();
-            let deposit = $('#till-' + id + '-deposit').html();
-            let message = "Are you sure you want to close the " + deposit + " till of cashier(s) " + cashiers + "?<br>After this operation waiters won't be able to finish any orders and the till will have to be counted. After stopping, the till can't be reopened.";
+            let cashiers = $(`#till-${id}-cashiers`).html();
+            let deposit = $(`#till-${id}-deposit`).html();
+            let message = `Are you sure you want to close the ${deposit} till of cashier(s) ${cashiers}?<br>After this operation waiters won't be able to finish any orders and the till will have to be counted. After stopping, the till can't be reopened.`;
             $('#confirmStopTillModalBody').html(message);
             $('#confirmStopTillModal').modal('show');
             $('#confirmStopTillLink').attr("href", $(this).data('url'));

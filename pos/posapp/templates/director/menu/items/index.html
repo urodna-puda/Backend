@@ -10,8 +10,8 @@
 
 {% block breadcrumbs %}
     <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
-    <li class="breadcrumb-item" aria-current="page"><a href="{% url "admin" %}">Staff</a></li>
-    <li class="breadcrumb-item" aria-current="page"><a href="{% url "admin/menu" %}">Menu</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director" %}">Director</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director/menu" %}">Menu</a></li>
     <li class="breadcrumb-item active" aria-current="page">Items</li>
 {% endblock %}
 
@@ -44,7 +44,7 @@
                                     </div>
                                 </div>
                                 <div class="col">
-                                    <form>
+                                    <form id="searchForm">
                                         <div class="input-group mb-3 input-group-sm">
                                             <input type="text" class="form-control border-right-0 border-secondary"
                                                    placeholder="Search" aria-label="Search"
@@ -78,7 +78,7 @@
                                     <td>{{ item.name }}</td>
                                     <td>{{ item.unitGroup.name }}</td>
                                     <td class="text-center"><a
-                                            href="{% url "admin/menu/items/item/delete" item.id %}"
+                                            href="{% url "director/menu/items/item/delete" item.id %}"
                                             class="btn btn-tool"><i class="fas fa-trash"></i></a>
                                     </td>
                                 </tr>
@@ -166,7 +166,7 @@
                                 {{ create_item_form.non_field_errors }}
                             </div>
                         {% endif %}
-                        <form action="{% url "admin/menu/items" %}" method="post" id="createItemForm">
+                        <form action="{% url "director/menu/items" %}" method="post" id="createItemForm">
                             {% csrf_token %}
                             <div class="form-group">
                                 <label for="{{ create_item_form.name.id_for_label }}">Name</label>
@@ -199,8 +199,7 @@
     <script>
         $('#searchForm').bind('submit', function () {
             let search = $('#searchField').val();
-            window.location = "?page={{ items.pages.page }}&page_length={{ items.pages.page_length.value }}"{% if unit_group %}
-                + '&unit_group={{ unit_group }}'{% endif %} + (search ? "&search=" + search : "");
+            window.location = `?page={{ items.pages.page }}&page_length={{ items.pages.page_length.value }}{% if unit_group %}&unit_group={{ unit_group }}{% endif %}${search ? `&search=${search}` : ""}`;
             return false;
         });
     </script>

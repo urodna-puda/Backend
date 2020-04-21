@@ -24,7 +24,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY", default="foo")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = int(os.environ.get("DEBUG", default=1))
 
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", default="*").split(" ")
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]", "web"]
 
 # Application definition
 
@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'adminlte3',
     'adminlte3_theme',
     'django.contrib.admin',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -73,6 +74,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'puda.wsgi.application'
+ASGI_APPLICATION = 'puda.routing.application'
 
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
@@ -87,6 +89,20 @@ DATABASES = {
         "PORT": os.environ.get("SQL_PORT", "5432"),
     }
 }
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": os.environ.get("CHANNELS_BACKEND", "channels.layers.InMemoryChannelLayer"),
+        "CONFIG": {},
+    },
+}
+
+if os.environ.get("CHANNELS_HOST", ""):
+    config = CHANNEL_LAYERS["default"]["CONFIG"]
+    if "hosts" not in config:
+        config["hosts"] = []
+
+    config["hosts"].append((os.environ.get("CHANNELS_HOST", ""), int(os.environ.get("CHANNELS_PORT", "0"))))
 
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators
@@ -132,3 +148,5 @@ LOGOUT_REDIRECT_URL = "/"
 AUTH_USER_MODEL = 'posapp.User'
 
 PHONENUMBER_DEFAULT_REGION = 'CZ'
+
+VERSION = os.environ.get("VERSION", default="dev")

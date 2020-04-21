@@ -19,7 +19,7 @@ from django.urls import path, include
 from posapp import urls, apiurls
 
 urlpatterns = [
-    path('staff/', admin.site.urls),
+    path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
     path('', include(urls)),
     path('api/1/', include(apiurls)),

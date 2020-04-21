@@ -1,0 +1,32 @@
+{% extends "_base.html" %}
+{% load generic %}
+
+{% block page_name %}
+    <i class="fas fa-comment-dots"></i>
+    Requests
+{% endblock %}
+
+{% block no_description %}{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager" %}">Manager</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Requests</li>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row">
+            {% if void_requests_open %}
+                <div class="col-12">
+                    {% include "manager/requests/open_void_requests.html" %}
+                </div>
+            {% endif %}
+            {% if transfer_requests_open %}
+                <div class="col-12">
+                    {% include "manager/requests/open_transfer_requests.html" %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
