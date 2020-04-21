@@ -5,6 +5,7 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models
 from django_countries.fields import CountryField
 from phonenumber_field.modelfields import PhoneNumberField
@@ -23,6 +24,7 @@ class User(AbstractUser):
     current_till = models.ForeignKey("Till", null=True, on_delete=models.SET_NULL)
     current_temp_tab = models.ForeignKey("Tab", null=True, on_delete=models.SET_NULL)
     mobile_phone = PhoneNumberField()
+    online_counter = models.IntegerField(validators=[MinValueValidator(0)], default=0)
 
     @property
     def requires_director_to_toggle(self):
@@ -304,9 +306,11 @@ class ProductInTab(models.Model):
             if not self.voidedAt:
                 raise_under(self.state)
 
-    @property
-    def void_request_exists(self):
-        return bool(self.ordervoidrequest_set.filter(resolution__isnull=True).count())
+    def void_request_exists(self, instance=None):
+        requests = self.ordervoidrequest_set.filter(resolution__isnull=True)
+        if instance:
+            requests = requests.exclude(id=instance.id)
+        return bool(requests.count())
 
     def __str__(self):
         return f"{self.product} in {self.tab}"
@@ -601,7 +605,7 @@ class OrderVoidRequest(models.Model):
     def clean(self):
         super(OrderVoidRequest, self).clean()
 
-        if self.order.void_request_exists:
+        if self.order.void_request_exists(self):
             raise ValidationError("It appears there already is another unresolved request associated with this order.")
         if self.order.state == ProductInTab.VOIDED:
             raise ValidationError("The order is already voided.")

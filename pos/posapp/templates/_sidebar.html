@@ -2,16 +2,11 @@
 {% load static %}
 {% load sidebar %}
 
-{% block brand_img_src %}
-    {% static "posapp/img/logo.svg" %}
-{% endblock %}
-
-{% block brand_img_alt %}
-    ÚRODNÁ PŮDA
-{% endblock %}
-
-{% block brand_text %}
-    PUDA POS
+{% block logo %}
+    <a href="/" class="brand-link">
+        <img src="{% static "posapp/img/puda.jpg" %}" alt="ÚRODNÁ PŮDA" class="brand-image img-circle elevation-3" style="opacity: .8">
+        <span class="brand-text font-weight-light">PUDA POS</span>
+    </a>
 {% endblock %}
 
 {% block nav_links_ul %}

@@ -58,6 +58,13 @@
                             {% for user in users.data %}
                                 <tr>
                                     <td>
+                                        {% if user.online_counter %}
+                                            <i class="text-success fas fa-circle" data-toggle="tooltip"
+                                               title="Online on {{ user.online_counter }} devices"></i>
+                                            {% else %}
+                                            <i class="text-secondary far fa-circle" data-toggle="tooltip"
+                                               title="Offline"></i>
+                                        {% endif %}
                                         <a href="{% url "manager/users/user" user.username %}">
                                             {{ user.username }}
                                         </a>
