@@ -86,25 +86,7 @@ class Context:
         page = int(self.request.GET.get(page_get_name, 0))
 
         last_page = count // page_length
-        self.data[key] = {}
 
-        self.data[key]['data'] = manager[page * page_length:(page + 1) * page_length]
-
-        self.data[key]['showing'] = {}
-        self.data[key]['showing']['from'] = page * page_length
-        self.data[key]['showing']['to'] = min((page + 1) * page_length - 1, count - 1)
-        self.data[key]['showing']['of'] = count
-
-        self.data[key]['pages'] = {}
-        self.data[key]['pages']['previous'] = page - 1
-        self.data[key]['pages']['showPrevious'] = self.data[key]['pages']['previous'] >= 0
-        self.data[key]['pages']['next'] = page + 1
-        self.data[key]['pages']['showNext'] = self.data[key]['pages']['next'] <= last_page
-        self.data[key]['pages']['last'] = last_page
-        self.data[key]['pages']['page'] = page
-        self.data[key]['pages']['page_length'] = generate_page_length_options(page_length)
-
-        links = []
         if page < (last_page / 2):
             first_link = max(0, page - 2)
             start = first_link
@@ -114,13 +96,27 @@ class Context:
             start = max(0, last_link - 5)
             end = last_link
 
-        for i in range(start, end):
-            links.append({'page': i, 'active': i == page})
-
-        self.data[key]['pages']['links'] = links
+        self[key] = {
+            "data": manager[page * page_length:(page + 1) * page_length],
+            "showing": {
+                "from": page * page_length,
+                "to": min((page + 1) * page_length - 1, count - 1),
+                "of": count,
+            },
+            "pages": {
+                'previous': page - 1,
+                'showPrevious': (page - 1) >= 0,
+                'next': page + 1,
+                'showNext': (page + 1) <= last_page,
+                'last': last_page,
+                'page': page,
+                'page_length': generate_page_length_options(page_length),
+                "links": [{'page': i, 'active': i == page} for i in range(start, end)]
+            }
+        }
 
     def render(self, content_type=None, status=None, using=None):
-        return render(self.request, self.template_name, dict(self))
+        return render(self.request, self.template_name, dict(self), content_type, status, using)
 
     def __getitem__(self, item):
         return self.data[item]
@@ -1044,6 +1040,7 @@ class Director:
                 context['form'] = form
                 search = request.GET.get('search', '')
                 currency_filter = int(request.GET['currency']) if 'currency' in request.GET else None
+                context["currency_filter"] = currency_filter
 
                 methods = PaymentMethod.objects.filter(
                     Q(name__icontains=search) | Q(currency__name__icontains=search))
@@ -1053,6 +1050,7 @@ class Director:
                 context.add_pagination_context(methods, 'methods')
 
                 context["search"] = search
+                context["currencies"] = Currency.objects.all().order_by("name")
 
                 context["showModal"] = show_modal
                 return context.render()
