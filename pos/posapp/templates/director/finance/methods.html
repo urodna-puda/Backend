@@ -28,7 +28,18 @@
                         <div class="card-tools">
                             <div class="container-fluid">
                                 <div class="row">
-                                    <div class="col-10">
+                                    <div class="col-5">
+                                        <div class="input-group mb-3">
+                                            <select id="currencyFilterSelect" class="form-control"
+                                                    data-live-search="true" onchange="refreshPage();">
+                                                <option value="">-----</option>
+                                                {% for currency in currencies %}
+                                                    <option value="{{ currency.id }}" {% if currency.id == currency_filter %}selected{% endif %}>{{ currency.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-5">
                                         <form id="searchForm">
                                             <div class="input-group mb-3">
                                                 <input type="text" class="form-control border-right-0 border-secondary"
@@ -44,7 +55,7 @@
                                             </div>
                                         </form>
                                     </div>
-                                    <div class="col-2">
+                                    <div class="col-1">
                                         <button type="button" class="btn btn-tool"
                                                 onclick="$('#createPaymentMethodModal').modal('show')"
                                                 data-toggle="tooltip" data-position="top" title="Create payment method">
@@ -144,7 +155,7 @@
                                 through {{ methods.showing.to|add_one }} of {{ methods.showing.of }}.
                                 &nbsp;
                                 Items per page:
-                                <select onchange="window.location = '?page={{ methods.pages.page }}&page_length=' + this.options[this.selectedIndex].value{% if search %} + '&search={{ search }}'{% endif %};">
+                                <select id="pageLengthSelect" onchange="refreshPage();">
                                     <option value="5" {% if methods.pages.page_length.len5 %}selected{% endif %}>
                                         5 items
                                     </option>
@@ -177,33 +188,28 @@
                                 <div class="btn-group" role="group">
                                     {% if methods.pages.showPrevious %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page=0&page_length={{ methods.pages.page_length.value }}'{% if search %} +
-                                                    '&search={{ search }}{% endif %}'">
+                                                onclick="refreshPage(0);">
                                             <i class="fas fa-angle-double-left"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ methods.pages.previous }}&page_length={{ methods.pages.page_length.value }}'{% if search %} +
-                                                    '&search={{ search }}{% endif %}'">
+                                                onclick="refreshPage({{ methods.pages.previous }});">
                                             <i class=" fas fa-angle-left"></i>
                                         </button>
                                     {% endif %}
                                     {% for link in methods.pages.links %}
                                         <button type="button"
                                                 class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
-                                                onclick="window.location = '?page={{ link.page }}&page_length={{ methods.pages.page_length.value }}'{% if search %} +
-                                                    '&search={{ search }}{% endif %}'">
+                                                onclick="refreshPage({{ link.page }})">
                                             {{ link.page|add_one }}
                                         </button>
                                     {% endfor %}
                                     {% if methods.pages.showNext %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ methods.pages.next }}&page_length={{ methods.pages.page_length.value }}'{% if search %} +
-                                                    '&search={{ search }}{% endif %}'">
+                                                onclick="refreshPage({{ methods.pages.next }})">
                                             <i class="fas fa-angle-right"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ methods.pages.last }}&page_length={{ methods.pages.page_length.value }}'{% if search %} +
-                                                    '&search={{ search }}{% endif %}'">
+                                                onclick="refreshPage({{ methods.pages.last }})">
                                             <i class="fas fa-angle-double-right"></i>
                                         </button>
                                     {% endif %}
@@ -267,15 +273,15 @@
     </div>
 {% endblock %}
 
+{% block extra_head %}
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/css/bootstrap-select.css"/>
+{% endblock %}
+
 {% block javascript %}
     {{ block.super }}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/js/bootstrap-select.min.js"></script>
     <script>
-        $('#searchForm').bind('submit', function () {
-            let search = $('#searchField').val();
-            window.location = "?page={{ methods.pages.page }}&page_length={{ methods.pages.page_length.value }}" + (search ? "&search=" + search : "");
-            return false;
-        });
-
         function toggleProperty(id, property) {
             event.stopPropagation();
             event.stopImmediatePropagation();
@@ -320,6 +326,30 @@
                     })
                 }
             });
+        }
+
+        let currencyFilterSelect = $('#currencyFilterSelect');
+        currencyFilterSelect.selectpicker();
+
+        $('#searchForm').on('submit', function (e) {
+            e.preventDefault();
+            refreshPage();
+            return false
+        });
+
+        function refreshPage(pageNumber) {
+            let page = (pageNumber || pageNumber === 0) ? pageNumber :{{ methods.pages.page }};
+            let pageLength = $('#pageLengthSelect').val();
+            let search = $('#searchField').val();
+            let currency = currencyFilterSelect.val();
+
+            let params = {};
+            if (page) params.page = page;
+            if (pageLength) params.page_length = pageLength;
+            if (search) params.search = search;
+            if (currency) params.currency = currency;
+
+            window.location = `{% url "director/finance/methods" %}?${$.param(params)}`;
         }
     </script>
 {% endblock %}
