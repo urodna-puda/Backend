@@ -13,7 +13,7 @@
 
 {% block breadcrumbs %}
     <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
-    <li class="breadcrumb-item" aria-current="page"><a href="{% url "admin" %}">Staff</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director" %}">Staff</a></li>
     <li class="breadcrumb-item active" aria-current="page">Deposits</li>
 {% endblock %}
 
@@ -99,7 +99,7 @@
                                         </button>
                                     </td>
                                     <td>
-                                        <form action="{% url "admin/finance/deposits" %}" method="post">
+                                        <form action="{% url "director/finance/deposits" %}" method="post">
                                             {% csrf_token %}
                                             <input type="hidden" name="deleteDepositId" value="{{ deposit.id }}"/>
                                             <button type="submit" class="btn btn-tool" data-toggle="tooltip"
@@ -187,7 +187,7 @@
     <script>
         $('#searchForm').bind('submit', function () {
             let search = $('#searchField').val();
-            window.location = "?page={{ page_number }}&page_length={{ page_length.value }}{% if enabledFilter.val %}&enabled={{ enabledFilter.val }}{% endif %}" + (search ? "&search=" + search : "");
+            window.location = "?page={{ deposits.pages.page }}&page_length={{ deposits.pages.page_length.value }}{% if enabledFilter.val %}&enabled={{ enabledFilter.val }}{% endif %}" + (search ? "&search=" + search : "");
             return false;
         });
 

@@ -1087,17 +1087,24 @@ class Director:
                                                     "payments or tills depend on it. You can remove it from the deposits "
                                                     "to prevent further use.")
                         return redirect(reverse("director/finance/methods"))
-    class Deposits(DirectorLoginRequiredMixin, views.View):
-        def get(self, request):
-            context = Context(request, 'director/finance/deposits/index.html')
 
-            return context.render()
+        class Deposits(DirectorLoginRequiredMixin, views.View):
 
-        class Deposit(DirectorLoginRequiredMixin, views.View):
-            pass
+            def get(self, request):
+                context = Context(request, 'director/finance/deposits/index.html')
+                search = request.GET.get('search', '')
 
-        class Create(DirectorLoginRequiredMixin, views.View):
-            pass
+                deposits = TillPaymentOptions.objects.filter(name__icontains=search)
+
+                context.add_pagination_context(deposits, 'deposits')
+                context['search']=search
+                return context.render()
+
+            class Deposit(DirectorLoginRequiredMixin, views.View):
+                pass
+
+            class Create(DirectorLoginRequiredMixin, views.View):
+                pass
 
     class Units(DirectorLoginRequiredMixin, views.View):
         def get(self, request):
