@@ -34,17 +34,17 @@
                                         <div class="btn-group btn-group-sm" role="group">
                                             <button type="button"
                                                     class="btn btn-outline-success{% if enabledFilter.yes %} active{% endif %}"
-                                                    onclick="window.location = '?page={{ page_number }}&page_length={{ page_length.value }}&enabled=yes{% if search %}&search={{ search }}{% endif %}'">
+                                                    onclick="window.location = '?page={{ deposits.pages.page }}&page_length={{ deposits.pages.page_length.value }}&enabled=yes{% if search %}&search={{ search }}{% endif %}'">
                                                 <i class="fas fa-check-circle"></i>
                                             </button>
                                             <button type="button"
                                                     class="btn btn-outline-secondary{% if enabledFilter.none %} active{% endif %}"
-                                                    onclick="window.location = '?page={{ page_number }}&page_length={{ page_length.value }}&enabled={% if search %}&search={{ search }}{% endif %}'">
+                                                    onclick="window.location = '?page={{ deposits.pages.page }}&page_length={{ deposits.pages.page_length.value }}&enabled={% if search %}&search={{ search }}{% endif %}'">
                                                 <i class="fas fa-slash"></i>
                                             </button>
                                             <button type="button"
                                                     class="btn btn-outline-danger{% if enabledFilter.no %} active{% endif %}"
-                                                    onclick="window.location = '?page={{ page_number }}&page_length={{ page_length.value }}&enabled=no{% if search %}&search={{ search }}{% endif %}'">
+                                                    onclick="window.location = '?page={{ deposits.pages.page }}&page_length={{ deposits.pages.page_length.value }}&enabled=no{% if search %}&search={{ search }}{% endif %}'">
                                                 <i class="fas fa-times-circle"></i>
                                             </button>
                                         </div>
@@ -84,7 +84,7 @@
                                 <tr>
                                     <td>{{ deposit.name }}</td>
                                     <td>{{ deposit.changeMethod.name }}</td>
-                                    <td>{{ deposit.amount }}</td>
+                                    <td>{{ deposit.depositAmount }}</td>
                                     <td>{{ deposit.method_names }}</td>
                                     <td>
                                         <button type="button" class="btn btn-tool toggle-manager"
@@ -120,19 +120,31 @@
                                 through {{ deposits.showing.to|add_one }} of {{ deposits.showing.of }}.
                                 &nbsp;
                                 Items per page:
-                                <select onchange="window.location = '?page={{ page_number }}&page_length=' + this.options[this.selectedIndex].value{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} + '&search={{ search }}'{% endif %};">
-                                    <option value="5" {% if page_length.len5 %}selected{% endif %}>5 items</option>
-                                    <option value="10" {% if page_length.len10 %}selected{% endif %}>10 items</option>
-                                    <option value="20" {% if page_length.len20 %}selected{% endif %}>20 items</option>
-                                    <option value="50" {% if page_length.len50 %}selected{% endif %}>50 items</option>
-                                    <option value="100" {% if page_length.len100 %}selected{% endif %}>100 items
+                                <select onchange="window.location = '?page={{ deposits.pages.page }}&page_length=' + this.options[this.selectedIndex].value{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} + '&search={{ search }}'{% endif %};">
+                                    <option value="5" {% if deposits.pages.page_length.len5 %}selected{% endif %}>5
+                                        items
                                     </option>
-                                    <option value="200" {% if page_length.len200 %}selected{% endif %}>200 items
+                                    <option value="10" {% if deposits.pages.page_length.len10 %}selected{% endif %}>10
+                                        items
                                     </option>
-                                    <option value="500" {% if page_length.len500 %}selected{% endif %}>500 items
+                                    <option value="20" {% if deposits.pages.page_length.len20 %}selected{% endif %}>20
+                                        items
+                                    </option>
+                                    <option value="50" {% if deposits.pages.page_length.len50 %}selected{% endif %}>50
+                                        items
+                                    </option>
+                                    <option value="100" {% if deposits.pages.page_length.len100 %}selected{% endif %}>
+                                        100 items
+                                    </option>
+                                    <option value="200" {% if deposits.pages.page_length.len200 %}selected{% endif %}>
+                                        200 items
+                                    </option>
+                                    <option value="500" {% if deposits.pages.page_length.len500 %}selected{% endif %}>
+                                        500 items
                                     </option>
                                     {% if page_length.other %}
-                                        <option value="{{ page_length.value }}" selected>Other ({{ page_length.value }}
+                                        <option value="{{ deposits.pages.page_length.value }}" selected>Other
+                                            ({{ deposits.pages.page_length.value }}
                                             items)
                                         </option>
                                     {% endif %}
@@ -142,12 +154,12 @@
                                 <div class="btn-group" role="group">
                                     {% if deposits.pages.showPrevious %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page=0&page_length={{ page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
+                                                onclick="window.location = '?page=0&page_length={{ deposits.pages.page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
                                                     '&search={{ search }}{% endif %}">
                                             <i class="fas fa-angle-double-left"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ deposits.pages.previous }}&page_length={{ page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
+                                                onclick="window.location = '?page={{ deposits.pages.previous }}&page_length={{ deposits.pagespage_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
                                                     '&search={{ search }}{% endif %}">
                                             <i class=" fas fa-angle-left"></i>
                                         </button>
@@ -162,12 +174,12 @@
                                     {% endfor %}
                                     {% if currencies.pages.showNext %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ currencies.pages.next }}&page_length={{ page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
+                                                onclick="window.location = '?page={{ deposits.pages.next }}&page_length={{ deposits.pages.page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
                                                     '&search={{ search }}{% endif %}">
                                             <i class="fas fa-angle-right"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ currencies.pages.last }}&page_length={{ page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
+                                                onclick="window.location = '?page={{ deposits.pages.last }}&page_length={{ deposits.pages.page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
                                                     '&search={{ search }}{% endif %}">
                                             <i class="fas fa-angle-double-right"></i>
                                         </button>

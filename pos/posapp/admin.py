@@ -149,8 +149,11 @@ class PaymentMethodAdmin(admin.ModelAdmin):
     ordering = ['name']
 
 
-class TillPaymentOptionsAdmin(admin.ModelAdmin):
-    pass
+class DepositAdmin(admin.ModelAdmin):
+    list_display = ['name', 'changeMethod', 'depositAmount', 'enabled']
+    search_fields = ['name']
+    list_filter = ['changeMethod', 'depositAmount', 'enabled']
+    ordering = ['name', 'depositAmount']
 
 
 class TillMoneyCountsInline(admin.TabularInline):
@@ -185,6 +188,6 @@ admin.site.register(Tab, TabAdmin)
 # admin.site.register(ProductInTab, ProductInTabAdmin)
 admin.site.register(Currency, CurrencyAdmin)
 admin.site.register(PaymentMethod, PaymentMethodAdmin)
-admin.site.register(TillPaymentOptions, TillPaymentOptionsAdmin)
+admin.site.register(TillPaymentOptions, DepositAdmin)
 admin.site.register(Till, TillAdmin)
 # admin.site.register(PaymentInOrder, PaymentInOrderAdmin)

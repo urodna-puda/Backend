@@ -1,6 +1,5 @@
 import decimal
 import uuid
-
 # Create your views here.
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -1097,7 +1096,7 @@ class Director:
                 deposits = TillPaymentOptions.objects.filter(name__icontains=search)
 
                 context.add_pagination_context(deposits, 'deposits')
-                context['search']=search
+                context['search'] = search
                 return context.render()
 
             class Deposit(DirectorLoginRequiredMixin, views.View):
