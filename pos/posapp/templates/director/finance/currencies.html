@@ -117,33 +117,10 @@
                                 through {{ currencies.showing.to|add_one }} of {{ currencies.showing.of }}.
                                 &nbsp;
                                 Items per page:
-                                <select onchange="window.location = '?page={{ currencies.pages.page }}&page_length=' + this.options[this.selectedIndex].value{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} + '&search={{ search }}'{% endif %};">
-                                    <option value="5" {% if currencies.pages.page_length.len5 %}selected{% endif %}>
-                                        5 items
-                                    </option>
-                                    <option value="10" {% if currencies.pages.page_length.len10 %}selected{% endif %}>
-                                        10 items
-                                    </option>
-                                    <option value="20" {% if currencies.pages.page_length.len20 %}selected{% endif %}>
-                                        20 items
-                                    </option>
-                                    <option value="50" {% if currencies.pages.page_length.len50 %}selected{% endif %}>
-                                        50 items
-                                    </option>
-                                    <option value="100" {% if currencies.pages.page_length.len100 %}selected{% endif %}>
-                                        100 items
-                                    </option>
-                                    <option value="200" {% if currencies.pages.page_length.len200 %}selected{% endif %}>
-                                        200 items
-                                    </option>
-                                    <option value="500" {% if currencies.pages.page_length.len500 %}selected{% endif %}>
-                                        500 items
-                                    </option>
-                                    {% if currencies.pages.page_length.other %}
-                                        <option value="{{ currencies.pages.page_length.value }}" selected>
-                                            Other ({{ currencies.pages.page_length.value }} items)
-                                        </option>
-                                    {% endif %}
+                                <select onchange="refreshPage();" id="pageLength">
+                                    {% for option in currencies.pages.page_length.options %}
+                                        <option value="{{ option }}" {% if option == currencies.pages.page_length.value %}selected{% endif %}>{{ option }} items</option>
+                                    {% endfor %}
                                 </select>
                             </div>
                             <div class="col-6 text-right">

@@ -135,6 +135,13 @@
                             <div class="col-6">
                                 Showing items {{ users.showing.from|add_one }} through {{ users.showing.to|add_one }}
                                 of {{ users.showing.of }}.
+                                &nbsp;
+                                Items per page:
+                                <select onchange="refreshPage();" id="pageLength">
+                                    {% for option in users.pages.page_length.options %}
+                                        <option value="{{ option }}" {% if option == users.pages.page_length.value %}selected{% endif %}>{{ option }} items</option>
+                                    {% endfor %}
+                                </select>
                             </div>
                             <div class="col-6 text-right">
                                 <div class="btn-group" role="group">

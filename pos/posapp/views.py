@@ -110,10 +110,16 @@ class Context:
                 'showNext': (page + 1) <= last_page,
                 'last': last_page,
                 'page': page,
-                'page_length': generate_page_length_options(page_length),
-                "links": [{'page': i, 'active': i == page} for i in range(start, end)]
-            }
+                'page_length': {
+                    "options": [5, 10, 20, 50, 100, 200, 500],
+                    "value": page_length,
+                },
+                "links": [{'page': i, 'active': i == page} for i in range(start, end)],
+            },
         }
+
+        if page_length not in self[key]["pages"]["page_length"]["options"]:
+            self[key]["pages"]["page_length"]["options"].append(page_length)
 
     def render(self, content_type=None, status=None, using=None):
         return render(self.request, self.template_name, dict(self), content_type, status, using)
@@ -139,25 +145,6 @@ class Context:
         yield 'version', self.version
         for key in self.data:
             yield key, self.data[key]
-
-
-def generate_page_length_options(page_length):
-    options = {
-        "len5": False,
-        "len10": False,
-        "len20": False,
-        "len50": False,
-        "len100": False,
-        "len200": False,
-        "len500": False,
-        "other": False,
-        "value": page_length,
-    }
-    if "len" + str(page_length) in options:
-        options["len" + str(page_length)] = True
-    else:
-        options["other"] = True
-    return options
 
 
 def check_dict(dictionary, keys):

@@ -72,33 +72,10 @@
                                 of {{ open.showing.of }}.
                                 &nbsp;
                                 Items per page:
-                                <select onchange="window.location = '?page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_counted={{ counted.pages.page }}&page_length=' + this.options[this.selectedIndex].value;">
-                                    <option value="5" {% if open.pages.page_length.len5 %}selected{% endif %}>
-                                        5 items
-                                    </option>
-                                    <option value="10" {% if open.pages.page_length.len10 %}selected{% endif %}>
-                                        10 items
-                                    </option>
-                                    <option value="20" {% if open.pages.page_length.len20 %}selected{% endif %}>
-                                        20 items
-                                    </option>
-                                    <option value="50" {% if open.pages.page_length.len50 %}selected{% endif %}>
-                                        50 items
-                                    </option>
-                                    <option value="100" {% if open.pages.page_length.len100 %}selected{% endif %}>
-                                        100 items
-                                    </option>
-                                    <option value="200" {% if open.pages.page_length.len200 %}selected{% endif %}>
-                                        200 items
-                                    </option>
-                                    <option value="500" {% if open.pages.page_length.len500 %}selected{% endif %}>
-                                        500 items
-                                    </option>
-                                    {% if open.pages.page_length.other %}
-                                        <option value="{{ open.pages.page_length.value }}" selected>
-                                            Other ({{ open.pages.page_length.value }} items)
-                                        </option>
-                                    {% endif %}
+                                <select onchange="refreshPage();" id="pageLengthOpen">
+                                    {% for option in open.pages.page_length.options %}
+                                        <option value="{{ option }}" {% if option == open.pages.page_length.value %}selected{% endif %}>{{ option }} items</option>
+                                    {% endfor %}
                                 </select>
                             </div>
                             <div class="col-6 text-right">
@@ -188,33 +165,10 @@
                                 of {{ stopped.showing.of }}.
                                 &nbsp;
                                 Items per page:
-                                <select onchange="window.location = '?page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_counted={{ counted.pages.page }}&page_length=' + this.options[this.selectedIndex].value;">
-                                    <option value="5" {% if stopped.pages.page_length.len5 %}selected{% endif %}>
-                                        5 items
-                                    </option>
-                                    <option value="10" {% if stopped.pages.page_length.len10 %}selected{% endif %}>
-                                        10 items
-                                    </option>
-                                    <option value="20" {% if stopped.pages.page_length.len20 %}selected{% endif %}>
-                                        20 items
-                                    </option>
-                                    <option value="50" {% if stopped.pages.page_length.len50 %}selected{% endif %}>
-                                        50 items
-                                    </option>
-                                    <option value="100" {% if stopped.pages.page_length.len100 %}selected{% endif %}>
-                                        100 items
-                                    </option>
-                                    <option value="200" {% if stopped.pages.page_length.len200 %}selected{% endif %}>
-                                        200 items
-                                    </option>
-                                    <option value="500" {% if stopped.pages.page_length.len500 %}selected{% endif %}>
-                                        500 items
-                                    </option>
-                                    {% if stopped.pages.page_length.other %}
-                                        <option value="{{ stopped.pages.page_length.value }}" selected>
-                                            Other ({{ stopped.pages.page_length.value }} items)
-                                        </option>
-                                    {% endif %}
+                                <select onchange="refreshPage();" id="pageLengthStopped">
+                                    {% for option in stopped.pages.page_length.options %}
+                                        <option value="{{ option }}" {% if option == stopped.pages.page_length.value %}selected{% endif %}>{{ option }} items</option>
+                                    {% endfor %}
                                 </select>
                             </div>
                             <div class="col-6 text-right">
@@ -305,33 +259,10 @@
                                 of {{ counted.showing.of }}.
                                 &nbsp;
                                 Items per page:
-                                <select onchange="window.location = '?page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_counted={{ counted.pages.page }}&page_length=' + this.options[this.selectedIndex].value;">
-                                    <option value="5" {% if counted.pages.page_length.len5 %}selected{% endif %}>
-                                        5 items
-                                    </option>
-                                    <option value="10" {% if counted.pages.page_length.len10 %}selected{% endif %}>
-                                        10 items
-                                    </option>
-                                    <option value="20" {% if counted.pages.page_length.len20 %}selected{% endif %}>
-                                        20 items
-                                    </option>
-                                    <option value="50" {% if counted.pages.page_length.len50 %}selected{% endif %}>
-                                        50 items
-                                    </option>
-                                    <option value="100" {% if counted.pages.page_length.len100 %}selected{% endif %}>
-                                        100 items
-                                    </option>
-                                    <option value="200" {% if counted.pages.page_length.len200 %}selected{% endif %}>
-                                        200 items
-                                    </option>
-                                    <option value="500" {% if counted.pages.page_length.len500 %}selected{% endif %}>
-                                        500 items
-                                    </option>
-                                    {% if counted.pages.page_length.other %}
-                                        <option value="{{ counted.pages.page_length.value }}" selected>
-                                            Other ({{ counted.pages.page_length.value }} items)
-                                        </option>
-                                    {% endif %}
+                                <select onchange="refreshPage();" id="pageLengthCounted">
+                                    {% for option in counted.pages.page_length.options %}
+                                        <option value="{{ option }}" {% if option == counted.pages.page_length.value %}selected{% endif %}>{{ option }} items</option>
+                                    {% endfor %}
                                 </select>
                             </div>
                             <div class="col-6 text-right">

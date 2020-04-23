@@ -92,33 +92,10 @@
                             through {{ items.showing.to|add_one }} of {{ items.showing.of }}.
                             &nbsp;
                             Items per page:
-                            <select onchange="window.location = '?page={{ items.pages.page }}&page_length=' + this.options[this.selectedIndex].value{% if unit_group %} + '&unit_group={{ unit_group }}'{% endif %}{% if search %} + '&search={{ search }}'{% endif %};">
-                                <option value="5" {% if items.pages.page_length.len5 %}selected{% endif %}>
-                                    5 items
-                                </option>
-                                <option value="10" {% if items.pages.page_length.len10 %}selected{% endif %}>
-                                    10 items
-                                </option>
-                                <option value="20" {% if items.pages.page_length.len20 %}selected{% endif %}>
-                                    20 items
-                                </option>
-                                <option value="50" {% if items.pages.page_length.len50 %}selected{% endif %}>
-                                    50 items
-                                </option>
-                                <option value="100" {% if items.pages.page_length.len100 %}selected{% endif %}>
-                                    100 items
-                                </option>
-                                <option value="200" {% if items.pages.page_length.len200 %}selected{% endif %}>
-                                    200 items
-                                </option>
-                                <option value="500" {% if v.pages.page_length.len500 %}selected{% endif %}>
-                                    500 items
-                                </option>
-                                {% if items.pages.page_length.other %}
-                                    <option value="{{ items.pages.page_length.value }}" selected>
-                                        Other ({{ items.pages.page_length.value }} items)
-                                    </option>
-                                {% endif %}
+                            <select onchange="refreshPage();" id="pageLength">
+                                {% for option in items.pages.page_length.options %}
+                                    <option value="{{ option }}" {% if option == items.pages.page_length.value %}selected{% endif %}>{{ option }} items</option>
+                                {% endfor %}
                             </select>
                         </div>
                         <div class="btn-group float-right" role="group">
