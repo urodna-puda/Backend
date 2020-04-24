@@ -15,6 +15,27 @@
     <li class="breadcrumb-item active" aria-current="page">Overview</li>
 {% endblock %}
 
+{% block page_actions %}
+    <div class="row flex-row-reverse">
+        <div class="col-12 col-md-6 col-lg-3">
+            <form id="searchForm">
+                <div class="input-group">
+                    <input type="text" class="form-control border-right-0 border-secondary bg-transparent"
+                           placeholder="Search" aria-label="Search"
+                           aria-describedby="search-addon-button" id="searchField"
+                           name="search"{% if search %} value="{{ search }}"{% endif %}>
+                    <div class="input-group-append">
+                        <button class="btn form-control btn-outline-secondary border-left-0"
+                                type="submit" id="search-addon-button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
 {% block content %}
     <div class="container-fluid">
         <div class="row">
@@ -74,7 +95,10 @@
                                 Items per page:
                                 <select onchange="refreshPage();" id="pageLengthOpen">
                                     {% for option in open.pages.page_length.options %}
-                                        <option value="{{ option }}" {% if option == open.pages.page_length.value %}selected{% endif %}>{{ option }} items</option>
+                                        <option value="{{ option }}"
+                                                {% if option == open.pages.page_length.value %}selected{% endif %}>{{ option }}
+                                            items
+                                        </option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -167,7 +191,10 @@
                                 Items per page:
                                 <select onchange="refreshPage();" id="pageLengthStopped">
                                     {% for option in stopped.pages.page_length.options %}
-                                        <option value="{{ option }}" {% if option == stopped.pages.page_length.value %}selected{% endif %}>{{ option }} items</option>
+                                        <option value="{{ option }}"
+                                                {% if option == stopped.pages.page_length.value %}selected{% endif %}>{{ option }}
+                                            items
+                                        </option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -261,7 +288,10 @@
                                 Items per page:
                                 <select onchange="refreshPage();" id="pageLengthCounted">
                                     {% for option in counted.pages.page_length.options %}
-                                        <option value="{{ option }}" {% if option == counted.pages.page_length.value %}selected{% endif %}>{{ option }} items</option>
+                                        <option value="{{ option }}"
+                                                {% if option == counted.pages.page_length.value %}selected{% endif %}>{{ option }}
+                                            items
+                                        </option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -335,5 +365,45 @@
             $('#confirmStopTillModal').modal('show');
             $('#confirmStopTillLink').attr("href", $(this).data('url'));
         });
+
+        $('#searchForm').on('submit', function (e) {
+            e.preventDefault();
+            refreshPage();
+            return false
+        });
+
+        function refreshPage(pageNumber, section) {
+            let pageOpen = {{ open.pages.page }};
+            let pageStopped = {{ stopped.pages.page }};
+            let pageCounted = {{ counted.pages.page }};
+
+            switch (section) {
+                case "open":
+                    pageOpen = (pageNumber || pageNumber === 0) ? pageNumber : pageOpen;
+                    break;
+                case "stopped":
+                    pageStopped = (pageNumber || pageNumber === 0) ? pageNumber : pageStopped;
+                    break;
+                case "counted":
+                    pageCounted = (pageNumber || pageNumber === 0) ? pageNumber : pageCounted;
+                    break;
+            }
+
+            let pageLengthOpen = $('#pageLengthOpen').val();
+            let pageLengthStopped = $('#pageLengthStopped').val();
+            let pageLengthCounted = $('#pageLengthCounted').val();
+            let search = $('#searchField').val();
+
+            let params = {};
+            if (pageCounted) params.page_open = pageCounted;
+            if (pageStopped) params.page_stopped = pageStopped;
+            if (pageCounted) params.page_counted = pageCounted;
+            if (pageLengthOpen) params.page_length_open = pageLengthOpen;
+            if (pageLengthStopped) params.page_length_stopped = pageLengthStopped;
+            if (pageLengthCounted) params.page_length_counted = pageLengthCounted;
+            if (search) params.search = search;
+
+            window.location = `{% url "manager/tills" %}?${$.param(params)}`;
+        }
     </script>
 {% endblock %}

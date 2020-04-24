@@ -671,13 +671,31 @@ class Manager:
     class Tills(ManagerLoginRequiredMixin, views.View):
         def get(self, request):
             context = Context(request, "manager/tills/index.html")
+            search = request.GET.get("search", "")
+            context["search"] = search
 
-            open_tills = Till.objects.filter(state=Till.OPEN)
-            stopped_tills = Till.objects.filter(state=Till.STOPPED)
-            counted_tills = Till.objects.filter(state=Till.COUNTED)
-            context.add_pagination_context(open_tills, 'open', page_get_name="page_open")
-            context.add_pagination_context(stopped_tills, 'stopped', page_get_name="page_stopped")
-            context.add_pagination_context(counted_tills, 'counted', page_get_name="page_counted")
+            open_tills = Till.objects.filter(state=Till.OPEN).filter(
+                Q(cashiers__first_name__icontains=search) |
+                Q(cashiers__last_name__icontains=search) |
+                Q(cashiers__username__icontains=search)
+            )
+            stopped_tills = Till.objects.filter(state=Till.STOPPED).filter(
+                Q(cashiers__first_name__icontains=search) |
+                Q(cashiers__last_name__icontains=search) |
+                Q(cashiers__username__icontains=search)
+            )
+            counted_tills = Till.objects.filter(state=Till.COUNTED).filter(
+                Q(cashiers__first_name__icontains=search) |
+                Q(cashiers__last_name__icontains=search) |
+                Q(cashiers__username__icontains=search)
+            )
+            context.add_pagination_context(open_tills, 'open', page_get_name="page_open",
+                                           page_length_get_name="page_length_open")
+            context.add_pagination_context(stopped_tills, 'stopped', page_get_name="page_stopped",
+                                           page_length_get_name="page_length_stopped")
+            context.add_pagination_context(counted_tills, 'counted', page_get_name="page_counted",
+                                           page_length_get_name="page_length_counted")
+            context["search"] = search
 
             return context.render()
 
