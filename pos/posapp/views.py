@@ -1167,23 +1167,18 @@ class Director:
             def fill_data(self, request):
                 context = Context(request, 'director/menu/products/index.html')
                 search = request.GET.get('search', '')
-                enabled_filter = request.GET.get('enabled', '')
+                activity_filter = request.GET.get('activity_filter', '')
 
                 products = Product.objects.filter(name__icontains=search).order_by('name')
-                if enabled_filter:
-                    if enabled_filter == "yes":
+                if activity_filter:
+                    if activity_filter == "enabled":
                         products = products.filter(enabled=True)
-                    if enabled_filter == "no":
+                    if activity_filter == "disanbled":
                         products = products.filter(enabled=False)
                 context.add_pagination_context(products, 'products')
 
                 context["search"] = search
-                context["enabledFilter"] = {
-                    "yes": (enabled_filter == "yes"),
-                    "none": (enabled_filter == ""),
-                    "no": (enabled_filter == "no"),
-                    "val": enabled_filter,
-                }
+                context["activity_filter"] = activity_filter
 
                 return context
 
