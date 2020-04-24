@@ -18,7 +18,7 @@
 {% block content %}
     <div class="container-fluid">
         <div class="row">
-            <div class="col-12 col-md-6">
+            <div class="col-12">
                 <div class="card">
                     <div class="card-header border-0">
                         <h2 class="card-title">
@@ -29,8 +29,7 @@
                             <div class="row">
                                 <div class="col">
                                     <div class="input-group mb-3 input-group-sm">
-                                        <select class="form-control"
-                                                onchange="window.location = '?page={{ items.pages.page }}&page_length={{ items.pages.page_length.value }}&unit_group=' + this.options[this.selectedIndex].value{% if search %} + '&search={{ search }}'{% endif %};">
+                                        <select class="form-control" onchange="refreshPage()" id="unitFilterSelect">
                                             <option value="">
                                                 All
                                             </option>
@@ -60,6 +59,13 @@
                                         </div>
                                     </form>
                                 </div>
+                            <div class="col-2">
+                                <button type="button" class="btn btn-tool"
+                                        onclick="$('#createItemModal').modal('show')"
+                                        data-toggle="tooltip" data-position="top" title="Create item">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
                             </div>
                         </div>
                     </div>
@@ -92,7 +98,7 @@
                             through {{ items.showing.to|add_one }} of {{ items.showing.of }}.
                             &nbsp;
                             Items per page:
-                            <select onchange="refreshPage();" id="pageLength">
+                            <select onchange="refreshPage();" id="pageLengthSelect">
                                 {% for option in items.pages.page_length.options %}
                                     <option value="{{ option }}" {% if option == items.pages.page_length.value %}selected{% endif %}>{{ option }} items</option>
                                 {% endfor %}
@@ -101,28 +107,28 @@
                         <div class="btn-group float-right" role="group">
                             {% if items.pages.showPrevious %}
                                 <button type="button" class="btn btn-outline-secondary"
-                                        onclick="window.location = '?page=0&page_length={{ items.pages.page_length.value }}'{% if unit_group %} + '&unit_group={{ unit_group }}'{% endif %}{% if search %} + '&search={{ search }}{% endif %}">
+                                        onclick="refreshPage(0);">
                                     <i class="fas fa-angle-double-left"></i>
                                 </button>
                                 <button type="button" class="btn btn-outline-secondary"
-                                        onclick="window.location = '?page={{ items.pages.previous }}&page_length={{ items.pages.page_length.value }}'{% if unit_group %} + '&unit_group={{ unit_group }}'{% endif %}{% if search %} + '&search={{ search }}{% endif %}">
+                                        onclick="refreshPage({{ items.pages.previous }})">
                                     <i class=" fas fa-angle-left"></i>
                                 </button>
                             {% endif %}
                             {% for link in items.pages.links %}
                                 <button type="button"
                                         class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
-                                        onclick="window.location = '?page={{ link.page }}&page_length={{ items.pages.page_length.value }}'{% if unit_group %} + '&unit_group={{ unit_group }}'{% endif %}{% if search %} + '&search={{ search }}{% endif %}">
+                                        onclick="refreshPage({{ link.page }})">
                                     {{ link.page|add_one }}
                                 </button>
                             {% endfor %}
                             {% if items.pages.showNext %}
                                 <button type="button" class="btn btn-outline-secondary"
-                                        onclick="window.location = '?page={{ items.pages.next }}&page_length={{ items.pages.page_length.value }}'{% if unit_group %} + '&unit_group={{ unit_group }}'{% endif %}{% if search %} + '&search={{ search }}{% endif %}">
+                                        onclick="refreshPage({{ items.pages.next }})">
                                     <i class="fas fa-angle-right"></i>
                                 </button>
                                 <button type="button" class="btn btn-outline-secondary"
-                                        onclick="window.location = '?page={{ items.pages.last }}&page_length={{ items.pages.page_length.value }}'{% if unit_group %} + '&unit_group={{ unit_group }}'{% endif %}{% if search %} + '&search={{ search }}{% endif %}">
+                                        onclick="refreshPage({{ items.pages.last }})">
                                     <i class="fas fa-angle-double-right"></i>
                                 </button>
                             {% endif %}
@@ -130,41 +136,48 @@
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-md-6">
-                <div class="card card-default">
-                    <div class="card-header">
-                        <h2 class="card-title">New item</h2>
-                    </div>
-                    <div class="card-body">
-                        {% if create_item_form.non_field_errors %}
-                            <div class="alert alert-warning alert-dismissible fade show">
-                                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;
-                                </button>
-                                {{ create_item_form.non_field_errors }}
-                            </div>
-                        {% endif %}
-                        <form action="{% url "director/menu/items" %}" method="post" id="createItemForm">
-                            {% csrf_token %}
-                            <div class="form-group">
-                                <label for="{{ create_item_form.name.id_for_label }}">Name</label>
-                                {{ create_item_form.name }}
-                                {% if create_item_form.name.errors %}
-                                    <div class="text-danger">{{ create_item_form.name.errors }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="form-group">
-                                <label for="{{ create_item_form.unitGroup.id_for_label }}">Unit group</label>
-                                {{ create_item_form.unitGroup }}
-                                {% if create_item_form.unitGroup.errors %}
-                                    <div class="text-danger">{{ create_item_form.unitGroup.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </form>
-                    </div>
-                    <div class="card-footer text-right">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-primary" form="createItemForm">Save changes</button>
-                    </div>
+        </div>
+    </div>
+    <!--MODALS-->
+    <div class="modal fade" tab-index="-1" id="createItemModal" aria-labelledby="createItemModalTitle"
+         aria-hidden="true" role="dialog">
+        <div class="modal-dialog" role="dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createItemModalTitle">New item</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    {% if create_item_form.non_field_errors %}
+                        <div class="alert alert-warning alert-dismissible fade show">
+                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;
+                            </button>
+                            {{ create_item_form.non_field_errors }}
+                        </div>
+                    {% endif %}
+                    <form action="{% url "director/menu/items" %}" method="post" id="createItemForm">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="{{ create_item_form.name.id_for_label }}">Name</label>
+                            {{ create_item_form.name }}
+                            {% if create_item_form.name.errors %}
+                                <div class="text-danger">{{ create_item_form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ create_item_form.unitGroup.id_for_label }}">Unit group</label>
+                            {{ create_item_form.unitGroup }}
+                            {% if create_item_form.unitGroup.errors %}
+                                <div class="text-danger">{{ create_item_form.unitGroup.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary" form="createItemForm">Save changes</button>
                 </div>
             </div>
         </div>
@@ -174,10 +187,25 @@
 {% block javascript %}
     {{ block.super }}
     <script>
-        $('#searchForm').bind('submit', function () {
-            let search = $('#searchField').val();
-            window.location = `?page={{ items.pages.page }}&page_length={{ items.pages.page_length.value }}{% if unit_group %}&unit_group={{ unit_group }}{% endif %}${search ? `&search=${search}` : ""}`;
-            return false;
+        $('#searchForm').on('submit', function (e) {
+            e.preventDefault();
+            refreshPage();
+            return false
         });
+
+        function refreshPage(pageNumber) {
+            let page = (pageNumber || pageNumber === 0) ? pageNumber : {{ items.pages.page }};
+            let pageLength = $('#pageLengthSelect').val();
+            let unitFilter = $('#unitFilterSelect').val();
+            let search = $('#searchField').val();
+
+            let params = {};
+            if (page) params.page = page;
+            if (pageLength) params.page_length = pageLength;
+            if (unitFilter) params.unit_group = unitFilter;
+            if (search) params.search = search;
+
+            window.location = `{% url "director/menu/items" %}?${$.param(params)}`;
+        }
     </script>
 {% endblock %}
