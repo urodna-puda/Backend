@@ -116,28 +116,28 @@
                                 <div class="btn-group" role="group">
                                     {% if open.pages.showPrevious %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_open=0&page_stopped={{ stopped.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ open.pages.page_length.value }}'">
+                                                onclick="refreshPage(0, 'open');">
                                             <i class="fas fa-angle-double-left"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_open={{ open.pages.previous }}&page_stopped={{ stopped.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ open.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ open.pages.previous }}, 'open')">
                                             <i class=" fas fa-angle-left"></i>
                                         </button>
                                     {% endif %}
                                     {% for link in open.pages.links %}
                                         <button type="button"
                                                 class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
-                                                onclick="window.location = '?page_open={{ link.page }}&page_stopped={{ stopped.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ open.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ link.page }}, 'open')">
                                             {{ link.page|add_one }}
                                         </button>
                                     {% endfor %}
                                     {% if open.pages.showNext %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_open={{ open.pages.next }}&page_stopped={{ stopped.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ open.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ open.pages.next }}, 'open')">
                                             <i class="fas fa-angle-right"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_open={{ open.pages.last }}&page_stopped={{ page_closed }}&page_counted={{ page_counted }}&page_length={{ open.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ open.pages.last }}, 'open')">
                                             <i class="fas fa-angle-double-right"></i>
                                         </button>
                                     {% endif %}
@@ -212,28 +212,28 @@
                                 <div class="btn-group" role="group">
                                     {% if stopped.pages.showPrevious %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_stopped=0&page_open={{ open.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ stopped.pages.page_length.value }}'">
+                                                onclick="refreshPage(0, 'stopped');">
                                             <i class="fas fa-angle-double-left"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_stopped={{ stopped.pages.previous }}&page_open={{ open.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ stopped.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ stopped.pages.previous }}, 'stopped')">
                                             <i class=" fas fa-angle-left"></i>
                                         </button>
                                     {% endif %}
                                     {% for link in stopped.pages.links %}
                                         <button type="button"
                                                 class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
-                                                onclick="window.location = '?page_stopped={{ link.page }}&page_open={{ open.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ stopped.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ link.page }}, 'stopped')">
                                             {{ link.page|add_one }}
                                         </button>
                                     {% endfor %}
                                     {% if stopped.pages.showNext %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_stopped={{ stopped.pages.next }}&page_open={{ open.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ stopped.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ stopped.pages.next }}, 'stopped')">
                                             <i class="fas fa-angle-right"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_stopped={{ stopped.pages.last }}&page_open={{ open.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ stopped.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ stopped.pages.last }}, 'stopped')">
                                             <i class="fas fa-angle-double-right"></i>
                                         </button>
                                     {% endif %}
@@ -309,28 +309,28 @@
                                 <div class="btn-group" role="group">
                                     {% if counted.pages.showPrevious %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_counted=0&page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_length={{ counted.pages.page_length.value }}'">
+                                                onclick="refreshPage(0, 'counted');">
                                             <i class="fas fa-angle-double-left"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_counted={{ counted.pages.previous }}&page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_length={{ counted.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ counted.pages.previous }}, 'counted')">
                                             <i class=" fas fa-angle-left"></i>
                                         </button>
                                     {% endif %}
                                     {% for link in counted.pages.links %}
                                         <button type="button"
                                                 class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
-                                                onclick="window.location = '?page_counted={{ link.page }}&page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_length={{ counted.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ link.page }}, 'counted')">
                                             {{ link.page|add_one }}
                                         </button>
                                     {% endfor %}
                                     {% if counted.pages.showNext %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_counted={{ counted.pages.next }}&page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_length={{ counted.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ counted.pages.next }}, 'counted')">
                                             <i class="fas fa-angle-right"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_counted={{ counted.pages.last }}&page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_length={{ counted.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ counted.pages.last }}, 'counted')">
                                             <i class="fas fa-angle-double-right"></i>
                                         </button>
                                     {% endif %}
