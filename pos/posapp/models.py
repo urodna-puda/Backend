@@ -371,6 +371,7 @@ class TillPaymentOptions(models.Model):
         till = Till()
         till.changeMethod = self.changeMethod
         till.depositAmount = self.depositAmount
+        till.deposit = self.name
         till.clean()
         till.save()
         for method in self.methods.all():
@@ -405,6 +406,7 @@ class Till(models.Model):
     paymentMethods = models.ManyToManyField(PaymentMethod, through="TillMoneyCount", related_name="tillsEnabled")
     changeMethod = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT, related_name="tillsAsChange")
     depositAmount = models.DecimalField(max_digits=15, decimal_places=3)
+    deposit = models.CharField(max_length=1024)
 
     @property
     def cashier_names(self):
@@ -418,10 +420,6 @@ class Till(models.Model):
             return names
         else:
             return "Nobody is assigned"
-
-    @property
-    def deposit(self):
-        return self.changeMethod.name + " " + str(self.depositAmount)
 
     def stop(self):
         if self.state == Till.OPEN:

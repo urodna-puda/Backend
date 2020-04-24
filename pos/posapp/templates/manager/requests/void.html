@@ -89,68 +89,41 @@
                                 through {{ closed_requests.showing.to|add_one }} of {{ closed_requests.showing.of }}.
                                 &nbsp;
                                 Items per page:
-                                <select onchange="window.location = '?page={{ closed_requests.pages.page }}&page_length=' + this.options[this.selectedIndex].value;">
-                                    <option value="5"
-                                            {% if closed_requests.pages.page_length.len5 %}selected{% endif %}>
-                                        5 items
-                                    </option>
-                                    <option value="10"
-                                            {% if closed_requests.pages.page_length.len10 %}selected{% endif %}>
-                                        10 items
-                                    </option>
-                                    <option value="20"
-                                            {% if closed_requests.pages.page_length.len20 %}selected{% endif %}>
-                                        20 items
-                                    </option>
-                                    <option value="50"
-                                            {% if closed_requests.pages.page_length.len50 %}selected{% endif %}>
-                                        50 items
-                                    </option>
-                                    <option value="100"
-                                            {% if closed_requests.pages.page_length.len100 %}selected{% endif %}>
-                                        100 items
-                                    </option>
-                                    <option value="200"
-                                            {% if closed_requests.pages.page_length.len200 %}selected{% endif %}>
-                                        200 items
-                                    </option>
-                                    <option value="500"
-                                            {% if closed_requests.pages.page_length.len500 %}selected{% endif %}>
-                                        500 items
-                                    </option>
-                                    {% if closed_requests.pages.page_length.other %}
-                                        <option value="{{ closed_requests.pages.page_length.value }}" selected>
-                                            Other ({{ closed_requests.pages.page_length.value }} items)
+                                <select onchange="refreshPage();" id="pageLengthSelect">
+                                    {% for option in closed_requests.pages.page_length.options %}
+                                        <option value="{{ option }}"
+                                                {% if option == closed_requests.pages.page_length.value %}selected{% endif %}>{{ option }}
+                                            items
                                         </option>
-                                    {% endif %}
+                                    {% endfor %}
                                 </select>
                             </div>
                             <div class="col-6 text-right">
                                 <div class="btn-group" role="group">
-                                    {% if products.pages.showPrevious %}
+                                    {% if closed_requests.pages.showPrevious %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page=0&page_length={{ products.pages.page_length.value }}'">
+                                                onclick="refreshPage(0);">
                                             <i class="fas fa-angle-double-left"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ products.pages.previous }}&page_length={{ products.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ closed_requests.pages.previous }})">
                                             <i class=" fas fa-angle-left"></i>
                                         </button>
                                     {% endif %}
-                                    {% for link in products.pages.links %}
+                                    {% for link in closed_requests.pages.links %}
                                         <button type="button"
                                                 class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
-                                                onclick="window.location = '?page={{ link.page }}&page_length={{ products.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ link.page }})">
                                             {{ link.page|add_one }}
                                         </button>
                                     {% endfor %}
-                                    {% if products.pages.showNext %}
+                                    {% if closed_requests.pages.showNext %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ products.pages.next }}&page_length={{ products.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ closed_requests.pages.next }})">
                                             <i class="fas fa-angle-right"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ products.pages.last }}&page_length={{ products.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ closed_requests.pages.last }})">
                                             <i class="fas fa-angle-double-right"></i>
                                         </button>
                                     {% endif %}
@@ -170,4 +143,20 @@
             max-width: 600px;
         }
     </style>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script>
+        function refreshPage(pageNumber) {
+            let page = (pageNumber || pageNumber === 0) ? pageNumber : {{ closed_requests.pages.page }};
+            let pageLength = $('#pageLengthSelect').val();
+
+            let params = {};
+            if (page) params.page = page;
+            if (pageLength) params.page_length = pageLength;
+
+            window.location = `{% url "manager/requests/void" %}?${$.param(params)}`;
+        }
+    </script>
 {% endblock %}

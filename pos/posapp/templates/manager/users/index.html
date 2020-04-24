@@ -18,18 +18,38 @@
 {% block content %}
     <div class="container-fluid">
         <div class="row">
-            <div class="col-lg-12 col-sm-12">
+            <div class="col-12">
                 <div class="card">
                     <div class="card-header border-0">
                         <h2 class="card-title">
                             <i class="fas fa-table"></i>
                             Users
                         </h2>
-                        <div class="card-tools">
-                            <button type="button" class="btn btn-tool"
-                                    onclick="window.location='{% url "manager/users/create" %}'">
-                                <i class="fas fa-plus"></i>
-                            </button>
+                        <div class="card-tools text-right">
+                            <div class="row">
+                                <div class="col-10">
+                                    <form id="searchForm">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control border-right-0 border-secondary"
+                                                   placeholder="Search" aria-label="Search"
+                                                   aria-describedby="search-addon-button" id="searchField"
+                                                   name="search"{% if search %} value="{{ search }}"{% endif %}>
+                                            <div class="input-group-append">
+                                                <button class="btn btn-outline-secondary border-left-0"
+                                                        type="submit" id="search-addon-button">
+                                                    <i class="fas fa-search"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="col-1">
+                                    <a href="{% url "manager/users/create" %}" class="btn btn-tool"
+                                            data-toggle="tooltip" data-position="top" title="Add">
+                                        <i class="fas fa-plus"></i>
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="card-body p-0">
@@ -135,33 +155,43 @@
                             <div class="col-6">
                                 Showing items {{ users.showing.from|add_one }} through {{ users.showing.to|add_one }}
                                 of {{ users.showing.of }}.
+                                &nbsp;
+                                Items per page:
+                                <select onchange="refreshPage();" id="pageLengthSelect">
+                                    {% for option in users.pages.page_length.options %}
+                                        <option value="{{ option }}"
+                                                {% if option == users.pages.page_length.value %}selected{% endif %}>{{ option }}
+                                            items
+                                        </option>
+                                    {% endfor %}
+                                </select>
                             </div>
                             <div class="col-6 text-right">
                                 <div class="btn-group" role="group">
                                     {% if users.pages.showPrevious %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page=0'">
+                                                onclick="refreshPage(0);">
                                             <i class="fas fa-angle-double-left"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ users.pages.previous }}'">
+                                                onclick="refreshPage({{ users.pages.previous }})">
                                             <i class=" fas fa-angle-left"></i>
                                         </button>
                                     {% endif %}
                                     {% for link in users.pages.links %}
                                         <button type="button"
                                                 class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
-                                                onclick="window.location = '?page={{ link.page }}'">
+                                                onclick="refreshPage({{ link.page }})">
                                             {{ link.page|add_one }}
                                         </button>
                                     {% endfor %}
                                     {% if users.pages.showNext %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ users.pages.next }}'">
+                                                onclick="refreshPage({{ users.pages.next }})">
                                             <i class="fas fa-angle-right"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ users.pages.last }}'">
+                                                onclick="refreshPage({{ users.pages.last }})">
                                             <i class="fas fa-angle-double-right"></i>
                                         </button>
                                     {% endif %}
@@ -206,6 +236,25 @@
                     })
                 }
             });
+        }
+
+        $('#searchForm').on('submit', function (e) {
+            e.preventDefault();
+            refreshPage();
+            return false
+        });
+
+        function refreshPage(pageNumber) {
+            let page = (pageNumber || pageNumber === 0) ? pageNumber : {{ users.pages.page }};
+            let pageLength = $('#pageLengthSelect').val();
+            let search = $('#searchField').val();
+
+            let params = {};
+            if (page) params.page = page;
+            if (pageLength) params.page_length = pageLength;
+            if (search) params.search = search;
+
+            window.location = `{% url "manager/users" %}?${$.param(params)}`;
         }
     </script>
 {% endblock %}

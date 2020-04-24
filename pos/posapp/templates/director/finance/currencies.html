@@ -29,20 +29,21 @@
                             <div class="row">
                                 <div class="col-4">
                                     <div class="input-group">
+                                        <input type="hidden" id="activityFilter" value="{{ activity_filter }}"/>
                                         <div class="btn-group" role="group">
                                             <button type="button"
-                                                    class="btn btn-outline-success{% if enabledFilter.yes %} active{% endif %}"
-                                                    onclick="window.location = '?page={{ currencies.pages.page }}&page_length={{ currencies.pages.page_length.value }}&enabled=yes{% if search %}&search={{ search }}{% endif %}'">
+                                                    class="btn btn-outline-success{% if activity_filter == "enabled" %} active{% endif %}"
+                                                    onclick="$('#activityFilter').val('enabled'); refreshPage();">
                                                 <i class="fas fa-check-circle"></i>
                                             </button>
                                             <button type="button"
-                                                    class="btn btn-outline-secondary{% if enabledFilter.none %} active{% endif %}"
-                                                    onclick="window.location = '?page={{ currencies.pages.page }}&page_length={{ currencies.pages.page_length.value }}&enabled={% if search %}&search={{ search }}{% endif %}'">
+                                                    class="btn btn-outline-secondary{% if not activity_filter %} active{% endif %}"
+                                                    onclick="$('#activityFilter').val(''); refreshPage();">
                                                 <i class="fas fa-slash"></i>
                                             </button>
                                             <button type="button"
-                                                    class="btn btn-outline-danger{% if enabledFilter.no %} active{% endif %}"
-                                                    onclick="window.location = '?page={{ currencies.pages.page }}&page_length={{ currencies.pages.page_length.value }}&enabled=no{% if search %}&search={{ search }}{% endif %}'">
+                                                    class="btn btn-outline-danger{% if activity_filter == "disabled" %} active{% endif %}"
+                                                    onclick="$('#activityFilter').val('disabled'); refreshPage();">
                                                 <i class="fas fa-times-circle"></i>
                                             </button>
                                         </div>
@@ -117,66 +118,41 @@
                                 through {{ currencies.showing.to|add_one }} of {{ currencies.showing.of }}.
                                 &nbsp;
                                 Items per page:
-                                <select onchange="window.location = '?page={{ currencies.pages.page }}&page_length=' + this.options[this.selectedIndex].value{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} + '&search={{ search }}'{% endif %};">
-                                    <option value="5" {% if currencies.pages.page_length.len5 %}selected{% endif %}>
-                                        5 items
-                                    </option>
-                                    <option value="10" {% if currencies.pages.page_length.len10 %}selected{% endif %}>
-                                        10 items
-                                    </option>
-                                    <option value="20" {% if currencies.pages.page_length.len20 %}selected{% endif %}>
-                                        20 items
-                                    </option>
-                                    <option value="50" {% if currencies.pages.page_length.len50 %}selected{% endif %}>
-                                        50 items
-                                    </option>
-                                    <option value="100" {% if currencies.pages.page_length.len100 %}selected{% endif %}>
-                                        100 items
-                                    </option>
-                                    <option value="200" {% if currencies.pages.page_length.len200 %}selected{% endif %}>
-                                        200 items
-                                    </option>
-                                    <option value="500" {% if currencies.pages.page_length.len500 %}selected{% endif %}>
-                                        500 items
-                                    </option>
-                                    {% if currencies.pages.page_length.other %}
-                                        <option value="{{ currencies.pages.page_length.value }}" selected>
-                                            Other ({{ currencies.pages.page_length.value }} items)
+                                <select onchange="refreshPage();" id="pageLengthSelect">
+                                    {% for option in currencies.pages.page_length.options %}
+                                        <option value="{{ option }}"
+                                                {% if option == currencies.pages.page_length.value %}selected{% endif %}>{{ option }}
+                                            items
                                         </option>
-                                    {% endif %}
+                                    {% endfor %}
                                 </select>
                             </div>
                             <div class="col-6 text-right">
                                 <div class="btn-group" role="group">
                                     {% if currencies.pages.showPrevious %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page=0&page_length={{ currencies.pages.page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
-                                                    '&search={{ search }}{% endif %}">
+                                                onclick="refreshPage(0);">
                                             <i class="fas fa-angle-double-left"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ currencies.pages.previous }}&page_length={{ currencies.pages.page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
-                                                    '&search={{ search }}{% endif %}">
+                                                onclick="refreshPage({{ currencies.pages.previous }})">
                                             <i class=" fas fa-angle-left"></i>
                                         </button>
                                     {% endif %}
                                     {% for link in currencies.pages.links %}
                                         <button type="button"
                                                 class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
-                                                onclick="window.location = '?page={{ link.page }}&page_length={{ currencies.pages.page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
-                                                    '&search={{ search }}{% endif %}">
+                                                onclick="refreshPage({{ link.page }})">
                                             {{ link.page|add_one }}
                                         </button>
                                     {% endfor %}
                                     {% if currencies.pages.showNext %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ currencies.pages.next }}&page_length={{ currencies.pages.page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
-                                                    '&search={{ search }}{% endif %}">
+                                                onclick="refreshPage({{ currencies.pages.next }})">
                                             <i class="fas fa-angle-right"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ currencies.pages.last }}&page_length={{ currencies.pages.page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
-                                                    '&search={{ search }}{% endif %}">
+                                                onclick="refreshPage({{ currencies.pages.last }})">
                                             <i class="fas fa-angle-double-right"></i>
                                         </button>
                                     {% endif %}
@@ -193,12 +169,6 @@
 {% block javascript %}
     {{ block.super }}
     <script>
-        $('#searchForm').bind('submit', function () {
-            let search = $('#searchField').val();
-            window.location = "?page={{ currencies.pages.page }}&page_length={{ currencies.pages.page_length.value }}{% if enabledFilter.val %}&enabled={{ enabledFilter.val }}{% endif %}" + (search ? "&search=" + search : "");
-            return false;
-        });
-
         function toggleEnabled(id) {
             event.stopPropagation();
             event.stopImmediatePropagation();
@@ -227,6 +197,27 @@
                     })
                 }
             });
+        }
+
+        $('#searchForm').on('submit', function (e) {
+            e.preventDefault();
+            refreshPage();
+            return false
+        });
+
+        function refreshPage(pageNumber) {
+            let page = (pageNumber || pageNumber === 0) ? pageNumber : {{ currencies.pages.page }};
+            let pageLength = $('#pageLengthSelect').val();
+            let activityFilter = $('#activityFilter').val();
+            let search = $('#searchField').val();
+
+            let params = {};
+            if (page) params.page = page;
+            if (pageLength) params.page_length = pageLength;
+            if (activityFilter) params.activity_filter = activityFilter;
+            if (search) params.search = search;
+
+            window.location = `{% url "director/finance/currencies" %}?${$.param(params)}`;
         }
     </script>
 {% endblock %}
