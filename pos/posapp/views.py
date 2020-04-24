@@ -87,6 +87,8 @@ class Context:
 
         last_page = count // page_length
 
+        page = min(page, last_page)
+
         if page < (last_page / 2):
             first_link = max(0, page - 2)
             start = first_link
@@ -573,9 +575,16 @@ class Manager:
     class Users(ManagerLoginRequiredMixin, views.View):
         def get(self, request):
             context = Context(request, "manager/users/index.html")
+            search = request.GET.get("search", "")
 
-            users = User.objects.filter(is_active=True).order_by("last_name", "first_name")
+            users = User.objects.filter(
+                Q(username__icontains=search) |
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(email__icontains=search)) \
+                .order_by("last_name", "first_name")
             context['me'] = request.user.username
+            context['search'] = search
             context.add_pagination_context(users, 'users')
 
             return context.render()
