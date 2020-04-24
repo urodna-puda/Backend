@@ -1034,27 +1034,21 @@ class Director:
         class Currencies(DirectorLoginRequiredMixin, views.View):
             def get(self, request):
                 context = Context(request, "director/finance/currencies.html")
-                page_length = int(request.GET.get('page_length', 20))
                 search = request.GET.get('search', '')
-                enabled_filter = request.GET.get('enabled', '')
+                activity_filter = request.GET.get('activity_filter', '')
 
                 currencies = Currency.objects.filter(
                     Q(name__icontains=search) | Q(code__icontains=search) | Q(symbol__icontains=search)).order_by(
                     'code')
-                if enabled_filter:
-                    if enabled_filter == "yes":
+                if activity_filter:
+                    if activity_filter == "enabled":
                         currencies = currencies.filter(enabled=True)
-                    if enabled_filter == "no":
+                    if activity_filter == "disabled":
                         currencies = currencies.filter(enabled=False)
                 context.add_pagination_context(currencies, 'currencies')
 
                 context["search"] = search
-                context["enabledFilter"] = {
-                    "yes": (enabled_filter == "yes"),
-                    "none": (enabled_filter == ""),
-                    "no": (enabled_filter == "no"),
-                    "val": enabled_filter,
-                }
+                context["activity_filter"] = activity_filter
 
                 return context.render()
 
