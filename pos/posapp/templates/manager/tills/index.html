@@ -33,6 +33,16 @@
                 </div>
             </form>
         </div>
+        <div class="col-12 col-md-6 col-lg-3 text-right">
+            <select id="depositFilterSelect" data-live-search="true" onchange="refreshPage();">
+                <option value="">-----</option>
+                {% for deposit in deposits %}
+                    <option value="{{ deposit }}" {% if deposit == deposit_filter %}selected{% endif %}>
+                        {{ deposit }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
     </div>
 {% endblock %}
 
@@ -353,9 +363,18 @@
     </div>
 {% endblock %}
 
+{% block extra_head %}
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/css/bootstrap-select.css"/>
+{% endblock %}
+
 {% block javascript %}
     {{ block.super }}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/js/bootstrap-select.min.js"></script>
     <script>
+        let depositFilterSelect = $('#depositFilterSelect');
+        depositFilterSelect.selectpicker();
+
         $('.stopTillButton').click(function () {
             let id = $(this).data('till-id');
             let cashiers = $(`#till-${id}-cashiers`).html();
@@ -393,6 +412,7 @@
             let pageLengthStopped = $('#pageLengthStopped').val();
             let pageLengthCounted = $('#pageLengthCounted').val();
             let search = $('#searchField').val();
+            let depositFilter = depositFilterSelect.val();
 
             let params = {};
             if (pageCounted) params.page_open = pageCounted;
@@ -402,6 +422,7 @@
             if (pageLengthStopped) params.page_length_stopped = pageLengthStopped;
             if (pageLengthCounted) params.page_length_counted = pageLengthCounted;
             if (search) params.search = search;
+            if (depositFilter) params.deposit_filter = depositFilter;
 
             window.location = `{% url "manager/tills" %}?${$.param(params)}`;
         }

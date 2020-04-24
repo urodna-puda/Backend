@@ -672,7 +672,7 @@ class Manager:
         def get(self, request):
             context = Context(request, "manager/tills/index.html")
             search = request.GET.get("search", "")
-            context["search"] = search
+            deposit_filter = request.GET.get("deposit_filter", "")
 
             open_tills = Till.objects.filter(state=Till.OPEN).filter(
                 Q(cashiers__first_name__icontains=search) |
@@ -689,6 +689,18 @@ class Manager:
                 Q(cashiers__last_name__icontains=search) |
                 Q(cashiers__username__icontains=search)
             )
+
+            deposits = set()
+            deposits.update(open_tills.values_list('deposit',flat=True))
+            deposits.update(stopped_tills.values_list('deposit',flat=True))
+            deposits.update(counted_tills.values_list('deposit',flat=True))
+            context["deposits"] = deposits
+            context["deposit_filter"] = deposit_filter
+
+            if deposit_filter:
+                open_tills = open_tills.filter(deposit__exact=deposit_filter)
+                stopped_tills = stopped_tills.filter(deposit__exact=deposit_filter)
+                counted_tills = counted_tills.filter(deposit__exact=deposit_filter)
             context.add_pagination_context(open_tills, 'open', page_get_name="page_open",
                                            page_length_get_name="page_length_open")
             context.add_pagination_context(stopped_tills, 'stopped', page_get_name="page_stopped",
