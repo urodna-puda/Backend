@@ -7,7 +7,7 @@ Please describe the bug in as much detail as you see fit. What happens and where
 Do you have any logs or have you taken a screenshot of the catastrophe? Put it here for us to see how bad we did.
 ```
 Please use code blocks like this one for any logs.
-They start and end with \`\`\` on a separate line
+They start and end with ``` on a separate line
 ```
 
 # Expected behaviour
