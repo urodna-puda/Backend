@@ -1,5 +1,6 @@
 import decimal
 import uuid
+
 # Create your views here.
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -1103,7 +1104,9 @@ class Director:
                 pass
 
             class Create(DirectorLoginRequiredMixin, views.View):
-                pass
+                def get(self, request):
+                    context = Context(request, 'director/finance/deposits/edit.html')
+                    return context.render()
 
     class Units(DirectorLoginRequiredMixin, views.View):
         def get(self, request):
