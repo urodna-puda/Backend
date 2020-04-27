@@ -29,43 +29,45 @@
                         </h2>
                         <div class="card-tools">
                             <div class="container">
-                                <div class="row float-right">
-                                    <div class="col-4 float-right">
-                                        <div class="btn-group btn-group-sm" role="group">
-                                            <button type="button"
-                                                    class="btn btn-outline-success{% if enabledFilter.yes %} active{% endif %}"
-                                                    onclick="window.location = '?page={{ deposits.pages.page }}&page_length={{ deposits.pages.page_length.value }}&enabled=yes{% if search %}&search={{ search }}{% endif %}'">
-                                                <i class="fas fa-check-circle"></i>
-                                            </button>
-                                            <button type="button"
-                                                    class="btn btn-outline-secondary{% if enabledFilter.none %} active{% endif %}"
-                                                    onclick="window.location = '?page={{ deposits.pages.page }}&page_length={{ deposits.pages.page_length.value }}&enabled={% if search %}&search={{ search }}{% endif %}'">
-                                                <i class="fas fa-slash"></i>
-                                            </button>
-                                            <button type="button"
-                                                    class="btn btn-outline-danger{% if enabledFilter.no %} active{% endif %}"
-                                                    onclick="window.location = '?page={{ deposits.pages.page }}&page_length={{ deposits.pages.page_length.value }}&enabled=no{% if search %}&search={{ search }}{% endif %}'">
-                                                <i class="fas fa-times-circle"></i>
-                                            </button>
+                                <div class="row">
+                                    <div class="col-4">
+                                        <div class="input-group">
+                                            <div class="btn-group btn-group" role="group">
+                                                <button type="button"
+                                                        class="btn btn-outline-success{% if enabledFilter.yes %} active{% endif %}"
+                                                        onclick="window.location = '?page={{ deposits.pages.page }}&page_length={{ deposits.pages.page_length.value }}&enabled=yes{% if search %}&search={{ search }}{% endif %}'">
+                                                    <i class="fas fa-check-circle"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn btn-outline-secondary{% if enabledFilter.none %} active{% endif %}"
+                                                        onclick="window.location = '?page={{ deposits.pages.page }}&page_length={{ deposits.pages.page_length.value }}&enabled={% if search %}&search={{ search }}{% endif %}'">
+                                                    <i class="fas fa-slash"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn btn-outline-danger{% if enabledFilter.no %} active{% endif %}"
+                                                        onclick="window.location = '?page={{ deposits.pages.page }}&page_length={{ deposits.pages.page_length.value }}&enabled=no{% if search %}&search={{ search }}{% endif %}'">
+                                                    <i class="fas fa-times-circle"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="col-6 float-right">
+                                    <div class="col-7">
                                         <form id="searchForm">
-                                            <div class="input-group mb-3 imput-group-sm">
-                                                <input type="text" class="form-control" placeholder="Search"
-                                                       aria-label="Search"
+                                            <div class="input-group">
+                                                <input type="text" class="form-control border-right-0 border-secondary"
+                                                       placeholder="Search" aria-label="Search"
                                                        aria-describedby="search-addon-button" id="searchField"
                                                        name="search"{% if search %} value="{{ search }}"{% endif %}>
                                                 <div class="input-group-append">
-                                                    <button class="btn btn-outline-secondary" type="submit"
+                                                    <button class="btn btn-outline-secondary border-left-0" type="submit"
                                                             id="search-addon-button"><i
                                                             class="fas fa-search"></i></button>
                                                 </div>
                                             </div>
                                         </form>
                                     </div>
-                                    <div class="col-2">
-                                        <a href="{% url "director/finance/deposits/create" %}">
+                                    <div class="col-1">
+                                        <a href="{% url "director/finance/deposits/create" %}" class="btn btn-tool">
                                             <i class="fas fa-plus"></i>
                                         </a>
                                     </div>
