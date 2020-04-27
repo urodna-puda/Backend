@@ -232,7 +232,10 @@ def index(request):
     return redirect(reverse("waiter/tabs"))
 
 
-class Waiter:
+class Waiter(WaiterLoginRequiredMixin, views.View):
+    def get(self, request):
+        return redirect(reverse("waiter/tabs"))
+
     class Tabs(WaiterLoginRequiredMixin, views.View):
         def get(self, request):
             context = Context(request, "waiter/tabs/index.html")
@@ -571,7 +574,10 @@ class Waiter:
                     return redirect(request.GET["next"] if "next" in request.GET else reverse("waiter/orders"))
 
 
-class Manager:
+class Manager(ManagerLoginRequiredMixin, views.View):
+    def get(self, request):
+        return redirect(reverse("manager/users"))
+
     class Users(ManagerLoginRequiredMixin, views.View):
         def get(self, request):
             context = Context(request, "manager/users/index.html")
@@ -1029,8 +1035,14 @@ class Manager:
                     return redirect(reverse("manager/requests/transfer"))
 
 
-class Director:
-    class Finance:
+class Director(DirectorLoginRequiredMixin, views.View):
+    def get(self, request):
+        return redirect(reverse("director/finance"))
+
+    class Finance(DirectorLoginRequiredMixin, views.View):
+        def get(self, request):
+            return redirect(reverse("director/finance"))
+
         class Currencies(DirectorLoginRequiredMixin, views.View):
             def get(self, request):
                 context = Context(request, "director/finance/currencies.html")
@@ -1162,7 +1174,10 @@ class Director:
 
             return context.render()
 
-    class Menu:
+    class Menu(DirectorLoginRequiredMixin, views.View):
+        def get(self, request):
+            return redirect(reverse("director/menu/products"))
+
         class Products(DirectorLoginRequiredMixin, views.View):
             def fill_data(self, request):
                 context = Context(request, 'director/menu/products/index.html')
