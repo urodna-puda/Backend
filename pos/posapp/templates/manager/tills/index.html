@@ -15,6 +15,37 @@
     <li class="breadcrumb-item active" aria-current="page">Overview</li>
 {% endblock %}
 
+{% block page_actions %}
+    <div class="row flex-row-reverse">
+        <div class="col-12 col-md-6 col-lg-3">
+            <form id="searchForm">
+                <div class="input-group">
+                    <input type="text" class="form-control border-right-0 border-secondary bg-transparent"
+                           placeholder="Search" aria-label="Search"
+                           aria-describedby="search-addon-button" id="searchField"
+                           name="search"{% if search %} value="{{ search }}"{% endif %}>
+                    <div class="input-group-append">
+                        <button class="btn form-control btn-outline-secondary border-left-0"
+                                type="submit" id="search-addon-button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3 text-right">
+            <select id="depositFilterSelect" data-live-search="true" onchange="refreshPage();">
+                <option value="">-----</option>
+                {% for deposit in deposits %}
+                    <option value="{{ deposit }}" {% if deposit == deposit_filter %}selected{% endif %}>
+                        {{ deposit }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+{% endblock %}
+
 {% block content %}
     <div class="container-fluid">
         <div class="row">
@@ -72,61 +103,41 @@
                                 of {{ open.showing.of }}.
                                 &nbsp;
                                 Items per page:
-                                <select onchange="window.location = '?page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_counted={{ counted.pages.page }}&page_length=' + this.options[this.selectedIndex].value;">
-                                    <option value="5" {% if open.pages.page_length.len5 %}selected{% endif %}>
-                                        5 items
-                                    </option>
-                                    <option value="10" {% if open.pages.page_length.len10 %}selected{% endif %}>
-                                        10 items
-                                    </option>
-                                    <option value="20" {% if open.pages.page_length.len20 %}selected{% endif %}>
-                                        20 items
-                                    </option>
-                                    <option value="50" {% if open.pages.page_length.len50 %}selected{% endif %}>
-                                        50 items
-                                    </option>
-                                    <option value="100" {% if open.pages.page_length.len100 %}selected{% endif %}>
-                                        100 items
-                                    </option>
-                                    <option value="200" {% if open.pages.page_length.len200 %}selected{% endif %}>
-                                        200 items
-                                    </option>
-                                    <option value="500" {% if open.pages.page_length.len500 %}selected{% endif %}>
-                                        500 items
-                                    </option>
-                                    {% if open.pages.page_length.other %}
-                                        <option value="{{ open.pages.page_length.value }}" selected>
-                                            Other ({{ open.pages.page_length.value }} items)
+                                <select onchange="refreshPage();" id="pageLengthOpen">
+                                    {% for option in open.pages.page_length.options %}
+                                        <option value="{{ option }}"
+                                                {% if option == open.pages.page_length.value %}selected{% endif %}>{{ option }}
+                                            items
                                         </option>
-                                    {% endif %}
+                                    {% endfor %}
                                 </select>
                             </div>
                             <div class="col-6 text-right">
                                 <div class="btn-group" role="group">
                                     {% if open.pages.showPrevious %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_open=0&page_stopped={{ stopped.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ open.pages.page_length.value }}'">
+                                                onclick="refreshPage(0, 'open');">
                                             <i class="fas fa-angle-double-left"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_open={{ open.pages.previous }}&page_stopped={{ stopped.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ open.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ open.pages.previous }}, 'open')">
                                             <i class=" fas fa-angle-left"></i>
                                         </button>
                                     {% endif %}
                                     {% for link in open.pages.links %}
                                         <button type="button"
                                                 class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
-                                                onclick="window.location = '?page_open={{ link.page }}&page_stopped={{ stopped.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ open.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ link.page }}, 'open')">
                                             {{ link.page|add_one }}
                                         </button>
                                     {% endfor %}
                                     {% if open.pages.showNext %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_open={{ open.pages.next }}&page_stopped={{ stopped.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ open.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ open.pages.next }}, 'open')">
                                             <i class="fas fa-angle-right"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_open={{ open.pages.last }}&page_stopped={{ page_closed }}&page_counted={{ page_counted }}&page_length={{ open.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ open.pages.last }}, 'open')">
                                             <i class="fas fa-angle-double-right"></i>
                                         </button>
                                     {% endif %}
@@ -188,61 +199,41 @@
                                 of {{ stopped.showing.of }}.
                                 &nbsp;
                                 Items per page:
-                                <select onchange="window.location = '?page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_counted={{ counted.pages.page }}&page_length=' + this.options[this.selectedIndex].value;">
-                                    <option value="5" {% if stopped.pages.page_length.len5 %}selected{% endif %}>
-                                        5 items
-                                    </option>
-                                    <option value="10" {% if stopped.pages.page_length.len10 %}selected{% endif %}>
-                                        10 items
-                                    </option>
-                                    <option value="20" {% if stopped.pages.page_length.len20 %}selected{% endif %}>
-                                        20 items
-                                    </option>
-                                    <option value="50" {% if stopped.pages.page_length.len50 %}selected{% endif %}>
-                                        50 items
-                                    </option>
-                                    <option value="100" {% if stopped.pages.page_length.len100 %}selected{% endif %}>
-                                        100 items
-                                    </option>
-                                    <option value="200" {% if stopped.pages.page_length.len200 %}selected{% endif %}>
-                                        200 items
-                                    </option>
-                                    <option value="500" {% if stopped.pages.page_length.len500 %}selected{% endif %}>
-                                        500 items
-                                    </option>
-                                    {% if stopped.pages.page_length.other %}
-                                        <option value="{{ stopped.pages.page_length.value }}" selected>
-                                            Other ({{ stopped.pages.page_length.value }} items)
+                                <select onchange="refreshPage();" id="pageLengthStopped">
+                                    {% for option in stopped.pages.page_length.options %}
+                                        <option value="{{ option }}"
+                                                {% if option == stopped.pages.page_length.value %}selected{% endif %}>{{ option }}
+                                            items
                                         </option>
-                                    {% endif %}
+                                    {% endfor %}
                                 </select>
                             </div>
                             <div class="col-6 text-right">
                                 <div class="btn-group" role="group">
                                     {% if stopped.pages.showPrevious %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_stopped=0&page_open={{ open.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ stopped.pages.page_length.value }}'">
+                                                onclick="refreshPage(0, 'stopped');">
                                             <i class="fas fa-angle-double-left"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_stopped={{ stopped.pages.previous }}&page_open={{ open.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ stopped.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ stopped.pages.previous }}, 'stopped')">
                                             <i class=" fas fa-angle-left"></i>
                                         </button>
                                     {% endif %}
                                     {% for link in stopped.pages.links %}
                                         <button type="button"
                                                 class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
-                                                onclick="window.location = '?page_stopped={{ link.page }}&page_open={{ open.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ stopped.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ link.page }}, 'stopped')">
                                             {{ link.page|add_one }}
                                         </button>
                                     {% endfor %}
                                     {% if stopped.pages.showNext %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_stopped={{ stopped.pages.next }}&page_open={{ open.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ stopped.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ stopped.pages.next }}, 'stopped')">
                                             <i class="fas fa-angle-right"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_stopped={{ stopped.pages.last }}&page_open={{ open.pages.page }}&page_counted={{ counted.pages.page }}&page_length={{ stopped.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ stopped.pages.last }}, 'stopped')">
                                             <i class="fas fa-angle-double-right"></i>
                                         </button>
                                     {% endif %}
@@ -305,61 +296,41 @@
                                 of {{ counted.showing.of }}.
                                 &nbsp;
                                 Items per page:
-                                <select onchange="window.location = '?page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_counted={{ counted.pages.page }}&page_length=' + this.options[this.selectedIndex].value;">
-                                    <option value="5" {% if counted.pages.page_length.len5 %}selected{% endif %}>
-                                        5 items
-                                    </option>
-                                    <option value="10" {% if counted.pages.page_length.len10 %}selected{% endif %}>
-                                        10 items
-                                    </option>
-                                    <option value="20" {% if counted.pages.page_length.len20 %}selected{% endif %}>
-                                        20 items
-                                    </option>
-                                    <option value="50" {% if counted.pages.page_length.len50 %}selected{% endif %}>
-                                        50 items
-                                    </option>
-                                    <option value="100" {% if counted.pages.page_length.len100 %}selected{% endif %}>
-                                        100 items
-                                    </option>
-                                    <option value="200" {% if counted.pages.page_length.len200 %}selected{% endif %}>
-                                        200 items
-                                    </option>
-                                    <option value="500" {% if counted.pages.page_length.len500 %}selected{% endif %}>
-                                        500 items
-                                    </option>
-                                    {% if counted.pages.page_length.other %}
-                                        <option value="{{ counted.pages.page_length.value }}" selected>
-                                            Other ({{ counted.pages.page_length.value }} items)
+                                <select onchange="refreshPage();" id="pageLengthCounted">
+                                    {% for option in counted.pages.page_length.options %}
+                                        <option value="{{ option }}"
+                                                {% if option == counted.pages.page_length.value %}selected{% endif %}>{{ option }}
+                                            items
                                         </option>
-                                    {% endif %}
+                                    {% endfor %}
                                 </select>
                             </div>
                             <div class="col-6 text-right">
                                 <div class="btn-group" role="group">
                                     {% if counted.pages.showPrevious %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_counted=0&page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_length={{ counted.pages.page_length.value }}'">
+                                                onclick="refreshPage(0, 'counted');">
                                             <i class="fas fa-angle-double-left"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_counted={{ counted.pages.previous }}&page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_length={{ counted.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ counted.pages.previous }}, 'counted')">
                                             <i class=" fas fa-angle-left"></i>
                                         </button>
                                     {% endif %}
                                     {% for link in counted.pages.links %}
                                         <button type="button"
                                                 class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
-                                                onclick="window.location = '?page_counted={{ link.page }}&page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_length={{ counted.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ link.page }}, 'counted')">
                                             {{ link.page|add_one }}
                                         </button>
                                     {% endfor %}
                                     {% if counted.pages.showNext %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_counted={{ counted.pages.next }}&page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_length={{ counted.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ counted.pages.next }}, 'counted')">
                                             <i class="fas fa-angle-right"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page_counted={{ counted.pages.last }}&page_open={{ open.pages.page }}&page_stopped={{ stopped.pages.page }}&page_length={{ counted.pages.page_length.value }}'">
+                                                onclick="refreshPage({{ counted.pages.last }}, 'counted')">
                                             <i class="fas fa-angle-double-right"></i>
                                         </button>
                                     {% endif %}
@@ -392,9 +363,18 @@
     </div>
 {% endblock %}
 
+{% block extra_head %}
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/css/bootstrap-select.css"/>
+{% endblock %}
+
 {% block javascript %}
     {{ block.super }}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/js/bootstrap-select.min.js"></script>
     <script>
+        let depositFilterSelect = $('#depositFilterSelect');
+        depositFilterSelect.selectpicker();
+
         $('.stopTillButton').click(function () {
             let id = $(this).data('till-id');
             let cashiers = $(`#till-${id}-cashiers`).html();
@@ -404,5 +384,47 @@
             $('#confirmStopTillModal').modal('show');
             $('#confirmStopTillLink').attr("href", $(this).data('url'));
         });
+
+        $('#searchForm').on('submit', function (e) {
+            e.preventDefault();
+            refreshPage();
+            return false
+        });
+
+        function refreshPage(pageNumber, section) {
+            let pageOpen = {{ open.pages.page }};
+            let pageStopped = {{ stopped.pages.page }};
+            let pageCounted = {{ counted.pages.page }};
+
+            switch (section) {
+                case "open":
+                    pageOpen = (pageNumber || pageNumber === 0) ? pageNumber : pageOpen;
+                    break;
+                case "stopped":
+                    pageStopped = (pageNumber || pageNumber === 0) ? pageNumber : pageStopped;
+                    break;
+                case "counted":
+                    pageCounted = (pageNumber || pageNumber === 0) ? pageNumber : pageCounted;
+                    break;
+            }
+
+            let pageLengthOpen = $('#pageLengthOpen').val();
+            let pageLengthStopped = $('#pageLengthStopped').val();
+            let pageLengthCounted = $('#pageLengthCounted').val();
+            let search = $('#searchField').val();
+            let depositFilter = depositFilterSelect.val();
+
+            let params = {};
+            if (pageCounted) params.page_open = pageCounted;
+            if (pageStopped) params.page_stopped = pageStopped;
+            if (pageCounted) params.page_counted = pageCounted;
+            if (pageLengthOpen) params.page_length_open = pageLengthOpen;
+            if (pageLengthStopped) params.page_length_stopped = pageLengthStopped;
+            if (pageLengthCounted) params.page_length_counted = pageLengthCounted;
+            if (search) params.search = search;
+            if (depositFilter) params.deposit_filter = depositFilter;
+
+            window.location = `{% url "manager/tills" %}?${$.param(params)}`;
+        }
     </script>
 {% endblock %}

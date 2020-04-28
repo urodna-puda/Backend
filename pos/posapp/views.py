@@ -86,25 +86,9 @@ class Context:
         page = int(self.request.GET.get(page_get_name, 0))
 
         last_page = count // page_length
-        self.data[key] = {}
 
-        self.data[key]['data'] = manager[page * page_length:(page + 1) * page_length]
+        page = min(page, last_page)
 
-        self.data[key]['showing'] = {}
-        self.data[key]['showing']['from'] = page * page_length
-        self.data[key]['showing']['to'] = min((page + 1) * page_length - 1, count - 1)
-        self.data[key]['showing']['of'] = count
-
-        self.data[key]['pages'] = {}
-        self.data[key]['pages']['previous'] = page - 1
-        self.data[key]['pages']['showPrevious'] = self.data[key]['pages']['previous'] >= 0
-        self.data[key]['pages']['next'] = page + 1
-        self.data[key]['pages']['showNext'] = self.data[key]['pages']['next'] <= last_page
-        self.data[key]['pages']['last'] = last_page
-        self.data[key]['pages']['page'] = page
-        self.data[key]['pages']['page_length'] = generate_page_length_options(page_length)
-
-        links = []
         if page < (last_page / 2):
             first_link = max(0, page - 2)
             start = first_link
@@ -114,13 +98,33 @@ class Context:
             start = max(0, last_link - 5)
             end = last_link
 
-        for i in range(start, end):
-            links.append({'page': i, 'active': i == page})
+        self[key] = {
+            "data": manager[page * page_length:(page + 1) * page_length],
+            "showing": {
+                "from": page * page_length,
+                "to": min((page + 1) * page_length - 1, count - 1),
+                "of": count,
+            },
+            "pages": {
+                'previous': page - 1,
+                'showPrevious': (page - 1) >= 0,
+                'next': page + 1,
+                'showNext': (page + 1) <= last_page,
+                'last': last_page,
+                'page': page,
+                'page_length': {
+                    "options": [5, 10, 20, 50, 100, 200, 500],
+                    "value": page_length,
+                },
+                "links": [{'page': i, 'active': i == page} for i in range(start, end)],
+            },
+        }
 
-        self.data[key]['pages']['links'] = links
+        if page_length not in self[key]["pages"]["page_length"]["options"]:
+            self[key]["pages"]["page_length"]["options"].append(page_length)
 
     def render(self, content_type=None, status=None, using=None):
-        return render(self.request, self.template_name, dict(self))
+        return render(self.request, self.template_name, dict(self), content_type, status, using)
 
     def __getitem__(self, item):
         return self.data[item]
@@ -143,25 +147,6 @@ class Context:
         yield 'version', self.version
         for key in self.data:
             yield key, self.data[key]
-
-
-def generate_page_length_options(page_length):
-    options = {
-        "len5": False,
-        "len10": False,
-        "len20": False,
-        "len50": False,
-        "len100": False,
-        "len200": False,
-        "len500": False,
-        "other": False,
-        "value": page_length,
-    }
-    if "len" + str(page_length) in options:
-        options["len" + str(page_length)] = True
-    else:
-        options["other"] = True
-    return options
 
 
 def check_dict(dictionary, keys):
@@ -247,7 +232,10 @@ def index(request):
     return redirect(reverse("waiter/tabs"))
 
 
-class Waiter:
+class Waiter(WaiterLoginRequiredMixin, views.View):
+    def get(self, request):
+        return redirect(reverse("waiter/tabs"))
+
     class Tabs(WaiterLoginRequiredMixin, views.View):
         def get(self, request):
             context = Context(request, "waiter/tabs/index.html")
@@ -586,13 +574,23 @@ class Waiter:
                     return redirect(request.GET["next"] if "next" in request.GET else reverse("waiter/orders"))
 
 
-class Manager:
+class Manager(ManagerLoginRequiredMixin, views.View):
+    def get(self, request):
+        return redirect(reverse("manager/users"))
+
     class Users(ManagerLoginRequiredMixin, views.View):
         def get(self, request):
             context = Context(request, "manager/users/index.html")
+            search = request.GET.get("search", "")
 
-            users = User.objects.filter(is_active=True).order_by("last_name", "first_name")
+            users = User.objects.filter(
+                Q(username__icontains=search) |
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(email__icontains=search)) \
+                .order_by("last_name", "first_name")
             context['me'] = request.user.username
+            context['search'] = search
             context.add_pagination_context(users, 'users')
 
             return context.render()
@@ -679,13 +677,43 @@ class Manager:
     class Tills(ManagerLoginRequiredMixin, views.View):
         def get(self, request):
             context = Context(request, "manager/tills/index.html")
+            search = request.GET.get("search", "")
+            deposit_filter = request.GET.get("deposit_filter", "")
 
-            open_tills = Till.objects.filter(state=Till.OPEN)
-            stopped_tills = Till.objects.filter(state=Till.STOPPED)
-            counted_tills = Till.objects.filter(state=Till.COUNTED)
-            context.add_pagination_context(open_tills, 'open', page_get_name="page_open")
-            context.add_pagination_context(stopped_tills, 'stopped', page_get_name="page_stopped")
-            context.add_pagination_context(counted_tills, 'counted', page_get_name="page_counted")
+            open_tills = Till.objects.filter(state=Till.OPEN).filter(
+                Q(cashiers__first_name__icontains=search) |
+                Q(cashiers__last_name__icontains=search) |
+                Q(cashiers__username__icontains=search)
+            )
+            stopped_tills = Till.objects.filter(state=Till.STOPPED).filter(
+                Q(cashiers__first_name__icontains=search) |
+                Q(cashiers__last_name__icontains=search) |
+                Q(cashiers__username__icontains=search)
+            )
+            counted_tills = Till.objects.filter(state=Till.COUNTED).filter(
+                Q(cashiers__first_name__icontains=search) |
+                Q(cashiers__last_name__icontains=search) |
+                Q(cashiers__username__icontains=search)
+            )
+
+            deposits = set()
+            deposits.update(open_tills.values_list('deposit',flat=True))
+            deposits.update(stopped_tills.values_list('deposit',flat=True))
+            deposits.update(counted_tills.values_list('deposit',flat=True))
+            context["deposits"] = deposits
+            context["deposit_filter"] = deposit_filter
+
+            if deposit_filter:
+                open_tills = open_tills.filter(deposit__exact=deposit_filter)
+                stopped_tills = stopped_tills.filter(deposit__exact=deposit_filter)
+                counted_tills = counted_tills.filter(deposit__exact=deposit_filter)
+            context.add_pagination_context(open_tills, 'open', page_get_name="page_open",
+                                           page_length_get_name="page_length_open")
+            context.add_pagination_context(stopped_tills, 'stopped', page_get_name="page_stopped",
+                                           page_length_get_name="page_length_stopped")
+            context.add_pagination_context(counted_tills, 'counted', page_get_name="page_counted",
+                                           page_length_get_name="page_length_counted")
+            context["search"] = search
 
             return context.render()
 
@@ -1007,32 +1035,32 @@ class Manager:
                     return redirect(reverse("manager/requests/transfer"))
 
 
-class Director:
-    class Finance:
+class Director(DirectorLoginRequiredMixin, views.View):
+    def get(self, request):
+        return redirect(reverse("director/finance"))
+
+    class Finance(DirectorLoginRequiredMixin, views.View):
+        def get(self, request):
+            return redirect(reverse("director/finance"))
+
         class Currencies(DirectorLoginRequiredMixin, views.View):
             def get(self, request):
                 context = Context(request, "director/finance/currencies.html")
-                page_length = int(request.GET.get('page_length', 20))
                 search = request.GET.get('search', '')
-                enabled_filter = request.GET.get('enabled', '')
+                activity_filter = request.GET.get('activity_filter', '')
 
                 currencies = Currency.objects.filter(
                     Q(name__icontains=search) | Q(code__icontains=search) | Q(symbol__icontains=search)).order_by(
                     'code')
-                if enabled_filter:
-                    if enabled_filter == "yes":
+                if activity_filter:
+                    if activity_filter == "enabled":
                         currencies = currencies.filter(enabled=True)
-                    if enabled_filter == "no":
+                    if activity_filter == "disabled":
                         currencies = currencies.filter(enabled=False)
                 context.add_pagination_context(currencies, 'currencies')
 
                 context["search"] = search
-                context["enabledFilter"] = {
-                    "yes": (enabled_filter == "yes"),
-                    "none": (enabled_filter == ""),
-                    "no": (enabled_filter == "no"),
-                    "val": enabled_filter,
-                }
+                context["activity_filter"] = activity_filter
 
                 return context.render()
 
@@ -1044,6 +1072,7 @@ class Director:
                 context['form'] = form
                 search = request.GET.get('search', '')
                 currency_filter = int(request.GET['currency']) if 'currency' in request.GET else None
+                context["currency_filter"] = currency_filter
 
                 methods = PaymentMethod.objects.filter(
                     Q(name__icontains=search) | Q(currency__name__icontains=search))
@@ -1053,6 +1082,7 @@ class Director:
                 context.add_pagination_context(methods, 'methods')
 
                 context["search"] = search
+                context["currencies"] = Currency.objects.all().order_by("name")
 
                 context["showModal"] = show_modal
                 return context.render()
@@ -1206,28 +1236,26 @@ class Director:
 
             return context.render()
 
-    class Menu:
+    class Menu(DirectorLoginRequiredMixin, views.View):
+        def get(self, request):
+            return redirect(reverse("director/menu/products"))
+
         class Products(DirectorLoginRequiredMixin, views.View):
             def fill_data(self, request):
                 context = Context(request, 'director/menu/products/index.html')
                 search = request.GET.get('search', '')
-                enabled_filter = request.GET.get('enabled', '')
+                activity_filter = request.GET.get('activity_filter', '')
 
                 products = Product.objects.filter(name__icontains=search).order_by('name')
-                if enabled_filter:
-                    if enabled_filter == "yes":
+                if activity_filter:
+                    if activity_filter == "enabled":
                         products = products.filter(enabled=True)
-                    if enabled_filter == "no":
+                    if activity_filter == "disanbled":
                         products = products.filter(enabled=False)
                 context.add_pagination_context(products, 'products')
 
                 context["search"] = search
-                context["enabledFilter"] = {
-                    "yes": (enabled_filter == "yes"),
-                    "none": (enabled_filter == ""),
-                    "no": (enabled_filter == "no"),
-                    "val": enabled_filter,
-                }
+                context["activity_filter"] = activity_filter
 
                 return context
 
