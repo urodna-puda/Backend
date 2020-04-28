@@ -361,7 +361,7 @@ class TillPaymentOptions(models.Model):
     methods = models.ManyToManyField(PaymentMethod, related_name="paymentOptions")
     changeMethod = models.ForeignKey(PaymentMethod, related_name="optionsAsChange", on_delete=models.PROTECT,
                                      limit_choices_to={"currency__enabled": True, "changeAllowed": True})
-    depositAmount = models.DecimalField(max_digits=15, decimal_places=3)
+    depositAmount = models.DecimalField(max_digits=15, decimal_places=3, validators=[MinValueValidator(0)])
     enabled = models.BooleanField(default=True)
 
     class Meta:

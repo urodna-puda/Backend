@@ -1100,6 +1100,17 @@ class Director:
                 context['search'] = search
                 return context.render()
 
+            def post(self, request):
+                if 'deleteDepositId' in request.POST:
+                    id = uuid.UUID(request.POST['deleteDepositId'])
+                    try:
+                        deposit = TillPaymentOptions.objects.get(id=id)
+                        deposit.delete()
+                        messages.success(request, f'Deposit {deposit.name} deleted successfully')
+                    except TillPaymentOptions.DoesNotExist:
+                        messages.error(request, 'Deleting deposit failed, deposit does not exist')
+                return self.get(request)
+
             class Edit(DirectorLoginRequiredMixin, views.View):
                 def get(self, request, id=None):
                     context = Context(request, 'director/finance/deposits/edit.html')

@@ -108,10 +108,9 @@
                                     <td>
 
                                         <form action="{% url "director/finance/deposits" %}" method="post">
-
                                             {% csrf_token %}
                                             <input type="hidden" name="deleteDepositId" value="{{ deposit.id }}"/>
-                                            <a class="btn btn-tool"
+                                            <a class="btn btn-tool" title="Edit deposit" data-toggle="tooltip"
                                                href="{% url 'director/finance/deposits/deposit' deposit.id %}">
                                                 <i class="fas fa-edit"></i>
                                             </a>
