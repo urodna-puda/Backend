@@ -1123,11 +1123,15 @@ class Director(DirectorLoginRequiredMixin, views.View):
             def get(self, request):
                 context = Context(request, 'director/finance/deposits/index.html')
                 search = request.GET.get('search', '')
-
+                activity_filter = request.GET.get('activity_filter', '')
                 deposits = Deposit.objects.filter(name__icontains=search)
-
+                if activity_filter == 'enabled':
+                    deposits = deposits.filter(enabled=True)
+                elif activity_filter == 'disabled':
+                    deposits = deposits.filter(enabled=False)
                 context.add_pagination_context(deposits, 'deposits')
                 context['search'] = search
+                context['activity_filter'] = activity_filter
                 return context.render()
 
             def post(self, request):

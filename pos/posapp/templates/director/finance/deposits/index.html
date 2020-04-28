@@ -32,20 +32,21 @@
                                 <div class="row">
                                     <div class="col-4">
                                         <div class="input-group">
-                                            <div class="btn-group btn-group" role="group">
+                                            <input type="hidden" id="activityFilter" value="{{ activity_filter }}"/>
+                                            <div class="btn-group" role="group">
                                                 <button type="button"
-                                                        class="btn btn-outline-success{% if enabledFilter.yes %} active{% endif %}"
-                                                        onclick="window.location = '?page={{ deposits.pages.page }}&page_length={{ deposits.pages.page_length.value }}&enabled=yes{% if search %}&search={{ search }}{% endif %}'">
+                                                        class="btn btn-outline-success{% if activity_filter == "enabled" %} active{% endif %}"
+                                                        onclick="$('#activityFilter').val('enabled'); refreshPage();">
                                                     <i class="fas fa-check-circle"></i>
                                                 </button>
                                                 <button type="button"
-                                                        class="btn btn-outline-secondary{% if enabledFilter.none %} active{% endif %}"
-                                                        onclick="window.location = '?page={{ deposits.pages.page }}&page_length={{ deposits.pages.page_length.value }}&enabled={% if search %}&search={{ search }}{% endif %}'">
+                                                        class="btn btn-outline-secondary{% if not activity_filter %} active{% endif %}"
+                                                        onclick="$('#activityFilter').val(''); refreshPage();">
                                                     <i class="fas fa-slash"></i>
                                                 </button>
                                                 <button type="button"
-                                                        class="btn btn-outline-danger{% if enabledFilter.no %} active{% endif %}"
-                                                        onclick="window.location = '?page={{ deposits.pages.page }}&page_length={{ deposits.pages.page_length.value }}&enabled=no{% if search %}&search={{ search }}{% endif %}'">
+                                                        class="btn btn-outline-danger{% if activity_filter == "disabled" %} active{% endif %}"
+                                                        onclick="$('#activityFilter').val('disabled'); refreshPage();">
                                                     <i class="fas fa-times-circle"></i>
                                                 </button>
                                             </div>
@@ -209,12 +210,6 @@
 {% block javascript %}
     {{ block.super }}
     <script>
-        $('#searchForm').bind('submit', function () {
-            let search = $('#searchField').val();
-            window.location = "?page={{ deposits.pages.page }}&page_length={{ deposits.pages.page_length.value }}{% if enabledFilter.val %}&enabled={{ enabledFilter.val }}{% endif %}" + (search ? "&search=" + search : "");
-            return false;
-        });
-
         function toggleEnabled(id) {
             event.stopPropagation();
             event.stopImmediatePropagation();
@@ -243,6 +238,27 @@
                     })
                 }
             });
+        }
+
+        $('#searchForm').on('submit', function (e) {
+            e.preventDefault();
+            refreshPage();
+            return false
+        });
+
+        function refreshPage(pageNumber) {
+            let page = (pageNumber || pageNumber === 0) ? pageNumber : {{ deposits.pages.page }};
+            let pageLength = $('#pageLengthSelect').val();
+            let activityFilter = $('#activityFilter').val();
+            let search = $('#searchField').val();
+
+            let params = {};
+            if (page) params.page = page;
+            if (pageLength) params.page_length = pageLength;
+            if (activityFilter) params.activity_filter = activityFilter;
+            if (search) params.search = search;
+
+            window.location = `{% url "director/finance/deposits" %}?${$.param(params)}`;
         }
     </script>
 {% endblock %}
