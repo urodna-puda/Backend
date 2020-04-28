@@ -355,7 +355,7 @@ class PaymentMethod(models.Model):
         return self.name
 
 
-class TillPaymentOptions(models.Model):
+class Deposit(models.Model):
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
     name = models.CharField(max_length=1024, null=False)
     methods = models.ManyToManyField(PaymentMethod, related_name="paymentOptions")

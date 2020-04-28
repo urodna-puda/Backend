@@ -17,7 +17,7 @@ from django.urls import reverse
 
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet, \
     CreateItemForm, AuthenticationForm, CreateEditDepositForm
-from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
+from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, Deposit, TillMoneyCount, \
     PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest, TabTransferRequest
 from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, \
     DirectorLoginRequiredMixin
@@ -694,7 +694,7 @@ class Manager:
                 context = Context(request, "manager/tills/assign.html")
 
                 context["users"] = User.objects.filter(is_waiter=True, current_till=None)
-                context["options"] = TillPaymentOptions.objects.filter(enabled=True)
+                context["options"] = Deposit.objects.filter(enabled=True)
 
                 return context.render()
 
@@ -705,7 +705,7 @@ class Manager:
                     options_id = request.POST["options"]
 
                     try:
-                        options = TillPaymentOptions.objects.get(id=uuid.UUID(options_id))
+                        options = Deposit.objects.get(id=uuid.UUID(options_id))
                         till = options.create_till()
                         for username in usernames:
                             user = User.objects.get(username=username)
@@ -725,7 +725,7 @@ class Manager:
                         messages.success(request, "The till was assigned successfully")
                     except User.DoesNotExist:
                         messages.error(request, "One of the selected users does not exist")
-                    except TillPaymentOptions.DoesNotExist:
+                    except Deposit.DoesNotExist:
                         messages.error(request,
                                        "The selected payment options config does not exist. It may have also been "
                                        "disabled by a director.")
@@ -735,7 +735,7 @@ class Manager:
                     messages.error(request, "Some required fields are missing")
 
                 context["users"] = User.objects.filter(is_waiter=True, current_till=None)
-                context["options"] = TillPaymentOptions.objects.filter(enabled=True)
+                context["options"] = Deposit.objects.filter(enabled=True)
 
                 return context.render()
 
@@ -1094,7 +1094,7 @@ class Director:
                 context = Context(request, 'director/finance/deposits/index.html')
                 search = request.GET.get('search', '')
 
-                deposits = TillPaymentOptions.objects.filter(name__icontains=search)
+                deposits = Deposit.objects.filter(name__icontains=search)
 
                 context.add_pagination_context(deposits, 'deposits')
                 context['search'] = search
@@ -1104,10 +1104,10 @@ class Director:
                 if 'deleteDepositId' in request.POST:
                     id = uuid.UUID(request.POST['deleteDepositId'])
                     try:
-                        deposit = TillPaymentOptions.objects.get(id=id)
+                        deposit = Deposit.objects.get(id=id)
                         deposit.delete()
                         messages.success(request, f'Deposit {deposit.name} deleted successfully')
-                    except TillPaymentOptions.DoesNotExist:
+                    except Deposit.DoesNotExist:
                         messages.error(request, 'Deleting deposit failed, deposit does not exist')
                 return self.get(request)
 
@@ -1118,10 +1118,10 @@ class Director:
                     if id:
                         context['is_edit'] = True
                         try:
-                            deposit = TillPaymentOptions.objects.get(id=id)
+                            deposit = Deposit.objects.get(id=id)
                             context['form'] = CreateEditDepositForm(instance=deposit)
 
-                        except TillPaymentOptions.DoesNotExist:
+                        except Deposit.DoesNotExist:
                             messages.warning(request, "This deposit does not exist")
                             return redirect(reverse('director/finance/deposits'))
                     else:
@@ -1134,12 +1134,12 @@ class Director:
                     if id:
                         context['is_edit'] = True
                         try:
-                            deposit = TillPaymentOptions.objects.get(id=id)
-                        except TillPaymentOptions.DoesNotExist:
+                            deposit = Deposit.objects.get(id=id)
+                        except Deposit.DoesNotExist:
                             messages.error(request, "This deposit does not exist, so it could not be saved")
                             return redirect(reverse('director/finance/deposits'))
                     else:
-                        deposit = TillPaymentOptions()
+                        deposit = Deposit()
 
                     form = CreateEditDepositForm(request.POST, instance=deposit)
                     if form.is_valid():

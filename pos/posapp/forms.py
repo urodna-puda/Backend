@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.validators import UnicodeUsernameValidator
 
-from posapp.models import User, PaymentMethod, Product, ItemInProduct, Item, TillPaymentOptions
+from posapp.models import User, PaymentMethod, Product, ItemInProduct, Item, Deposit
 
 
 class CreateUserForm(forms.ModelForm):
@@ -111,7 +111,7 @@ class AuthenticationForm(forms.Form):
 
 class CreateEditDepositForm(forms.ModelForm):
     class Meta:
-        model = TillPaymentOptions
+        model = Deposit
         fields = ['name', 'methods', 'changeMethod', 'depositAmount', 'enabled']
 
     def __init__(self, *args, **kwargs):
