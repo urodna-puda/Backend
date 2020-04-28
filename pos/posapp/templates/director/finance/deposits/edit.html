@@ -1,244 +1,100 @@
 {% extends "_base.html" %}
-{% load generic %}
 
 {% block page_name %}
-    <span class="fa-layers fa-fw">
-        <i class="fas fa-cash-register"></i>
-        <i class="text-gray fas fa-cog" data-fa-transform="shrink-6 down-4.2 right-4"></i>
-    </span>
-    Deposits
+    <i class="fas fa-user-plus"></i>
+    Create new user
 {% endblock %}
 
 {% block no_description %}{% endblock %}
 
 {% block breadcrumbs %}
     <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
-    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director" %}">Staff</a></li>
-    <li class="breadcrumb-item" aria-current="page"><a href="{% url "deposits" %}">Deposits</a></li>
-    <li class="breadcrumb-item active" aria-current="page"> Create deposit</li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager" %}">Manager</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager/users" %}">Users</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Create</li>
 {% endblock %}
 
 {% block content %}
     <div class="container-fluid">
         <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header border-0">
+            {% if form.non_field_errors %}
+                <div class="card bg-gradient-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+        </div>
+        <div class="row">
+            <div class="col-lg-8 col-sm-12">
+                <div class="card card-default">
+                    <div class="card-header">
                         <h2 class="card-title">
-                            <i class="fas fa-table"></i>
-                            Deposits
+                            <i class="fas fa-cogs"></i>
+                            User details
                         </h2>
-                        <div class="card-tools">
-                            <div class="container">
-                                <div class="row float-right">
-                                    <div class="col-4 float-right">
-                                        <div class="btn-group btn-group-sm" role="group">
-                                            <button type="button"
-                                                    class="btn btn-outline-success{% if enabledFilter.yes %} active{% endif %}"
-                                                    onclick="window.location = '?page={{ deposits.pages.page }}&page_length={{ deposits.pages.page_length.value }}&enabled=yes{% if search %}&search={{ search }}{% endif %}'">
-                                                <i class="fas fa-check-circle"></i>
-                                            </button>
-                                            <button type="button"
-                                                    class="btn btn-outline-secondary{% if enabledFilter.none %} active{% endif %}"
-                                                    onclick="window.location = '?page={{ deposits.pages.page }}&page_length={{ deposits.pages.page_length.value }}&enabled={% if search %}&search={{ search }}{% endif %}'">
-                                                <i class="fas fa-slash"></i>
-                                            </button>
-                                            <button type="button"
-                                                    class="btn btn-outline-danger{% if enabledFilter.no %} active{% endif %}"
-                                                    onclick="window.location = '?page={{ deposits.pages.page }}&page_length={{ deposits.pages.page_length.value }}&enabled=no{% if search %}&search={{ search }}{% endif %}'">
-                                                <i class="fas fa-times-circle"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="col-8 float-right">
-                                        <form id="searchForm">
-                                            <div class="input-group mb-3 imput-group-sm">
-                                                <input type="text" class="form-control" placeholder="Search"
-                                                       aria-label="Search"
-                                                       aria-describedby="search-addon-button" id="searchField"
-                                                       name="search"{% if search %} value="{{ search }}"{% endif %}>
-                                                <div class="input-group-append">
-                                                    <button class="btn btn-outline-secondary" type="submit"
-                                                            id="search-addon-button"><i
-                                                            class="fas fa-search"></i></button>
-                                                </div>
-                                            </div>
-                                        </form>
-                                    </div>
-                                    <div class="col-2">
-                                        <button type="button" class="btn btn-tool"
-                                                onclick="$('#createDepositModal').modal('show')"
-                                                data-toggle="tooltip" data-position="top" title="Create payment method">
-                                            <i class="fas fa-plus"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
-                    <div class="card-body p-0">
-                        <table class="table table-striped table-hover table-valign-middle">
-                            <thead>
-                            <tr>
-                                <th scope="col">Name</th>
-                                <th scope="col">Change method</th>
-                                <th scope="col">Deposit amount</th>
-                                <th scope="col">Allowed methods</th>
-                                <th scope="col">Enabled</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {% for deposit in deposits.data %}
-                                <tr>
-                                    <td>{{ deposit.name }}</td>
-                                    <td>{{ deposit.changeMethod.name }}</td>
-                                    <td>{{ deposit.depositAmount }}</td>
-                                    <td>{{ deposit.method_names }}</td>
-                                    <td>
-                                        <button type="button" class="btn btn-tool toggle-manager"
-                                                onclick="toggleEnabled('{{ deposit.id }}')">
-                                            {% if deposit.enabled %}
-                                                <i class="text-success fas fa-check-circle"
-                                                   id="enabled-indicator-{{ deposit.id }}"></i>
-                                            {% else %}
-                                                <i class="text-danger fas fa-times-circle"
-                                                   id="enabled-indicator-{{ deposit.id }}"></i>
-                                            {% endif %}
-                                        </button>
-                                    </td>
-                                    <td>
-                                        <form action="{% url "director/finance/deposits" %}" method="post">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="deleteDepositId" value="{{ deposit.id }}"/>
-                                            <button type="submit" class="btn btn-tool" data-toggle="tooltip"
-                                                    data-position="top" title="Delete deposit">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="card-footer border-top">
-                        <div class="row">
-                            <div class="col-6">
-                                Showing items {{ deposits.showing.from|add_one }}
-                                through {{ deposits.showing.to|add_one }} of {{ deposits.showing.of }}.
-                                &nbsp;
-                                Items per page:
-                                <select onchange="window.location = '?page={{ deposits.pages.page }}&page_length=' + this.options[this.selectedIndex].value{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} + '&search={{ search }}'{% endif %};">
-                                    <option value="5" {% if deposits.pages.page_length.len5 %}selected{% endif %}>5
-                                        items
-                                    </option>
-                                    <option value="10" {% if deposits.pages.page_length.len10 %}selected{% endif %}>10
-                                        items
-                                    </option>
-                                    <option value="20" {% if deposits.pages.page_length.len20 %}selected{% endif %}>20
-                                        items
-                                    </option>
-                                    <option value="50" {% if deposits.pages.page_length.len50 %}selected{% endif %}>50
-                                        items
-                                    </option>
-                                    <option value="100" {% if deposits.pages.page_length.len100 %}selected{% endif %}>
-                                        100 items
-                                    </option>
-                                    <option value="200" {% if deposits.pages.page_length.len200 %}selected{% endif %}>
-                                        200 items
-                                    </option>
-                                    <option value="500" {% if deposits.pages.page_length.len500 %}selected{% endif %}>
-                                        500 items
-                                    </option>
-                                    {% if page_length.other %}
-                                        <option value="{{ deposits.pages.page_length.value }}" selected>Other
-                                            ({{ deposits.pages.page_length.value }}
-                                            items)
-                                        </option>
-                                    {% endif %}
-                                </select>
+                    <div class="card-body">
+                        <form method="post" action="
+                                {% if is_edit %}{% url "director/finance/deposits/deposit" id %}{% else %}{% url "director/finance/deposits/create" %}{% endif %}">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="{{ form.name.id_for_label }}">Deposit name:</label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                    <div class="text-danger">{{ form.name.errors }}</div>
+                                {% endif %}
                             </div>
-                            <div class="col-6 text-right">
-                                <div class="btn-group" role="group">
-                                    {% if deposits.pages.showPrevious %}
-                                        <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page=0&page_length={{ deposits.pages.page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
-                                                    '&search={{ search }}{% endif %}">
-                                            <i class="fas fa-angle-double-left"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ deposits.pages.previous }}&page_length={{ deposits.pagespage_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
-                                                    '&search={{ search }}{% endif %}">
-                                            <i class=" fas fa-angle-left"></i>
-                                        </button>
-                                    {% endif %}
-                                    {% for link in deposits.pages.links %}
-                                        <button type="button"
-                                                class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
-                                                onclick="window.location = '?page={{ link.page }}&page_length={{ page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
-                                                    '&search={{ search }}{% endif %}">
-                                            {{ link.page|add_one }}
-                                        </button>
-                                    {% endfor %}
-                                    {% if currencies.pages.showNext %}
-                                        <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ deposits.pages.next }}&page_length={{ deposits.pages.page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
-                                                    '&search={{ search }}{% endif %}">
-                                            <i class="fas fa-angle-right"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ deposits.pages.last }}&page_length={{ deposits.pages.page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
-                                                    '&search={{ search }}{% endif %}">
-                                            <i class="fas fa-angle-double-right"></i>
-                                        </button>
-                                    {% endif %}
-                                </div>
+                            <div class="form-group">
+                                <label for="{{ form.methods.id_for_label }}">Methods:</label>
+                                {{ form.methods }}
+                                {% if form.methods.errors %}
+                                    <div class="text-danger">{{ form.methods.errors }}</div>
+                                {% endif %}
                             </div>
-                        </div>
+                            <div class="form-group">
+                                <label for="{{ form.changeMethod.id_for_label }}">Change method:</label>
+                                {{ form.changeMethod }}
+                                {% if form.changeMethod.errors %}
+                                    <div class="text-danger">{{ form.changeMethod.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ form.depositAmount.id_for_label }}">Amount:</label>
+                                {{ form.depositAmount }}
+                                {% if form.depositAmount.errors %}
+                                    <div class="text-danger">{{ form.depositAmount.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="form-group form-check">
+                                {{ form.enabled }}
+                                <label class="form-check-label" for="{{ form.enabled.id_for_label }}">Enabled</label>
+                                {% if form.enabled.errors %}
+                                    <div class="text-danger">{{ form.enabled.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                {% if is_edit %}
+                                    <i class="far fa-save"></i> Save
+                                {% else %}
+
+                                    <i class="fas fa-plus"></i> Create
+                                {% endif %}
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 {% endblock %}
-
+{% block extra_head %}
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/css/bootstrap-select.css"/>
+{% endblock %}
 {% block javascript %}
     {{ block.super }}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/js/bootstrap-select.min.js"></script>
     <script>
-        $('#searchForm').bind('submit', function () {
-            let search = $('#searchField').val();
-            window.location = "?page={{ deposits.pages.page }}&page_length={{ deposits.pages.page_length.value }}{% if enabledFilter.val %}&enabled={{ enabledFilter.val }}{% endif %}" + (search ? "&search=" + search : "");
-            return false;
-        });
-
-        function toggleEnabled(id) {
-            event.stopPropagation();
-            event.stopImmediatePropagation();
-
-            postData("/api/1/currencies/" + id + "/toggleEnabled").then(result => {
-                if (result.status === 200) {
-                    if (result.now) {
-                        $("#enabled-indicator-" + id).removeClass().addClass("text-success fas fa-check-circle");
-                    } else {
-                        $("#enabled-indicator-" + id).removeClass().addClass("text-danger fas fa-times-circle");
-                    }
-                    $(document).Toasts('create', {
-                        body: result.message,
-                        title: 'Currency updated',
-                        icon: 'text-success fas fa-check fa-lg',
-                        autohide: true,
-                        delay: 5000,
-                    })
-                } else {
-                    $(document).Toasts('create', {
-                        body: result.error,
-                        title: 'Currency update failed',
-                        icon: 'text-danger fas fa-times fa-lg',
-                        autohide: true,
-                        delay: 5000,
-                    })
-                }
-            });
-        }
+        $('.selectpicker').selectpicker()
     </script>
 {% endblock %}

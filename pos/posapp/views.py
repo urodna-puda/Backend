@@ -16,7 +16,7 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet, \
-    CreateItemForm, AuthenticationForm
+    CreateItemForm, AuthenticationForm, CreateEditDepositForm
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
     PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest, TabTransferRequest
 from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, \
@@ -1100,13 +1100,44 @@ class Director:
                 context['search'] = search
                 return context.render()
 
-            class Deposit(DirectorLoginRequiredMixin, views.View):
-                pass
-
-            class Create(DirectorLoginRequiredMixin, views.View):
-                def get(self, request):
+            class Edit(DirectorLoginRequiredMixin, views.View):
+                def get(self, request, id=None):
                     context = Context(request, 'director/finance/deposits/edit.html')
+                    context['id'] = id
+                    if id:
+                        context['is_edit'] = True
+                        try:
+                            deposit = TillPaymentOptions.objects.get(id=id)
+                            context['form'] = CreateEditDepositForm(instance=deposit)
+
+                        except TillPaymentOptions.DoesNotExist:
+                            messages.warning(request, "This deposit does not exist")
+                            return redirect(reverse('director/finance/deposits'))
+                    else:
+                        context['form'] = CreateEditDepositForm()
                     return context.render()
+
+                def post(self, request, id=None):
+                    context = Context(request, 'director/finance/deposits/edit.html')
+                    context['id'] = id
+                    if id:
+                        context['is_edit'] = True
+                        try:
+                            deposit = TillPaymentOptions.objects.get(id=id)
+                        except TillPaymentOptions.DoesNotExist:
+                            messages.error(request, "This deposit does not exist, so it could not be saved")
+                            return redirect(reverse('director/finance/deposits'))
+                    else:
+                        deposit = TillPaymentOptions()
+
+                    form = CreateEditDepositForm(request.POST, instance=deposit)
+                    if form.is_valid():
+                        form.save()
+                        messages.success(request, "Deposit saved successfully!")
+                        return redirect(reverse('director/finance/deposits'))
+                    else:
+                        context['form'] = form
+                        return context.render()
 
     class Units(DirectorLoginRequiredMixin, views.View):
         def get(self, request):

@@ -106,9 +106,15 @@
                                         </button>
                                     </td>
                                     <td>
+
                                         <form action="{% url "director/finance/deposits" %}" method="post">
+
                                             {% csrf_token %}
                                             <input type="hidden" name="deleteDepositId" value="{{ deposit.id }}"/>
+                                            <a class="btn btn-tool"
+                                               href="{% url 'director/finance/deposits/deposit' deposit.id %}">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
                                             <button type="submit" class="btn btn-tool" data-toggle="tooltip"
                                                     data-position="top" title="Delete deposit">
                                                 <i class="fas fa-trash"></i>
