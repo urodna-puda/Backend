@@ -177,45 +177,7 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form>
-                        <input type="hidden" id="orderTabId"/>
-                        <div class="form-group">
-                            <label for="newOrderProduct">Product</label>
-                            <select class="form-control" id="newOrderProduct">
-                                {% for product in products %}
-                                    <option value="{{ product.id }}">{{ product.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="orderCount">Amount:</label>
-                            <input type="number" min="1" step="1" id="orderCount" value="1"/>
-                        </div>
-                        <div class="form-group">
-                            <label for="orderNote" class="col-form-label">Note:</label>
-                            <textarea class="form-control" id="orderNote"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>Order in state:</label>
-                            <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                                <label class="btn btn-outline-warning">
-                                    <input type="radio" name="orderState" id="orderStateO" autocomplete="off"> Waiting
-                                </label>
-                                <label class="btn btn-outline-secondary active">
-                                    <input type="radio" name="orderState" id="orderStateP" autocomplete="off" checked>
-                                    In
-                                    preparation
-                                </label>
-                                <label class="btn btn-outline-info">
-                                    <input type="radio" name="orderState" id="orderStateT" autocomplete="off"> To be
-                                    served
-                                </label>
-                                <label class="btn btn-outline-success">
-                                    <input type="radio" name="orderState" id="orderStateS" autocomplete="off"> Finished
-                                </label>
-                            </div>
-                        </div>
-                    </form>
+                    {% include "waiter/tabs/components/order.panel.html" %}
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>

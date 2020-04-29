@@ -1,0 +1,95 @@
+{% extends "_base.html" %}
+{% load static %}
+
+{% block page_name %}
+    <i class="fas fa-pizza-slice"></i>
+    Direct order - Ordering
+{% endblock %}
+
+{% block description %}
+    <span data-toggle="tooltip" title="This order will be displayed as tab {{ tab.name }} in other pages">{{ tab.name }}</span>
+{% endblock %}
+
+{% block no_description %}{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "waiter" %}">Waiter</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "waiter/direct" %}">Direct order</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Ordering</li>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12 col-md-6">
+                {% include "waiter/tabs/components/items.card.html" %}
+            </div>
+            <div class="col-12 col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-cart-plus"></i>&nbsp;Order products
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        {% include "waiter/tabs/components/order.panel.html" %}
+                    </div>
+                    <div class="card-footer text-right">
+                        <button type="button" class="btn btn-primary" id="createOrder">Order</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--MODALS-->
+    {% include "waiter/tabs/components/request_void.modal.html" %}
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script src="{% static "posapp/js/bootstrap-input-spinner.js" %}"></script>
+    <script>
+        $(".void-order-button").on('click', function () {
+            let button = $(this);
+            let productName = button.data('order-product-name'),
+                state = button.data('order-state');
+            $('#confirmVoidRequestModalBody').html(`Are you sure you want to request void of product ${productName} currently in state ${state}?`)
+            $('#confirmVoidRequestModal').modal('show');
+            {% if manager_role %}
+                $('#confirmVoidRequestModalButtonVoid').off('click').on('click', function () {
+                    window.location = button.data('order-void-url');
+                });
+            {% else %}
+                $('#confirmVoidRequestModalButtonAuthenticate').off('click').on('click', function () {
+                    window.location = button.data('order-authenticate-url');
+                })
+            {% endif %}
+            $('#confirmVoidRequestModalButtonRequest').off('click').on('click', function () {
+                window.location = button.data('order-request-url');
+            });
+        })
+
+        $("input[type='number']").inputSpinner();
+        $(document).ready(() => {
+            $("#createOrder").click(() => {
+                let product = $("#newOrderProduct").val();
+                let amount = $("#orderCount").val();
+                let note = $("#orderNote").val();
+                let state = "";
+                if ($("#orderStateO").is(":checked")) state = "O";
+                else if ($("#orderStateP").is(":checked")) state = "P";
+                else if ($("#orderStateT").is(":checked")) state = "T";
+                else if ($("#orderStateS").is(":checked")) state = "S";
+                postData(`/api/1/tabs/{{ tab.id }}/order`, {
+                    "product": product,
+                    "amount": Number(amount),
+                    "note": note,
+                    "state": state,
+                }).then(() => {
+                    location.reload();
+                });
+            });
+        });
+    </script>
+{% endblock %}

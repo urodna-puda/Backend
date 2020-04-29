@@ -1,0 +1,169 @@
+{% load generic %}
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">
+            <i class="fas fa-bars"></i>
+            Items
+        </h2>
+    </div>
+    <div class="card-body p-0">
+        <div class="container-fluid container-fluid-striped container-fluid-hover">
+            {% for product in tab.products %}
+                {% for variant in product.variants %}
+                    <div class="row align-items-center{% if not forloop.parentloop.last or not forloop.last %} border-bottom{% endif %}">
+                        <div class="col-5 p-2">
+                            {{ product.name }}<br>
+                            <span class="text-muted text-xs">{{ variant.note }}</span>
+                        </div>
+                        <div class="col-3 text-center">
+                                            <span class="badge badge-warning{% if not variant.showOrdered %} invisible{% endif %}"
+                                                  data-toggle="tooltip" data-placement="top" title="Waiting">
+                                                {{ variant.orderedCount }}
+                                            </span>
+                            <span class="badge badge-secondary{% if not variant.showPreparing %} invisible{% endif %}"
+                                  data-toggle="tooltip" data-placement="top" title="Waiting">
+                                                {{ variant.preparingCount }}
+                                            </span>
+                            <span class="badge badge-info{% if not variant.showToServe %} invisible{% endif %}"
+                                  data-toggle="tooltip" data-placement="top" title="Waiting">
+                                                {{ variant.toServeCount }}
+                                            </span>
+                            <span class="badge badge-success{% if not variant.showServed %} invisible{% endif %}"
+                                  data-toggle="tooltip" data-placement="top" title="Waiting">
+                                                {{ variant.servedCount }}
+                                            </span>
+                        </div>
+                        <div class="col-3 text-right">{{ variant.total }}</div>
+                        <div class="col-1 text-center">
+                            <button type="button" class="btn btn-tool" data-toggle="collapse-toggle"
+                                    data-target="#collapsible-{{ product.id }}-{{ variant.note|replace_spaces }}">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="col-12 collapse in p-0 mt-0"
+                             id="collapsible-{{ product.id }}-{{ variant.note|replace_spaces }}">
+                            <table class="table table-valign-middle m-0">
+                                <thead>
+                                <tr class="d-flex">
+                                    <th scope="col" class="col border-top-0">Ordered at</th>
+                                    <th scope="col" class="col border-top-0">Started at</th>
+                                    <th scope="col" class="col border-top-0">Prepared at</th>
+                                    <th scope="col" class="col border-top-0">Served at</th>
+                                    <th scope="col" class="col-1 border-top-0"></th>
+                                </tr>
+                                </thead>
+                                {% for order in variant.orders %}
+                                    <tr class="bg-{{ order.color }} d-flex">
+                                        <td class="col">{{ order.orderedAt|empty_none }}</td>
+                                        <td class="col">{{ order.preparingAt|empty_none }}</td>
+                                        <td class="col">{{ order.preparedAt|empty_none }}</td>
+                                        <td class="col">{{ order.servedAt|empty_none }}</td>
+                                        <td class="col-1 text-center">
+                                            {% if order.state != 'V' %}
+                                                {% if order.void_request_exists %}
+                                                    <i class="fas fa-ellipsis-h" data-toggle="tooltip"
+                                                       title="Request in progress"></i>
+                                                {% else %}
+                                                    <button type="button"
+                                                            class="btn btn-tool void-order-button"
+                                                            data-order-id="{{ order.id }}"
+                                                            data-order-state="{{ order.get_state_display }}"
+                                                            data-order-product-name="{{ product.name }}"
+                                                            {% if manager_role %}data-order-void-url="{% url "waiter/orders/order/void" order.id %}?next={{ next_url }}"{% endif %}
+                                                            data-order-request-url="{% url "waiter/orders/order/requestVoid" order.id %}?next={{ next_url }}"
+                                                            data-order-authenticate-url="{% url "waiter/orders/order/authenticateAndVoid" order.id %}?next={{ next_url }}">
+                                                        <i class="fas fa-trash" data-toggle="tooltip"
+                                                           data-position="top"
+                                                           title="Void item"></i>
+                                                    </button>
+                                                {% endif %}
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </table>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endfor %}
+            {% for payment in payments %}
+                <div class="row align-items-center border-top {% if forloop.first %} border-dark{% endif %} ">
+                    <div class="col p-2">{{ payment.method.paymentMethod.name }}</div>
+                    <div class="col text-right">
+                        {{ payment.amount }}
+                    </div>
+                    <div class="col-1 text-center">
+                        {% if tab_open and not hide_delete_payment %}
+                            <button type="submit" form="deletePayment{{ payment.id }}Form"
+                                    class="btn btn-tool" name="delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="card-footer">
+        {% if tab_open %}
+            <div class="row">
+                <h5 class="col-6">Spent</h5>
+                <div class="col-6">
+                    <h5 class="float-right">{{ tab.total }}</h5>
+                </div>
+            </div>
+            <div class="row">
+                <h5 class="col-6">Paid</h5>
+                <div class="col-6">
+                    <h5 class="float-right">{{ tab.paid }}</h5>
+                </div>
+            </div>
+            {% if tab.showVariance %}
+                <div class="row">
+                    <h5 class="col-6"> {{ tab.varianceLabel }}</h5>
+                    <div class="col-6">
+                        <h5 class="float-right">{{ tab.variance }}</h5>
+                    </div>
+                </div>
+            {% endif %}
+            <div class="row">
+                <div class="col-6">
+                    {% if show_back_button %}
+                        <a href="{% url "waiter/direct/order" %}" class="btn btn-info">
+                            <i class="fas fa-shopping-cart"></i>&nbsp;Back to ordering
+                        </a>
+                    {% endif %}
+                </div>
+                <div class="col-6 text-right">
+                    {% if replace_finish_button %}
+                        <a class="btn btn-info" href="{% url "waiter/direct/pay" %}">
+                            <i class="fas fa-money-bill-alt"></i>&nbsp;Proceed to checkout
+                        </a>
+                    {% else %}
+                        {% if tab.showFinaliseAuto %}
+                            <button class="btn btn-primary" type="submit" form="finaliseForm">
+                                <i class="fas fa-flag-checkered"></i>&nbsp;
+                                Finish
+                            </button>
+                        {% endif %}
+                        {% if tab.showFinaliseChange %}
+                            <button class="btn btn-warning" type="button" data-toggle="modal"
+                                    data-target="#confirmChangeModal">
+                                <i class="fas fa-coins"></i>&nbsp;
+                                Finish
+                            </button>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <div class="row">
+                <h5 class="col-6">Total</h5>
+                <div class="col-6">
+                    <h5 class="float-right">{{ tab.total }}</h5>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>

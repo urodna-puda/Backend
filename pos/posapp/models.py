@@ -7,6 +7,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.urls import reverse
 from django_countries.fields import CountryField
 from phonenumber_field.modelfields import PhoneNumberField
 
@@ -22,7 +23,7 @@ class User(AbstractUser):
     is_manager = models.BooleanField(default=False)
     is_director = models.BooleanField(default=False)
     current_till = models.ForeignKey("Till", null=True, on_delete=models.SET_NULL)
-    current_temp_tab = models.ForeignKey("Tab", null=True, on_delete=models.SET_NULL)
+    current_temp_tab = models.OneToOneField("Tab", null=True, on_delete=models.SET_NULL, related_name="temp_tab_owner")
     mobile_phone = PhoneNumberField()
     online_counter = models.IntegerField(validators=[MinValueValidator(0)], default=0)
 
@@ -157,6 +158,10 @@ class Tab(models.Model):
     def transfer_request_exists(self):
         return self.tabtransferrequest_set.count() > 0
 
+    @property
+    def is_temp(self):
+        return self.temp_tab_owner
+
     def order_product(self, product, count, note, state):
         for i in range(count):
             new = ProductInTab()
@@ -182,6 +187,12 @@ class Tab(models.Model):
             new.save()
 
     def mark_paid(self, by: User):
+        if hasattr(self, 'temp_tab_owner'):
+            owner = self.temp_tab_owner
+            owner.current_temp_tab = None
+            owner.clean()
+            owner.save()
+            self.refresh_from_db()
         variance = self.variance
         change_payment = None
         if variance < 0:
@@ -197,6 +208,10 @@ class Tab(models.Model):
         self.clean()
         self.save()
         return change_payment
+
+    def clean(self):
+        if self.state == self.PAID and hasattr(self, 'temp_tab_owner'):
+            raise ValidationError("Tab cannot be saved as paid and have a temp tab owner")
 
 
 class ProductInTab(models.Model):
@@ -581,6 +596,8 @@ class OrderVoidRequest(models.Model):
                         "note": self.order.note,
                         "tab_name": self.order.tab.name,
                         "tab_id": str(self.order.tab.id),
+                        "review_url": reverse("waiter/direct/order") if hasattr(self.order.tab, "temp_tab_owner") else
+                        reverse("waiter/tabs/tab", kwargs={"id": self.order.tab.id}),
                     },
                     "resolution": self.resolution,
                 },
