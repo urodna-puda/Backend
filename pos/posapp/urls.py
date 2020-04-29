@@ -1,5 +1,4 @@
 from django.urls import path
-from django.views.generic import RedirectView
 
 from posapp import views
 
@@ -23,6 +22,10 @@ urlpatterns = [
     path('waiter/orders/<uuid:id>/void', views.Waiter.Orders.Order.Void.as_view(), name='waiter/orders/order/void'),
     path('waiter/orders/<uuid:id>/authenticateAndVoid', views.Waiter.Orders.Order.AuthenticateAndVoid.as_view(),
          name='waiter/orders/order/authenticateAndVoid'),
+    path('waiter/direct', views.Waiter.Direct.as_view(), name='waiter/direct'),
+    path('waiter/direct/new', views.Waiter.Direct.New.as_view(), name='waiter/direct/new'),
+    path('waiter/direct/order', views.Waiter.Direct.Order.as_view(), name='waiter/direct/order'),
+    path('waiter/direct/pay', views.Waiter.Direct.Pay.as_view(), name='waiter/direct/pay'),
     path('manager', views.Manager.as_view(), name='manager'),
     path('manager/users', views.Manager.Users.as_view(), name='manager/users'),
     path('manager/users/create', views.Manager.Users.Create.as_view(), name='manager/users/create'),

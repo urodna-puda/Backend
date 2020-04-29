@@ -80,7 +80,7 @@
             switch (data.notification_type) {
                 case "void_request_resolved":
                     $(document).Toasts('create', {
-                        body: `<a id="toast"></a>Manager ${data.manager.username} has ${data.resolution === 'A' ? 'approved' : 'rejected'} your void request of product ${data.order.product_name} in tab ${data.order.tab_name}. <a href="/waiter/tabs/${data.order.tab_id}">Review it now</a>.`,
+                        body: `<a id="toast"></a>Manager ${data.manager.username} has ${data.resolution === 'A' ? 'approved' : 'rejected'} your void request of product ${data.order.product_name} in tab ${data.order.tab_name}. <a href="${data.order.review_url}">Review it now</a>.`,
                         title: 'Void request resolved',
                         icon: data.resolution === 'A' ? 'text-success fas fa-check fa-lg' : 'text-danger fas fa-times fa-lg',
                         autohide: false,
@@ -149,6 +149,14 @@
                         }
                 }
             };
+
+            $(".alert-autoclose").delay(4000).slideUp(200, function() {
+                $(this).alert('close');
+            });
+
+            $(".alert-success").not(".alert-persistent").delay(4000).slideUp(200, function() {
+                $(this).alert('close');
+            });
         {% endif %}
     </script>
 {% endblock %}
@@ -198,27 +206,27 @@
     {% if messages %}
         {% for message in messages %}
             {% if message.level == DEFAULT_MESSAGE_LEVELS.DEBUG %}
-                <div class="alert alert-primary alert-dismissible fade show">
+                <div class="alert alert-primary alert-dismissible fade show {{ message.extra_tags }}">
                     <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
                     <i class="fas fa-bug"></i>&nbsp;{{ message|safe }}
                 </div>
             {% elif message.level == DEFAULT_MESSAGE_LEVELS.INFO %}
-                <div class="alert alert-info alert-dismissible fade show">
+                <div class="alert alert-info alert-dismissible fade show {{ message.extra_tags }}">
                     <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
                     <i class="fas fa-info-circle"></i>&nbsp;{{ message|safe }}
                 </div>
             {% elif message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}
-                <div class="alert alert-success alert-dismissible fade show">
+                <div class="alert alert-success alert-dismissible fade show {{ message.extra_tags }}">
                     <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
                     <i class="fas fa-check"></i>&nbsp;{{ message|safe }}
                 </div>
             {% elif message.level == DEFAULT_MESSAGE_LEVELS.WARNING %}
-                <div class="alert alert-warning alert-dismissible fade show">
+                <div class="alert alert-warning alert-dismissible fade show {{ message.extra_tags }}">
                     <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
                     <i class="fas fa-exclamation-triangle"></i>&nbsp;{{ message|safe }}
                 </div>
             {% elif message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}
-                <div class="alert alert-danger alert-dismissible fade show">
+                <div class="alert alert-danger alert-dismissible fade show {{ message.extra_tags }}">
                     <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
                     <i class="fas fa-times-circle"></i>&nbsp;{{ message|safe }}
                 </div>

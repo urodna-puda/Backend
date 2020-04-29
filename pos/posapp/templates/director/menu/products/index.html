@@ -26,51 +26,53 @@
                             Products
                         </h2>
                         <div class="card-tools text-right">
-                            <div class="row">
-                                <div class="col-4">
-                                    <div class="input-group">
-                                        <input type="hidden" id="activityFilter" value="{{ activity_filter }}"/>
-                                        <div class="btn-group" role="group">
-                                            <button type="button"
-                                                    class="btn btn-outline-success{% if activity_filter == "enabled" %} active{% endif %}"
-                                                    onclick="$('#activityFilter').val('enabled'); refreshPage();">
-                                                <i class="fas fa-check-circle"></i>
-                                            </button>
-                                            <button type="button"
-                                                    class="btn btn-outline-secondary{% if not activity_filter %} active{% endif %}"
-                                                    onclick="$('#activityFilter').val(''); refreshPage();">
-                                                <i class="fas fa-slash"></i>
-                                            </button>
-                                            <button type="button"
-                                                    class="btn btn-outline-danger{% if activity_filter == "disabled" %} active{% endif %}"
-                                                    onclick="$('#activityFilter').val('disabled'); refreshPage();">
-                                                <i class="fas fa-times-circle"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-7">
-                                    <form id="searchForm">
+                            <div class="container-fluid">
+                                <div class="row">
+                                    <div class="col-4">
                                         <div class="input-group">
-                                            <input type="text" class="form-control border-right-0 border-secondary"
-                                                   placeholder="Search" aria-label="Search"
-                                                   aria-describedby="search-addon-button" id="searchField"
-                                                   name="search"{% if search %} value="{{ search }}"{% endif %}>
-                                            <div class="input-group-append">
-                                                <button class="btn btn-outline-secondary border-left-0"
-                                                        type="submit"
-                                                        id="search-addon-button"><i
-                                                        class="fas fa-search"></i></button>
+                                            <input type="hidden" id="activityFilter" value="{{ activity_filter }}"/>
+                                            <div class="btn-group" role="group">
+                                                <button type="button"
+                                                        class="btn btn-outline-success{% if activity_filter == "enabled" %} active{% endif %}"
+                                                        onclick="$('#activityFilter').val('enabled'); refreshPage();">
+                                                    <i class="fas fa-check-circle"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn btn-outline-secondary{% if not activity_filter %} active{% endif %}"
+                                                        onclick="$('#activityFilter').val(''); refreshPage();">
+                                                    <i class="fas fa-slash"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn btn-outline-danger{% if activity_filter == "disabled" %} active{% endif %}"
+                                                        onclick="$('#activityFilter').val('disabled'); refreshPage();">
+                                                    <i class="fas fa-times-circle"></i>
+                                                </button>
                                             </div>
                                         </div>
-                                    </form>
-                                </div>
-                                <div class="col-1">
-                                    <button type="button" class="btn btn-tool"
-                                            data-toggle="tooltip" data-position="top" title="Add"
-                                            onclick="$('#createProductModal').modal('show')">
-                                        <i class="fas fa-plus"></i>
-                                    </button>
+                                    </div>
+                                    <div class="col-7">
+                                        <form id="searchForm">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control border-right-0 border-secondary"
+                                                       placeholder="Search" aria-label="Search"
+                                                       aria-describedby="search-addon-button" id="searchField"
+                                                       name="search"{% if search %} value="{{ search }}"{% endif %}>
+                                                <div class="input-group-append">
+                                                    <button class="btn btn-outline-secondary border-left-0"
+                                                            type="submit"
+                                                            id="search-addon-button"><i
+                                                            class="fas fa-search"></i></button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="col-1">
+                                        <button type="button" class="btn btn-tool"
+                                                data-toggle="tooltip" data-position="top" title="Add"
+                                                onclick="$('#createProductModal').modal('show')">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -80,17 +82,17 @@
                             <thead>
                             <tr class="d-flex">
                                 <th scope="col" class="col-5">Name</th>
-                                <th scope="col" class="col-5 text-center">Price</th>
-                                <th scope="col" class="col-1 text-center">Enabled</th>
-                                <th scope="col" class="col-1 text-center">Actions</th>
+                                <th scope="col" class="col-3 text-center">Price</th>
+                                <th scope="col" class="col-2 text-center">Enabled</th>
+                                <th scope="col" class="col-2 text-center">Actions</th>
                             </tr>
                             </thead>
                             <tbody>
                             {% for product in products.data %}
                                 <tr class="d-flex">
                                     <td class="col-5">{{ product.name }}</td>
-                                    <td class="col-5 text-center">{{ product.price }}</td>
-                                    <td class="col-1 text-center">
+                                    <td class="col-3 text-center">{{ product.price }}</td>
+                                    <td class="col-2 text-center">
                                         <button type="button" class="btn btn-tool toggle-manager"
                                                 onclick="toggleEnabled('{{ product.id }}')">
                                             {% if product.enabled %}
@@ -102,7 +104,7 @@
                                             {% endif %}
                                         </button>
                                     </td>
-                                    <td class="col-1 text-center"><a
+                                    <td class="col-2 text-center"><a
                                             href="{% url "director/menu/products/product" product.id %}"
                                             class="btn btn-tool"><i class="fas fa-edit"></i></a>
                                     </td>

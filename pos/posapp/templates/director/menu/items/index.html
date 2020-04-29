@@ -25,47 +25,51 @@
                             <i class="fas fa-table"></i>
                             Items
                         </h2>
-                        <div class="card-tools text-right">
-                            <div class="row">
-                                <div class="col">
-                                    <div class="input-group mb-3 input-group-sm">
-                                        <select class="form-control" onchange="refreshPage()" id="unitFilterSelect">
-                                            <option value="">
-                                                All
-                                            </option>
-                                            {% for group in unit_groups %}
-                                                <option value="{{ group.id }}"
-                                                        {% ifequal unit_group group.id %}selected{% endifequal %}>
-                                                    {{ group.name }}
+                        <div class="card-tools">
+                            <div class="container-fluid">
+                                <div class="row">
+                                    <div class="col-5">
+                                        <div class="input-group mb-3">
+                                            <select class="form-control" data-live-search="true"onchange="refreshPage()"
+                                                    id="unitFilterSelect">
+                                                <option value="">
+                                                    All
                                                 </option>
-                                            {% endfor %}
-                                        </select>
+                                                {% for group in unit_groups %}
+                                                    <option value="{{ group.id }}"
+                                                            {% ifequal unit_group group.id %}selected{% endifequal %}>
+                                                        {{ group.name }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <form id="searchForm">
+                                            <div class="input-group mb-3">
+                                                <input type="text" class="form-control border-right-0 border-secondary"
+                                                       placeholder="Search" aria-label="Search"
+                                                       aria-describedby="search-addon-button"
+                                                       id="searchField" name="search"{% if search %}
+                                                       value="{{ search }}"{% endif %}>
+                                                <div class="input-group-append">
+                                                    <button class="btn btn-outline-secondary border-left-0"
+                                                            type="submit"
+                                                            id="search-addon-button">
+                                                        <i class="fas fa-search"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="col-1 text-center">
+                                        <button type="button" class="btn btn-tool"
+                                                onclick="$('#createItemModal').modal('show')"
+                                                data-toggle="tooltip" data-position="top" title="Create item">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
                                     </div>
                                 </div>
-                                <div class="col">
-                                    <form id="searchForm">
-                                        <div class="input-group mb-3 input-group-sm">
-                                            <input type="text" class="form-control border-right-0 border-secondary"
-                                                   placeholder="Search" aria-label="Search"
-                                                   aria-describedby="search-addon-button"
-                                                   id="searchField" name="search"{% if search %}
-                                                   value="{{ search }}"{% endif %}>
-                                            <div class="input-group-append">
-                                                <button class="btn btn-outline-secondary border-left-0" type="submit"
-                                                        id="search-addon-button">
-                                                    <i class="fas fa-search"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-                            <div class="col-2">
-                                <button type="button" class="btn btn-tool"
-                                        onclick="$('#createItemModal').modal('show')"
-                                        data-toggle="tooltip" data-position="top" title="Create item">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                            </div>
                             </div>
                         </div>
                     </div>
@@ -100,7 +104,10 @@
                             Items per page:
                             <select onchange="refreshPage();" id="pageLengthSelect">
                                 {% for option in items.pages.page_length.options %}
-                                    <option value="{{ option }}" {% if option == items.pages.page_length.value %}selected{% endif %}>{{ option }} items</option>
+                                    <option value="{{ option }}"
+                                            {% if option == items.pages.page_length.value %}selected{% endif %}>{{ option }}
+                                        items
+                                    </option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -184,8 +191,14 @@
     </div>
 {% endblock %}
 
+{% block extra_head %}
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/css/bootstrap-select.css"/>
+{% endblock %}
+
 {% block javascript %}
     {{ block.super }}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/js/bootstrap-select.min.js"></script>
     <script>
         $('#searchForm').on('submit', function (e) {
             e.preventDefault();
@@ -193,10 +206,13 @@
             return false
         });
 
+        let unitFilterSelect = $('#unitFilterSelect');
+        unitFilterSelect.selectpicker();
+
         function refreshPage(pageNumber) {
             let page = (pageNumber || pageNumber === 0) ? pageNumber : {{ items.pages.page }};
             let pageLength = $('#pageLengthSelect').val();
-            let unitFilter = $('#unitFilterSelect').val();
+            let unitFilter = unitFilterSelect.val();
             let search = $('#searchField').val();
 
             let params = {};
