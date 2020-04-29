@@ -1098,7 +1098,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                                              f"Count {count.paymentMethod.name} was not saved due to error: "
                                              f"{err.message}")
 
-                    return self.get(self.request, id, zeroed)
+                    return self.get(id, zeroed)
 
             class Close(ManagerLoginRequiredMixin, BaseView):
                 def get(self, id, *args, **kwargs):
@@ -1573,7 +1573,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
 
 class Debug:
     class CreateUser(BaseView):
-        def get(self, request, form=None):
+        def get(self, form=None, *args, **kwargs):
             if settings.DEBUG:
                 form = form or CreateUserForm(initial={
                     "username": "test",
@@ -1597,6 +1597,6 @@ class Debug:
                     form.save()
                     messages.success(self.request, "User created")
                     form = None
-                return self.get(self.request, form)
+                return self.get(form)
             else:
                 return HttpResponseForbidden()
