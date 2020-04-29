@@ -80,7 +80,7 @@
             switch (data.notification_type) {
                 case "void_request_resolved":
                     $(document).Toasts('create', {
-                        body: `<a id="toast"></a>Manager ${data.manager.username} has ${data.resolution === 'A' ? 'approved' : 'rejected'} your void request of product ${data.order.product_name} in tab ${data.order.tab_name}. <a href="/waiter/tabs/${data.order.tab_id}">Review it now</a>.`,
+                        body: `<a id="toast"></a>Manager ${data.manager.username} has ${data.resolution === 'A' ? 'approved' : 'rejected'} your void request of product ${data.order.product_name} in tab ${data.order.tab_name}. <a href="${data.order.review_url}">Review it now</a>.`,
                         title: 'Void request resolved',
                         icon: data.resolution === 'A' ? 'text-success fas fa-check fa-lg' : 'text-danger fas fa-times fa-lg',
                         autohide: false,

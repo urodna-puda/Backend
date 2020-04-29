@@ -247,12 +247,7 @@ class Waiter(WaiterLoginRequiredMixin, views.View):
                 tabs.append(prepare_tab_dict(tab))
 
             context['tabs'] = tabs
-            context['products'] = []
-            for product in Product.objects.all():
-                context['products'].append({
-                    'id': product.id,
-                    'name': product.name,
-                })
+            context['products'] = Product.objects.filter(enabled=True)
 
             if request.user.is_manager:
                 context['paid_tabs'] = Tab.objects.filter(state=Tab.PAID)
@@ -278,6 +273,7 @@ class Waiter(WaiterLoginRequiredMixin, views.View):
                     tab = Tab.objects.filter(temp_tab_owner__isnull=True).get(id=id)
                     context["tab_open"] = tab.state == Tab.OPEN
                     context["tab_my"] = tab.owner == request.user
+                    context["next_url"] = reverse("waiter/tabs/tab", kwargs={"id":id})
 
                     if update_handler:
                         update_handler(context, tab)
@@ -611,8 +607,17 @@ class Waiter(WaiterLoginRequiredMixin, views.View):
                 return redirect(reverse("waiter/direct"))
 
         class Order(WaiterLoginRequiredMixin, views.View):
-            def get(self, request, ):
-                pass
+            def get(self, request):
+                context = Context(request, "waiter/direct/order.html")
+                if not request.user.current_temp_tab:
+                    messages.warning(request, "You don't have an open order. Start one now.")
+                    return redirect(reverse("waiter/direct"))
+                context["tab"] = prepare_tab_dict(request.user.current_temp_tab)
+                context["tab_open"] = True
+                context["next_url"] = reverse("waiter/direct/order")
+                context["replace_finish_button"] = True
+                context["products"] = Product.objects.filter(enabled=True)
+                return context.render()
 
         class Pay(WaiterLoginRequiredMixin, views.View):
             pass

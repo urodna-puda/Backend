@@ -7,6 +7,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.urls import reverse
 from django_countries.fields import CountryField
 from phonenumber_field.modelfields import PhoneNumberField
 
@@ -585,6 +586,8 @@ class OrderVoidRequest(models.Model):
                         "note": self.order.note,
                         "tab_name": self.order.tab.name,
                         "tab_id": str(self.order.tab.id),
+                        "review_url": reverse("waiter/direct/order") if hasattr(self.order.tab, "temp_tab_owner") else
+                        reverse("waiter/tabs/tab", kwargs={"id": self.order.tab.id}),
                     },
                     "resolution": self.resolution,
                 },

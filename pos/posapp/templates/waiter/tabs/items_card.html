@@ -70,9 +70,9 @@
                                                             data-order-id="{{ order.id }}"
                                                             data-order-state="{{ order.get_state_display }}"
                                                             data-order-product-name="{{ product.name }}"
-                                                            {% if manager_role %}data-order-void-url="{% url "waiter/orders/order/void" order.id %}?next={% url "waiter/tabs/tab" id %}"{% endif %}
-                                                            data-order-request-url="{% url "waiter/orders/order/requestVoid" order.id %}?next={% url "waiter/tabs/tab" id %}"
-                                                            data-order-authenticate-url="{% url "waiter/orders/order/authenticateAndVoid" order.id %}?next={% url "waiter/tabs/tab" id %}">
+                                                            {% if manager_role %}data-order-void-url="{% url "waiter/orders/order/void" order.id %}?next={{ next_url }}"{% endif %}
+                                                            data-order-request-url="{% url "waiter/orders/order/requestVoid" order.id %}?next={{ next_url }}"
+                                                            data-order-authenticate-url="{% url "waiter/orders/order/authenticateAndVoid" order.id %}?next={{ next_url }}">
                                                         <i class="fas fa-trash" data-toggle="tooltip"
                                                            data-position="top"
                                                            title="Void item"></i>
@@ -127,23 +127,36 @@
                     </div>
                 </div>
             {% endif %}
-            {% if tab.showFinaliseAuto %}
-                <div class="row float-right">
-                    <button class="btn btn-primary" type="submit" form="finaliseForm">
-                        <i class="fas fa-flag-checkered"></i>&nbsp;
-                        Finish
-                    </button>
+            <div class="row">
+                <div class="col-6">
+                    {% if show_back_button %}
+                        <a href="{% url "waiter/direct/order" %}" class="btn btn-info">
+                            <i class="fas fa-shopping-cart"></i>&nbsp;Back to ordering
+                        </a>
+                    {% endif %}
                 </div>
-            {% endif %}
-            {% if tab.showFinaliseChange %}
-                <div class="row float-right">
-                    <button class="btn btn-warning" type="button" data-toggle="modal"
-                            data-target="#confirmChangeModal">
-                        <i class="fas fa-coins"></i>&nbsp;
-                        Finish
-                    </button>
+                <div class="col-6 text-right">
+                    {% if replace_finish_button %}
+                        <a class="btn btn-info" href="{% url "waiter/direct/pay" %}">
+                            <i class="fas fa-money-bill-alt"></i>&nbsp;Proceed to checkout
+                        </a>
+                    {% else %}
+                        {% if tab.showFinaliseAuto %}
+                            <button class="btn btn-primary" type="submit" form="finaliseForm">
+                                <i class="fas fa-flag-checkered"></i>&nbsp;
+                                Finish
+                            </button>
+                        {% endif %}
+                        {% if tab.showFinaliseChange %}
+                            <button class="btn btn-warning" type="button" data-toggle="modal"
+                                    data-target="#confirmChangeModal">
+                                <i class="fas fa-coins"></i>&nbsp;
+                                Finish
+                            </button>
+                        {% endif %}
+                    {% endif %}
                 </div>
-            {% endif %}
+            </div>
         {% else %}
             <div class="row">
                 <h5 class="col-6">Total</h5>
