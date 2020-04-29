@@ -22,7 +22,7 @@ class User(AbstractUser):
     is_manager = models.BooleanField(default=False)
     is_director = models.BooleanField(default=False)
     current_till = models.ForeignKey("Till", null=True, on_delete=models.SET_NULL)
-    current_temp_tab = models.ForeignKey("Tab", null=True, on_delete=models.SET_NULL)
+    current_temp_tab = models.OneToOneField("Tab", null=True, on_delete=models.SET_NULL, related_name="temp_tab_owner")
     mobile_phone = PhoneNumberField()
     online_counter = models.IntegerField(validators=[MinValueValidator(0)], default=0)
 
@@ -156,6 +156,10 @@ class Tab(models.Model):
     @property
     def transfer_request_exists(self):
         return self.tabtransferrequest_set.count() > 0
+
+    @property
+    def is_temp(self):
+        return self.temp_tab_owner
 
     def order_product(self, product, count, note, state):
         for i in range(count):

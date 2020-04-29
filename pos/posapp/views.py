@@ -240,7 +240,7 @@ class Waiter(WaiterLoginRequiredMixin, views.View):
         def get(self, request):
             context = Context(request, "waiter/tabs/index.html")
             tabs = []
-            tabs_list = Tab.objects.filter(state=Tab.OPEN)
+            tabs_list = Tab.objects.filter(state=Tab.OPEN, temp_tab_owner__isnull=True)
             for tab in tabs_list:
                 tabs.append(prepare_tab_dict(tab))
 
@@ -273,7 +273,7 @@ class Waiter(WaiterLoginRequiredMixin, views.View):
                 context = Context(request, "waiter/tabs/tab.html")
                 context["id"] = id
                 try:
-                    tab = Tab.objects.get(id=id)
+                    tab = Tab.objects.filter(temp_tab_owner__isnull=True).get(id=id)
                     context["tab_open"] = tab.state == Tab.OPEN
                     context["tab_my"] = tab.owner == request.user
 
@@ -360,7 +360,7 @@ class Waiter(WaiterLoginRequiredMixin, views.View):
                 def post(self, request, id):
                     if "newOwnerUsername" in request.POST:
                         try:
-                            tab = Tab.objects.get(id=id)
+                            tab = Tab.objects.filter(temp_tab_owner__isnull=True).get(id=id)
                             if tab.owner == request.user:
                                 new_owner = User.objects.get(username=request.POST["newOwnerUsername"])
                                 transfer_request = TabTransferRequest()
@@ -400,7 +400,7 @@ class Waiter(WaiterLoginRequiredMixin, views.View):
             class RequestClaim(WaiterLoginRequiredMixin, views.View):
                 def get(self, request, id):
                     try:
-                        tab = Tab.objects.get(id=id)
+                        tab = Tab.objects.filter(temp_tab_owner__isnull=True).get(id=id)
                         if tab.owner != request.user:
                             transfer_request = TabTransferRequest()
                             transfer_request.tab = tab
@@ -438,7 +438,7 @@ class Waiter(WaiterLoginRequiredMixin, views.View):
                 def post(self, request, id):
                     if "newOwnerUsername" in request.POST:
                         try:
-                            tab = Tab.objects.get(id=id)
+                            tab = Tab.objects.filter(temp_tab_owner__isnull=True).get(id=id)
                             new_owner = User.objects.get(username=request.POST["newOwnerUsername"])
                             tab.owner = new_owner
                             tab.clean()
