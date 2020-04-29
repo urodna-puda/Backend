@@ -1,4 +1,6 @@
 import decimal
+import random
+import string
 import uuid
 
 # Create your views here.
@@ -572,6 +574,48 @@ class Waiter(WaiterLoginRequiredMixin, views.View):
                         messages.error(request, "Username or password was missing in the request")
 
                     return redirect(request.GET["next"] if "next" in request.GET else reverse("waiter/orders"))
+
+    class Direct(WaiterLoginRequiredMixin, views.View):
+        def get(self, request):
+            if request.user.current_temp_tab:
+                return redirect(reverse("waiter/direct/order"))
+            else:
+                return redirect(reverse("waiter/direct/new"))
+
+        class New(WaiterLoginRequiredMixin, views.View):
+            def get(self, request):
+                context = Context(request, "waiter/direct/new.html")
+                if request.user.current_temp_tab:
+                    messages.warning(request, "You already have an open order. No need to start a new one.")
+                    return redirect(reverse("waiter/direct"))
+                return context.render()
+
+            def post(self, request):
+                if request.user.current_temp_tab:
+                    messages.warning(request, "You already have an open order. No need to start a new one.")
+                    return redirect(reverse("waiter/direct"))
+                tab = Tab()
+                slug = ''.join(
+                    random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits + "+/") for _ in
+                    range(16))
+                tab.name = f"{request.user.username}'s temporary tab {slug}"
+                tab.owner = request.user
+                try:
+                    tab.clean()
+                    tab.save()
+                    request.user.current_temp_tab = tab
+                    request.user.clean()
+                    request.user.save()
+                except ValidationError as err:
+                    messages.error(request, "Something went wrong when starting order: " + err.message)
+                return redirect(reverse("waiter/direct"))
+
+        class Order(WaiterLoginRequiredMixin, views.View):
+            def get(self, request, ):
+                pass
+
+        class Pay(WaiterLoginRequiredMixin, views.View):
+            pass
 
 
 class Manager(ManagerLoginRequiredMixin, views.View):

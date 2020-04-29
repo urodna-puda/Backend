@@ -1,0 +1,36 @@
+{% extends "_base.html" %}
+{% block page_name %}
+    <i class="fas fa-pizza-slice"></i>
+    Direct order - New
+{% endblock %}
+
+{% block no_description %}{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "waiter" %}">Waiter</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "waiter/direct" %}">Direct order</a></li>
+    <li class="breadcrumb-item active" aria-current="page">New order</li>
+{% endblock %}
+
+{% block content %}
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">
+                <i class="fas fa-info-circle"></i>&nbsp;No open order
+            </h2>
+        </div>
+        <div class="card-body">
+            <p>You may start a new order by clicking the button below. Direct orders allow you to order products without
+                requiring you to create a Tab. The customer has to pay right away.</p>
+        </div>
+        <div class="card-footer text-right">
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="fas fa-plus"></i> &nbsp; Start order
+                </button>
+            </form>
+        </div>
+    </div>
+{% endblock %}
