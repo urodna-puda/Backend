@@ -276,11 +276,6 @@ class BaseView(views.View):
         pass
 
 
-@login_required
-def index(request):
-    return redirect(reverse("waiter/tabs"))
-
-
 class TabBaseView(WaiterLoginRequiredMixin, BaseView):
     template_name = ""
     next_url = ""
@@ -362,9 +357,58 @@ class TabBaseView(WaiterLoginRequiredMixin, BaseView):
             messages.error(self.request, "This Tab is closed and cannot be edited")
 
 
-class Waiter(WaiterLoginRequiredMixin, BaseView):
-    def get(self):
+class DisambiguationView(BaseView):
+    name = ""
+    links = []
+    breadcrumbs = []
+    """
+    template: ("", "", []),
+    """
+
+    def get(self, *args, **kwargs):
+        context = Context(self.request, "disambiguation.html")
+        context["name"] = self.name
+        context["links"] = DisambiguationView.generate_ul(self.links)
+        context["breadcrumbs"] = self.breadcrumbs
+        return context.render()
+
+    @staticmethod
+    def generate_ul(links):
+        if links:
+            ul = "<ul>"
+            for name, link, sub in links:
+                ul += f'<li><a href="{reverse(link)}">{name}</a>{DisambiguationView.generate_ul(sub)}</li>'
+            ul += "</ul>"
+        else:
+            ul = ""
+        return ul
+
+
+@login_required
+def index(request):
+    if request.user.is_waiter:
         return redirect(reverse("waiter/tabs"))
+    elif request.user.is_manager:
+        return redirect(reverse("manager/tills"))
+    elif request.user.is_director:
+        return redirect(reverse("director/menu/products"))
+
+
+class Waiter(WaiterLoginRequiredMixin, DisambiguationView):
+    name = "Waiter"
+    links = [
+        ("Tabs", "waiter/tabs", []),
+        ("Orders", "waiter/orders", []),
+        ("Direct order", "waiter/direct", [
+            ("New", "waiter/direct/new", []),
+            ("Order", "waiter/direct/order", []),
+            ("Checkout", "waiter/direct/pay", []),
+        ]),
+    ]
+    breadcrumbs = [
+        ("Home", "index"),
+        ("Waiter",),
+    ]
 
     class Tabs(WaiterLoginRequiredMixin, BaseView):
         def get(self, *args, **kwargs):
@@ -713,9 +757,23 @@ class Waiter(WaiterLoginRequiredMixin, BaseView):
                 return context.render()
 
 
-class Manager(ManagerLoginRequiredMixin, BaseView):
-    def get(self, *args, **kwargs):
-        return redirect(reverse("manager/users"))
+class Manager(ManagerLoginRequiredMixin, DisambiguationView):
+    name = "Manager"
+    links = [
+        ("Users", "manager/users", [
+            ("Create", "manager/users/create", []),
+        ]),
+        ("Tills", "manager/tills", [
+            ("Assign", "manager/tills/assign", []),
+        ]),
+        ("Requests", "manager/requests", [
+            ("Void requests", "manager/requests/void", []),
+        ]),
+    ]
+    breadcrumbs = [
+        ("Home", "index"),
+        ("Manager",),
+    ]
 
     class Users(ManagerLoginRequiredMixin, BaseView):
         def get(self, *args, **kwargs):
@@ -1178,13 +1236,35 @@ class Manager(ManagerLoginRequiredMixin, BaseView):
                     return redirect(reverse("manager/requests/transfer"))
 
 
-class Director(DirectorLoginRequiredMixin, BaseView):
-    def get(self, *args, **kwargs):
-        return redirect(reverse("director/finance"))
+class Director(DirectorLoginRequiredMixin, DisambiguationView):
+    name = "Director"
+    links = [
+        ("Finance", "director/finance", [
+            ("Currencies", "director/finance/currencies", []),
+            ("Payment methods", "director/finance/methods", []),
+        ]),
+        ("Units", "director/units", []),
+        ("Menu", "director/menu", [
+            ("Products", "director/menu/products", []),
+            ("Items", "director/menu/items", []),
+        ]),
+    ]
+    breadcrumbs = [
+        ("Home", "index"),
+        ("Director", ),
+    ]
 
-    class Finance(DirectorLoginRequiredMixin, BaseView):
-        def get(self, *args, **kwargs):
-            return redirect(reverse("director/finance"))
+    class Finance(DirectorLoginRequiredMixin, DisambiguationView):
+        name = "Finance"
+        links = [
+            ("Currencies", "director/finance/currencies", []),
+            ("Payment methods", "director/finance/methods", []),
+        ]
+        breadcrumbs = [
+            ("Home", "index"),
+            ("Director", "director"),
+            ("Finance", ),
+        ]
 
         class Currencies(DirectorLoginRequiredMixin, BaseView):
             def get(self, *args, **kwargs):
@@ -1318,9 +1398,17 @@ class Director(DirectorLoginRequiredMixin, BaseView):
 
             return context.render()
 
-    class Menu(DirectorLoginRequiredMixin, BaseView):
-        def get(self, *args, **kwargs):
-            return redirect(reverse("director/menu/products"))
+    class Menu(DirectorLoginRequiredMixin, DisambiguationView):
+        name = "Menu"
+        links = [
+            ("Products", "director/menu/products", []),
+            ("Items", "director/menu/items", []),
+        ]
+        breadcrumbs = [
+            ("Home", "index"),
+            ("Director", "director"),
+            ("Menu", ),
+        ]
 
         class Products(DirectorLoginRequiredMixin, BaseView):
             def fill_data(self, request):
