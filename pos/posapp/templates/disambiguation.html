@@ -1,0 +1,33 @@
+{% extends "_base.html" %}
+
+{% block page_name %}
+    <i class="fas fa-sitemap"></i>
+    {{ name }}
+{% endblock %}
+
+{% block breadcrumbs %}
+    {% for breadcrumb in breadcrumbs %}
+        {% if forloop.last %}
+            <li class="breadcrumb-item active" aria-current="page">{{ breadcrumb.0 }}</li>
+        {% else %}
+            <li class="breadcrumb-item" aria-current="page"><a href="{% url breadcrumb.1 %}">{{ breadcrumb.0 }}</a></li>
+        {% endif %}
+    {% endfor %}
+{% endblock %}
+
+{% block content %}
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">
+                <i class="fas fa-folder-open"></i>&nbsp;Available sub-pages
+            </h2>
+        </div>
+        <div class="card-body">
+            {{ links|safe }}
+        </div>
+        <div class="card-footer">
+            <small class="text-muted">This is just a sad empty unused page. The links lead to pages that logically
+                follow this page and actually have some use.</small>
+        </div>
+    </div>
+{% endblock %}
