@@ -444,7 +444,7 @@ class Waiter(WaiterLoginRequiredMixin, DisambiguationView):
                 self.next_url = reverse("waiter/tabs/tab", kwargs={"id": id})
                 try:
                     tab = Tab.objects.filter(temp_tab_owner__isnull=True).get(id=id)
-                    context = self.fill_data(self.request, tab)
+                    context = self.fill_data(tab)
                     return context.render()
                 except Tab.DoesNotExist:
                     messages.error(self.request, "Invalid request: specified Tab does not exist. "
@@ -1489,6 +1489,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                                 for form in items_formset.forms:
                                     form.instance.product = product
                                 items_formset.save()
+                                messages.success(self.request, "Product successfully updated")
                                 items_formset = ItemsInProductFormSet(
                                     queryset=ItemInProduct.objects.filter(
                                         product=product

@@ -82,17 +82,17 @@
                             <thead>
                             <tr class="d-flex">
                                 <th scope="col" class="col-5">Name</th>
-                                <th scope="col" class="col-5 text-center">Price</th>
-                                <th scope="col" class="col-1 text-center">Enabled</th>
-                                <th scope="col" class="col-1 text-center">Actions</th>
+                                <th scope="col" class="col-3 text-center">Price</th>
+                                <th scope="col" class="col-2 text-center">Enabled</th>
+                                <th scope="col" class="col-2 text-center">Actions</th>
                             </tr>
                             </thead>
                             <tbody>
                             {% for product in products.data %}
                                 <tr class="d-flex">
                                     <td class="col-5">{{ product.name }}</td>
-                                    <td class="col-5 text-center">{{ product.price }}</td>
-                                    <td class="col-1 text-center">
+                                    <td class="col-3 text-center">{{ product.price }}</td>
+                                    <td class="col-2 text-center">
                                         <button type="button" class="btn btn-tool toggle-manager"
                                                 onclick="toggleEnabled('{{ product.id }}')">
                                             {% if product.enabled %}
@@ -104,7 +104,7 @@
                                             {% endif %}
                                         </button>
                                     </td>
-                                    <td class="col-1 text-center"><a
+                                    <td class="col-2 text-center"><a
                                             href="{% url "director/menu/products/product" product.id %}"
                                             class="btn btn-tool"><i class="fas fa-edit"></i></a>
                                     </td>
