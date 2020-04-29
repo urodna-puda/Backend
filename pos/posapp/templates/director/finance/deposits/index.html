@@ -13,7 +13,8 @@
 
 {% block breadcrumbs %}
     <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
-    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director" %}">Staff</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director" %}">Director</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director/finance" %}">Finance</a></li>
     <li class="breadcrumb-item active" aria-current="page">Deposits</li>
 {% endblock %}
 
@@ -133,67 +134,41 @@
                                 through {{ deposits.showing.to|add_one }} of {{ deposits.showing.of }}.
                                 &nbsp;
                                 Items per page:
-                                <select onchange="window.location = '?page={{ deposits.pages.page }}&page_length=' + this.options[this.selectedIndex].value{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} + '&search={{ search }}'{% endif %};">
-                                    <option value="5" {% if deposits.pages.page_length.len5 %}selected{% endif %}>5
-                                        items
-                                    </option>
-                                    <option value="10" {% if deposits.pages.page_length.len10 %}selected{% endif %}>10
-                                        items
-                                    </option>
-                                    <option value="20" {% if deposits.pages.page_length.len20 %}selected{% endif %}>20
-                                        items
-                                    </option>
-                                    <option value="50" {% if deposits.pages.page_length.len50 %}selected{% endif %}>50
-                                        items
-                                    </option>
-                                    <option value="100" {% if deposits.pages.page_length.len100 %}selected{% endif %}>
-                                        100 items
-                                    </option>
-                                    <option value="200" {% if deposits.pages.page_length.len200 %}selected{% endif %}>
-                                        200 items
-                                    </option>
-                                    <option value="500" {% if deposits.pages.page_length.len500 %}selected{% endif %}>
-                                        500 items
-                                    </option>
-                                    {% if page_length.other %}
-                                        <option value="{{ deposits.pages.page_length.value }}" selected>Other
-                                            ({{ deposits.pages.page_length.value }}
-                                            items)
+                                <select onchange="refreshPage();" id="pageLengthSelect">
+                                    {% for option in deposits.pages.page_length.options %}
+                                        <option value="{{ option }}"
+                                                {% if option == deposits.pages.page_length.value %}selected{% endif %}>{{ option }}
+                                            items
                                         </option>
-                                    {% endif %}
+                                    {% endfor %}
                                 </select>
                             </div>
                             <div class="col-6 text-right">
                                 <div class="btn-group" role="group">
                                     {% if deposits.pages.showPrevious %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page=0&page_length={{ deposits.pages.page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
-                                                    '&search={{ search }}{% endif %}">
+                                                onclick="refreshPage(0);">
                                             <i class="fas fa-angle-double-left"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ deposits.pages.previous }}&page_length={{ deposits.pagespage_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
-                                                    '&search={{ search }}{% endif %}">
+                                                onclick="refreshPage({{ deposits.pages.previous }})">
                                             <i class=" fas fa-angle-left"></i>
                                         </button>
                                     {% endif %}
                                     {% for link in deposits.pages.links %}
                                         <button type="button"
                                                 class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
-                                                onclick="window.location = '?page={{ link.page }}&page_length={{ page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
-                                                    '&search={{ search }}{% endif %}">
+                                                onclick="refreshPage({{ link.page }})">
                                             {{ link.page|add_one }}
                                         </button>
                                     {% endfor %}
-                                    {% if currencies.pages.showNext %}
+                                    {% if deposits.pages.showNext %}
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ deposits.pages.next }}&page_length={{ deposits.pages.page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
-                                                    '&search={{ search }}{% endif %}">
+                                                onclick="refreshPage({{ deposits.pages.next }})">
                                             <i class="fas fa-angle-right"></i>
                                         </button>
                                         <button type="button" class="btn btn-outline-secondary"
-                                                onclick="window.location = '?page={{ deposits.pages.last }}&page_length={{ deposits.pages.page_length.value }}'{% if enabledFilter.val %} + '&enabled={{ enabledFilter.val }}'{% endif %}{% if search %} +
-                                                    '&search={{ search }}{% endif %}">
+                                                onclick="refreshPage({{ deposits.pages.last }})">
                                             <i class="fas fa-angle-double-right"></i>
                                         </button>
                                     {% endif %}

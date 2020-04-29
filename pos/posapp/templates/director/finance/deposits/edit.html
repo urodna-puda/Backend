@@ -2,16 +2,17 @@
 
 {% block page_name %}
     <i class="fas fa-user-plus"></i>
-    Create new user
+    {% if is_edit %}Edit{% else %}Create{% endif %} deposit
 {% endblock %}
 
 {% block no_description %}{% endblock %}
 
 {% block breadcrumbs %}
     <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
-    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager" %}">Manager</a></li>
-    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager/users" %}">Users</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Create</li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director" %}">Director</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director/finance" %}">Finance</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director/finance/deposits" %}">Deposits</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{% if is_edit %}Edit{% else %}Create{% endif %} deposit</li>
 {% endblock %}
 
 {% block content %}
@@ -30,7 +31,7 @@
                     <div class="card-header">
                         <h2 class="card-title">
                             <i class="fas fa-cogs"></i>
-                            User details
+                            Deposit details
                         </h2>
                     </div>
                     <div class="card-body">
