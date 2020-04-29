@@ -26,51 +26,53 @@
                             Products
                         </h2>
                         <div class="card-tools text-right">
-                            <div class="row">
-                                <div class="col-4">
-                                    <div class="input-group">
-                                        <input type="hidden" id="activityFilter" value="{{ activity_filter }}"/>
-                                        <div class="btn-group" role="group">
-                                            <button type="button"
-                                                    class="btn btn-outline-success{% if activity_filter == "enabled" %} active{% endif %}"
-                                                    onclick="$('#activityFilter').val('enabled'); refreshPage();">
-                                                <i class="fas fa-check-circle"></i>
-                                            </button>
-                                            <button type="button"
-                                                    class="btn btn-outline-secondary{% if not activity_filter %} active{% endif %}"
-                                                    onclick="$('#activityFilter').val(''); refreshPage();">
-                                                <i class="fas fa-slash"></i>
-                                            </button>
-                                            <button type="button"
-                                                    class="btn btn-outline-danger{% if activity_filter == "disabled" %} active{% endif %}"
-                                                    onclick="$('#activityFilter').val('disabled'); refreshPage();">
-                                                <i class="fas fa-times-circle"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-7">
-                                    <form id="searchForm">
+                            <div class="container-fluid">
+                                <div class="row">
+                                    <div class="col-4">
                                         <div class="input-group">
-                                            <input type="text" class="form-control border-right-0 border-secondary"
-                                                   placeholder="Search" aria-label="Search"
-                                                   aria-describedby="search-addon-button" id="searchField"
-                                                   name="search"{% if search %} value="{{ search }}"{% endif %}>
-                                            <div class="input-group-append">
-                                                <button class="btn btn-outline-secondary border-left-0"
-                                                        type="submit"
-                                                        id="search-addon-button"><i
-                                                        class="fas fa-search"></i></button>
+                                            <input type="hidden" id="activityFilter" value="{{ activity_filter }}"/>
+                                            <div class="btn-group" role="group">
+                                                <button type="button"
+                                                        class="btn btn-outline-success{% if activity_filter == "enabled" %} active{% endif %}"
+                                                        onclick="$('#activityFilter').val('enabled'); refreshPage();">
+                                                    <i class="fas fa-check-circle"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn btn-outline-secondary{% if not activity_filter %} active{% endif %}"
+                                                        onclick="$('#activityFilter').val(''); refreshPage();">
+                                                    <i class="fas fa-slash"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn btn-outline-danger{% if activity_filter == "disabled" %} active{% endif %}"
+                                                        onclick="$('#activityFilter').val('disabled'); refreshPage();">
+                                                    <i class="fas fa-times-circle"></i>
+                                                </button>
                                             </div>
                                         </div>
-                                    </form>
-                                </div>
-                                <div class="col-1">
-                                    <button type="button" class="btn btn-tool"
-                                            data-toggle="tooltip" data-position="top" title="Add"
-                                            onclick="$('#createProductModal').modal('show')">
-                                        <i class="fas fa-plus"></i>
-                                    </button>
+                                    </div>
+                                    <div class="col-7">
+                                        <form id="searchForm">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control border-right-0 border-secondary"
+                                                       placeholder="Search" aria-label="Search"
+                                                       aria-describedby="search-addon-button" id="searchField"
+                                                       name="search"{% if search %} value="{{ search }}"{% endif %}>
+                                                <div class="input-group-append">
+                                                    <button class="btn btn-outline-secondary border-left-0"
+                                                            type="submit"
+                                                            id="search-addon-button"><i
+                                                            class="fas fa-search"></i></button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="col-1">
+                                        <button type="button" class="btn btn-tool"
+                                                data-toggle="tooltip" data-position="top" title="Add"
+                                                onclick="$('#createProductModal').modal('show')">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
