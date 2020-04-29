@@ -7,7 +7,7 @@
     </div>
     {% if money_counts %}
         <div class="card-body">
-            <form method="post" action="{% url "waiter/tabs/tab" id %}" id="paymentForm">
+            <form method="post" id="paymentForm">
                 {% csrf_token %}
                 <div class="form-group">
                     <label for="moneyCount">Payment method</label>

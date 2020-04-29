@@ -234,6 +234,87 @@ def index(request):
     return redirect(reverse("waiter/tabs"))
 
 
+class TabBaseView(WaiterLoginRequiredMixin, views.View):
+    template_name = ""
+    next_url = ""
+
+    def fill_data(self, request, tab, update=False):
+        context = Context(request, self.template_name)
+        context["id"] = tab.id
+        context["tab_open"] = tab.state == Tab.OPEN
+        context["tab_my"] = tab.owner == request.user
+        context["next_url"] = self.next_url
+
+        if update:
+            self.update_handler(request, context, tab)
+
+        tab.refresh_from_db()
+        context["tab_open"] = tab.state == Tab.OPEN
+        context["tab_my"] = tab.owner == request.user
+        context["transfer_request_exists"] = tab.transfer_request_exists
+        context["waiters"] = User.objects.filter(is_waiter=True)
+        if tab.owner:
+            context["waiters"] = context["waiters"].exclude(username=tab.owner.username)
+
+        current_till = request.user.current_till
+        if current_till:
+            context["money_counts"] = [method for method in current_till.tillmoneycount_set.all()
+                                       if method.paymentMethod.enabled]
+            context["change_method_name"] = current_till.changeMethod.name
+
+        context["tab"] = prepare_tab_dict(tab)
+        context["payments"] = tab.payments.all()
+
+        return context
+
+    def update_handler(self, request, context, tab):
+        if context["tab_open"]:
+            if check_dict(request.POST, ["moneyCountId", "amount"]) and tab:
+                if context["tab_my"]:
+                    try:
+                        money_count_id = uuid.UUID(request.POST["moneyCountId"])
+                        context["last_used_method"] = money_count_id
+                        amount = decimal.Decimal(request.POST["amount"])
+                        if amount < 0:
+                            messages.warning(request, "Payment amount must be greater than zero.")
+                        else:
+                            money_count = request.user.current_till.tillmoneycount_set.get(
+                                id=money_count_id)
+                            payment = PaymentInTab()
+                            payment.tab = tab
+                            payment.method = money_count
+                            payment.amount = amount
+                            payment.clean()
+                            payment.save()
+                            messages.success(request, "Payment created successfully")
+                    except TillMoneyCount.DoesNotExist:
+                        messages.warning(request, "Invalid request: Payment method does not exist")
+                    except ValidationError as err:
+                        messages.warning(request, f"Creating the payment failed: {err.message}")
+                else:
+                    messages.warning(request, f"Only the tab owner can create payments")
+            if check_dict(request.POST, ["paymentId", "delete"]) and tab:
+                try:
+                    payment_id = uuid.UUID(request.POST["paymentId"])
+                    payment = PaymentInTab.objects.get(id=payment_id, tab=tab)
+                    payment.delete()
+                    messages.success(request, "Payment was deleted successfully")
+                except PaymentInTab.DoesNotExist:
+                    messages.warning(request,
+                                     "The specified payment can't be deleted as it does not exist.")
+            if check_dict(request.POST, ["close"]) and tab:
+                try:
+                    change_payment = tab.mark_paid(request.user)
+                    messages.success(request, "The Tab was marked as paid.")
+                    if change_payment:
+                        messages.info(request, f"The remaining variance of {change_payment.amount} was "
+                                               f"returned via {change_payment.method.paymentMethod.name}")
+                except ValidationError as err:
+                    messages.warning(request, f"Closing this Tab failed: {err.message}")
+        else:
+            messages.error(request, "This Tab is closed and cannot be edited")
+
+
 class Waiter(WaiterLoginRequiredMixin, views.View):
     def get(self, request):
         return redirect(reverse("waiter/tabs"))
@@ -265,94 +346,30 @@ class Waiter(WaiterLoginRequiredMixin, views.View):
                     messages.warning(request, f"Creating Tab failed: {err.message}")
             return self.get(request)
 
-        class Tab(WaiterLoginRequiredMixin, views.View):
-            def fill_data(self, request, id, update_handler=None):
-                context = Context(request, "waiter/tabs/tab.html")
-                context["id"] = id
+        class Tab(TabBaseView):
+            template_name = "waiter/tabs/tab.html"
+
+            def get(self, request, id):
+                self.next_url = reverse("waiter/tabs/tab", kwargs={"id": id})
                 try:
                     tab = Tab.objects.filter(temp_tab_owner__isnull=True).get(id=id)
-                    context["tab_open"] = tab.state == Tab.OPEN
-                    context["tab_my"] = tab.owner == request.user
-                    context["next_url"] = reverse("waiter/tabs/tab", kwargs={"id":id})
-
-                    if update_handler:
-                        update_handler(context, tab)
-
-                    tab.refresh_from_db()
-                    context["tab_open"] = tab.state == Tab.OPEN
-                    context["tab_my"] = tab.owner == request.user
-                    context["transfer_request_exists"] = tab.transfer_request_exists
-                    context["waiters"] = User.objects.filter(is_waiter=True)
-                    if tab.owner:
-                        context["waiters"] = context["waiters"].exclude(username=tab.owner.username)
-
-                    current_till = request.user.current_till
-                    if current_till:
-                        context["money_counts"] = [method for method in current_till.tillmoneycount_set.all()
-                                                   if method.paymentMethod.enabled]
-                        context["change_method_name"] = current_till.changeMethod.name
-
-                    context["tab"] = prepare_tab_dict(tab)
-                    context["payments"] = tab.payments.all()
+                    context = self.fill_data(request, tab)
+                    return context.render()
                 except Tab.DoesNotExist:
                     messages.error(request, "Invalid request: specified Tab does not exist. "
                                             "Go back to previous page and try it again.")
-                return context
-
-            def get(self, request, id):
-                context = self.fill_data(request, id)
-                return context.render()
+                    return redirect(reverse("waiter/tabs"))
 
             def post(self, request, id):
-                def update_handler(context, tab):
-                    if context["tab_open"]:
-                        if check_dict(request.POST, ["moneyCountId", "amount"]) and tab:
-                            if context["tab_my"]:
-                                try:
-                                    money_count_id = uuid.UUID(request.POST["moneyCountId"])
-                                    context["last_used_method"] = money_count_id
-                                    amount = decimal.Decimal(request.POST["amount"])
-                                    if amount < 0:
-                                        messages.warning(request, "Payment amount must be greater than zero.")
-                                    else:
-                                        money_count = request.user.current_till.tillmoneycount_set.get(
-                                            id=money_count_id)
-                                        payment = PaymentInTab()
-                                        payment.tab = tab
-                                        payment.method = money_count
-                                        payment.amount = amount
-                                        payment.clean()
-                                        payment.save()
-                                        messages.success(request, "Payment created successfully")
-                                except TillMoneyCount.DoesNotExist:
-                                    messages.warning(request, "Invalid request: Payment method does not exist")
-                                except ValidationError as err:
-                                    messages.warning(request, f"Creating the payment failed: {err.message}")
-                            else:
-                                messages.warning(request, f"Only the tab owner can create payments")
-                        if check_dict(request.POST, ["paymentId", "delete"]) and tab:
-                            try:
-                                payment_id = uuid.UUID(request.POST["paymentId"])
-                                payment = PaymentInTab.objects.get(id=payment_id, tab=tab)
-                                payment.delete()
-                                messages.success(request, "Payment was deleted successfully")
-                            except PaymentInTab.DoesNotExist:
-                                messages.warning(request,
-                                                 "The specified payment can't be deleted as it does not exist.")
-                        if check_dict(request.POST, ["close"]) and tab:
-                            try:
-                                change_payment = tab.mark_paid(request.user)
-                                messages.success(request, "The Tab was marked as paid.")
-                                if change_payment:
-                                    messages.info(request, f"The remaining variance of {change_payment.amount} was "
-                                                           f"returned via {change_payment.method.paymentMethod.name}")
-                            except ValidationError as err:
-                                messages.warning(request, f"Closing this Tab failed: {err.message}")
-                    else:
-                        messages.error(request, "This Tab is closed and cannot be edited")
-
-                context = self.fill_data(request, id, update_handler)
-                return context.render()
+                self.next_url = reverse("waiter/tabs/tab", kwargs={"id": id})
+                try:
+                    tab = Tab.objects.filter(temp_tab_owner__isnull=True).get(id=id)
+                    context = self.fill_data(request, tab, True)
+                    return context.render()
+                except Tab.DoesNotExist:
+                    messages.error(request, "Invalid request: specified Tab does not exist. "
+                                            "Go back to previous page and try it again.")
+                    return redirect(reverse("waiter/tabs"))
 
             class RequestTransfer(WaiterLoginRequiredMixin, views.View):
                 def post(self, request, id):
@@ -619,8 +636,26 @@ class Waiter(WaiterLoginRequiredMixin, views.View):
                 context["products"] = Product.objects.filter(enabled=True)
                 return context.render()
 
-        class Pay(WaiterLoginRequiredMixin, views.View):
-            pass
+        class Pay(TabBaseView):
+            template_name = "waiter/direct/pay.html"
+
+            def get(self, request):
+                if not request.user.current_temp_tab:
+                    messages.warning(request, "You don't have an open order. Start one now.")
+                    return redirect(reverse("waiter/direct"))
+                self.next_url=reverse("waiter/direct/order")
+                context = self.fill_data(request, request.user.current_temp_tab)
+                context["show_back_button"] = True
+                return context.render()
+
+            def post(self, request):
+                if not request.user.current_temp_tab:
+                    messages.warning(request, "You don't have an open order. Start one now.")
+                    return redirect(reverse("waiter/direct"))
+                self.next_url=reverse("waiter/direct/order")
+                context = self.fill_data(request, request.user.current_temp_tab, True)
+                context["show_back_button"] = True
+                return context.render()
 
 
 class Manager(ManagerLoginRequiredMixin, views.View):

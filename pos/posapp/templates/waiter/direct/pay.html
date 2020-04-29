@@ -1,0 +1,42 @@
+{% extends "_base.html" %}
+
+{% block page_name %}
+    <i class="fas fa-pizza-slice"></i>
+    Direct order - Checkout
+{% endblock %}
+
+{% block no_description %}{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "waiter" %}">Waiter</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "waiter/direct" %}">Direct order</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Checkout</li>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12 col-md-6">
+                {% include "waiter/tabs/items_card.html" %}
+            </div>
+            <div class="col-12 col-md-6">
+                {% include "waiter/tabs/payment_card.html" %}
+            </div>
+        </div>
+    </div>
+    <!--MODALS-->
+    {% include "waiter/tabs/confirm_change_modal.html" %}
+    {% include "waiter/tabs/request_void_modal.html" %}
+    <!--FAKE FORMS-->
+    {% for payment in payments %}
+        <form method="post" id="deletePayment{{ payment.id }}Form">
+            {% csrf_token %}
+            <input type="hidden" name="paymentId" value="{{ payment.id }}"/>
+        </form>
+    {% endfor %}
+    <form method="post" id="finaliseForm">
+        {% csrf_token %}
+        <input type="hidden" name="close" value="true"/>
+    </form>
+{% endblock %}

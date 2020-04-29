@@ -187,6 +187,12 @@ class Tab(models.Model):
             new.save()
 
     def mark_paid(self, by: User):
+        if hasattr(self, 'temp_tab_owner'):
+            owner = self.temp_tab_owner
+            owner.current_temp_tab = None
+            owner.clean()
+            owner.save()
+            self.refresh_from_db()
         variance = self.variance
         change_payment = None
         if variance < 0:
@@ -202,6 +208,10 @@ class Tab(models.Model):
         self.clean()
         self.save()
         return change_payment
+
+    def clean(self):
+        if self.state == self.PAID and hasattr(self, 'temp_tab_owner'):
+            raise ValidationError("Tab cannot be saved as paid and have a temp tab owner")
 
 
 class ProductInTab(models.Model):
