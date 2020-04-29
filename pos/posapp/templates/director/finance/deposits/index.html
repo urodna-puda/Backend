@@ -189,7 +189,7 @@
             event.stopPropagation();
             event.stopImmediatePropagation();
 
-            postData("/api/1/currencies/" + id + "/toggleEnabled").then(result => {
+            postData("/api/1/deposits/" + id + "/toggleEnabled").then(result => {
                 if (result.status === 200) {
                     if (result.now) {
                         $("#enabled-indicator-" + id).removeClass().addClass("text-success fas fa-check-circle");
@@ -198,7 +198,7 @@
                     }
                     $(document).Toasts('create', {
                         body: result.message,
-                        title: 'Currency updated',
+                        title: 'Deposit updated',
                         icon: 'text-success fas fa-check fa-lg',
                         autohide: true,
                         delay: 5000,
@@ -206,7 +206,7 @@
                 } else {
                     $(document).Toasts('create', {
                         body: result.error,
-                        title: 'Currency update failed',
+                        title: 'Deposit update failed',
                         icon: 'text-danger fas fa-times fa-lg',
                         autohide: true,
                         delay: 5000,

@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from posapp.models import Tab, Product, User, PaymentMethod, Currency, ProductInTab
+from posapp.models import Tab, Product, User, PaymentMethod, Currency, ProductInTab, Deposit
 from posapp.security.role_decorators import ManagerLoginRequiredMixin, WaiterLoginRequiredMixin
 from posapp.serializers import TabListSerializer
 
@@ -245,6 +245,40 @@ class ProductToggleEnabled(APIView):
             return Response({
                 'status': 404,
                 'error': 'Product with this id was not found',
+            }, status.HTTP_404_NOT_FOUND)
+        except ValidationError as err:
+            return Response({
+                'status': 406,
+                'error': err.message,
+            }, status.HTTP_406_NOT_ACCEPTABLE)
+
+
+class DepositToggleEnabled(APIView):
+    is_text = "success\">is"
+    isnt_text = "danger\">isn't"
+
+    def post(self, request, id, format=None):
+        if not request.user.is_director:
+            return Response({
+                'status': 404,
+                'error': 'Only directors can access this view',
+            }, status.HTTP_403_FORBIDDEN)
+
+        try:
+            deposit = Deposit.objects.get(id=id)
+            deposit.enabled = not deposit.enabled
+            deposit.clean()
+            deposit.save()
+            return Response({
+                'status': 200,
+                'now': deposit.enabled,
+                'message': f"The deposit now <span class=\"badge badge-{self.is_text if deposit.enabled else self.isnt_text}</span> enabled.",
+            }, status.HTTP_200_OK)
+
+        except Deposit.DoesNotExist:
+            return Response({
+                'status': 404,
+                'error': 'Deposit with this id was not found',
             }, status.HTTP_404_NOT_FOUND)
         except ValidationError as err:
             return Response({

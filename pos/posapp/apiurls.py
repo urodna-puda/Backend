@@ -1,4 +1,5 @@
 from django.urls import path
+
 from posapp import apiviews
 
 urlpatterns = [
@@ -10,4 +11,5 @@ urlpatterns = [
     path('currencies/<int:id>/toggleEnabled', apiviews.CurrencyToggleEnabled.as_view()),
     path('methods/<uuid:id>/toggle/<str:property>', apiviews.MethodToggles.as_view()),
     path('products/<uuid:id>/toggleEnabled', apiviews.ProductToggleEnabled.as_view()),
+    path('deposits/<uuid:id>/toggleEnabled', apiviews.DepositToggleEnabled.as_view()),
 ]
