@@ -93,14 +93,14 @@
                     <div class="col text-right">
                         {{ payment.amount }}
                     </div>
-                    {% if tab_open %}
-                        <div class="col-1 text-center">
+                    <div class="col-1 text-center">
+                        {% if tab_open and not hide_delete_payment %}
                             <button type="submit" form="deletePayment{{ payment.id }}Form"
                                     class="btn btn-tool" name="delete">
                                 <i class="fas fa-trash"></i>
                             </button>
-                        </div>
-                    {% endif %}
+                        {% endif %}
+                    </div>
                 </div>
             {% endfor %}
         </div>

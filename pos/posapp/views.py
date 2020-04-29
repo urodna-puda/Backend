@@ -610,8 +610,8 @@ class Waiter(WaiterLoginRequiredMixin, views.View):
                 tab = Tab()
                 slug = ''.join(
                     random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits + "+/") for _ in
-                    range(16))
-                tab.name = f"{request.user.username}'s temporary tab {slug}"
+                    range(11))
+                tab.name = f"@DIRECT {slug}"
                 tab.owner = request.user
                 try:
                     tab.clean()
@@ -634,6 +634,8 @@ class Waiter(WaiterLoginRequiredMixin, views.View):
                 context["next_url"] = reverse("waiter/direct/order")
                 context["replace_finish_button"] = True
                 context["products"] = Product.objects.filter(enabled=True)
+                context["payments"] = request.user.current_temp_tab.payments.all()
+                context["hide_delete_payment"] = True
                 return context.render()
 
         class Pay(TabBaseView):
@@ -781,9 +783,9 @@ class Manager(ManagerLoginRequiredMixin, views.View):
             )
 
             deposits = set()
-            deposits.update(open_tills.values_list('deposit',flat=True))
-            deposits.update(stopped_tills.values_list('deposit',flat=True))
-            deposits.update(counted_tills.values_list('deposit',flat=True))
+            deposits.update(open_tills.values_list('deposit', flat=True))
+            deposits.update(stopped_tills.values_list('deposit', flat=True))
+            deposits.update(counted_tills.values_list('deposit', flat=True))
             context["deposits"] = deposits
             context["deposit_filter"] = deposit_filter
 

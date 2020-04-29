@@ -24,11 +24,11 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-12{% if tab_open %} col-md-7{% endif %}">
-                {% include "waiter/tabs/items_card.html" %}
+                {% include "waiter/tabs/components/items.card.html" %}
             </div>
             {% if tab_open and tab_my %}
                 <div class="col-12 col-md-5">
-                    {% include "waiter/tabs/payment_card.html"   %}
+                    {% include "waiter/tabs/components/payment.card.html" %}
                 </div>
                 {% if transfer_request_exists %}
                     <div class="col-12 col-md-4">
@@ -153,8 +153,8 @@
     </div>
     {% if tab_open %}
         <!--MODALS-->
-        {% include "waiter/tabs/confirm_change_modal.html" %}
-        {% include "waiter/tabs/request_void_modal.html" %}
+        {% include "waiter/tabs/components/confirm_change.modal.html" %}
+        {% include "waiter/tabs/components/request_void.modal.html" %}
         <!--FAKE FORMS-->
         {% for payment in payments %}
             <form action="{% url "waiter/tabs/tab" id %}" method="post" id="deletePayment{{ payment.id }}Form">

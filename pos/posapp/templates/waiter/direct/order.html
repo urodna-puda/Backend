@@ -6,6 +6,10 @@
     Direct order - Ordering
 {% endblock %}
 
+{% block description %}
+    <span data-toggle="tooltip" title="This order will be displayed as tab {{ tab.name }} in other pages">{{ tab.name }}</span>
+{% endblock %}
+
 {% block no_description %}{% endblock %}
 
 {% block breadcrumbs %}
@@ -19,7 +23,7 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-12 col-md-6">
-                {% include "waiter/tabs/items_card.html" %}
+                {% include "waiter/tabs/components/items.card.html" %}
             </div>
             <div class="col-12 col-md-6">
                 <div class="card">
@@ -29,7 +33,7 @@
                         </h2>
                     </div>
                     <div class="card-body">
-                        {% include "waiter/tabs/order_panel.html" %}
+                        {% include "waiter/tabs/components/order.panel.html" %}
                     </div>
                     <div class="card-footer text-right">
                         <button type="button" class="btn btn-primary" id="createOrder">Order</button>
@@ -39,7 +43,7 @@
         </div>
     </div>
     <!--MODALS-->
-    {% include "waiter/tabs/request_void_modal.html" %}
+    {% include "waiter/tabs/components/request_void.modal.html" %}
 {% endblock %}
 
 {% block javascript %}
