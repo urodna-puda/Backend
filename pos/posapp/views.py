@@ -1245,6 +1245,9 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
         ("Finance", "director/finance", [
             ("Currencies", "director/finance/currencies", []),
             ("Payment methods", "director/finance/methods", []),
+            ("Deposits", "director/finance/deposits", [
+                ("Create deposit", "director/finance/deposits/create", []),
+            ]),
         ]),
         ("Units", "director/units", []),
         ("Menu", "director/menu", [
@@ -1262,6 +1265,9 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
         links = [
             ("Currencies", "director/finance/currencies", []),
             ("Payment methods", "director/finance/methods", []),
+            ("Deposits", "director/finance/deposits", [
+                ("Create deposit", "director/finance/deposits/create", []),
+            ]),
         ]
         breadcrumbs = [
             ("Home", "index"),
