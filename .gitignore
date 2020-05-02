@@ -1,6 +1,6 @@
 
-# Created by https://www.gitignore.io/api/venv,macos,django,python,windows,intellij
-# Edit at https://www.gitignore.io/?templates=venv,macos,django,python,windows,intellij
+# Created by https://www.gitignore.io/api/venv,macos,django,python,windows,intellij,visualstudiocode
+# Edit at https://www.gitignore.io/?templates=venv,macos,django,python,windows,intellij,visualstudiocode
 
 ### Django ###
 *.log
@@ -298,6 +298,17 @@ venv.bak/
 pip-selfcheck.json
 !/.env
 
+### VisualStudioCode ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+### VisualStudioCode Patch ###
+# Ignore all local history of files
+.history
+
 ### Windows ###
 # Windows thumbnail cache files
 Thumbs.db
@@ -324,6 +335,6 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-# End of https://www.gitignore.io/api/venv,macos,django,python,windows,intellij
+# End of https://www.gitignore.io/api/venv,macos,django,python,windows,intellij,visualstudiocode
 
 .idea/misc.xml
