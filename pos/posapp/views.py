@@ -1345,7 +1345,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                                            "to prevent further use.")
                         return redirect(reverse("director/finance/methods"))
 
-        class Deposits(DirectorLoginRequiredMixin, views.View):
+        class Deposits(DirectorLoginRequiredMixin, BaseView):
 
             def get(self, request):
                 context = Context(request, 'director/finance/deposits/index.html')
@@ -1372,7 +1372,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                         messages.error(request, 'Deleting deposit failed, deposit does not exist')
                 return self.get(request)
 
-            class Edit(DirectorLoginRequiredMixin, views.View):
+            class Edit(DirectorLoginRequiredMixin, BaseView):
                 def get(self, request, id=None):
                     context = Context(request, 'director/finance/deposits/edit.html')
                     context['id'] = id
