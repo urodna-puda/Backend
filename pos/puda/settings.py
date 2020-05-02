@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'adminlte3_theme',
     'django.contrib.admin',
     'channels',
+    'django_fsm',
+    'django_fsm_log',
 ]
 
 MIDDLEWARE = [
