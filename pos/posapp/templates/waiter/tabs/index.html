@@ -101,7 +101,6 @@
                                             <span class="text-xs text-muted">{{ variant.note }}</span>
                                         </td>
                                         <td class="text-right">
-
                                             {% if variant.showOrdered %}
                                                 <span class="badge badge-warning" data-toggle="tooltip"
                                                       data-placement="top"
@@ -122,6 +121,16 @@
                                                       data-placement="top"
                                                       title="Finished">{{ variant.servedCount }}</span>
                                             {% endif %}
+                                            <button class="orderAgainButton btn btn-sm btn-tool" data-toggle="modal"
+                                                    data-target="#orderModal" data-product-id="{{ product.id }}"
+                                                    data-note="{{ variant.note }}" data-tab-id="{{ tab.id }}"
+                                                    data-tab-name="{{ tab.name }}">
+                                                <span class="fa-layers" data-toggle="tooltip" title="Order again">
+                                                    <i class="fas fa-shopping-cart"></i>
+                                                    <i class="fas fa-redo-alt fa-inverse"
+                                                       data-fa-transform="shrink-9 up-2 right-3"></i>
+                                                </span>
+                                            </button>
                                         </td>
                                     </tr>
                                 {% endfor %}
@@ -198,11 +207,15 @@
                 var button = $(event.relatedTarget); // Button that triggered the modal
                 var tabId = button.data('tab-id'); // Extract info from data-* attributes
                 var tabName = button.data('tab-name'); // Extract info from data-* attributes
+                var productId = button.data('product-id');
+                var note = button.data('note');
                 // If necessary, you could initiate an AJAX request here (and then do the updating in a callback).
                 // Update the modal's content. We'll use jQuery here, but you could use a data binding library or other methods instead.
                 var modal = $(this);
                 $("#orderModalTabName").text(tabName);
                 $("#orderTabId").val(tabId);
+                $('#newOrderProduct').val(productId);
+                $('#orderNote').val(note);
             });
             $("#createOrder").click(() => {
                 let tab = $("#orderTabId").val();
