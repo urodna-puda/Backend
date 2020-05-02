@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from uuid import uuid4
 
@@ -7,8 +8,11 @@ from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.dispatch import receiver
 from django.urls import reverse
 from django_countries.fields import CountryField
+from django_fsm import FSMField, transition, ConcurrentTransitionMixin
+from django_fsm_log.decorators import fsm_log_by
 from phonenumber_field.modelfields import PhoneNumberField
 
 
@@ -724,3 +728,89 @@ class TabTransferRequest(models.Model):
             return "Claim"
         else:
             return "Nonsense"
+
+
+def generate_expense_upload_to_filename(instance, filename):
+    return f"posapp/expenses/{instance.id}/{filename}"
+
+
+class Expense(ConcurrentTransitionMixin, models.Model):
+    NEW = "new"
+    REQUESTED = "requested"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    APPEALED = "appealed"
+    PAID = "paid"
+    STATES = [
+        (NEW, "New"),
+        (REQUESTED, "Requested"),
+        (ACCEPTED, "Accepted"),
+        (REJECTED, "Rejected"),
+        (APPEALED, "Appealed"),
+        (PAID, "Paid"),
+    ]
+    id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
+    amount = models.DecimalField(max_digits=15, decimal_places=3)
+    requested_at = models.DateTimeField(auto_now_add=True)
+    requested_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="expenses_requested")
+    description = models.TextField()
+    invoice_file = models.FileField(upload_to=generate_expense_upload_to_filename)
+    state = FSMField(default='new', choices=STATES, protected=True)
+
+    @fsm_log_by
+    @transition(field=state, source=NEW, target=REQUESTED,
+                permission=lambda instance, user: instance.requested_by == user,
+                conditions=[lambda instance: instance.invoice_file])
+    def submit(self):
+        pass
+
+    @fsm_log_by
+    @transition(field=state, source=[REQUESTED, APPEALED], target=ACCEPTED,
+                permission=lambda instance, user: user.is_director)
+    def accept(self, by):
+        pass
+
+    @fsm_log_by
+    @transition(field=state, source=[REQUESTED, APPEALED], target=REJECTED,
+                permission=lambda instance, user: user.is_director)
+    def reject(self, by):
+        pass
+
+    @fsm_log_by
+    @transition(field=state, source=REJECTED, target=APPEALED,
+                permission=lambda instance, user: user == instance.requested_by or user.is_director)
+    def appeal(self, by):
+        pass
+
+    @fsm_log_by
+    @transition(field=state, source=ACCEPTED, target=PAID, permission=lambda instance, user: user.is_director)
+    def pay(self):
+        pass
+
+    def clean(self):
+        super(Expense, self).clean()
+        if not self.invoice_file and self.state != "new":
+            raise ValidationError("Invoice field may only be empty if the state is new.")
+
+
+@receiver(models.signals.post_delete, sender=Expense)
+def auto_delete_file_on_delete(sender, instance, **kwargs):
+    if instance.invoice_file:
+        if os.path.isfile(instance.invoice_file.path):
+            os.remove(instance.invoice_file.path)
+
+
+@receiver(models.signals.pre_save, sender=Expense)
+def auto_delete_file_on_change(sender, instance, **kwargs):
+    if not instance.pk:
+        return False
+
+    try:
+        old_file = Expense.objects.get(pk=instance.pk).invoice_file
+    except Expense.DoesNotExist:
+        return False
+
+    new_file = instance.invoice_file
+    if not old_file == new_file:
+        if os.path.isfile(old_file.path):
+            os.remove(old_file.path)

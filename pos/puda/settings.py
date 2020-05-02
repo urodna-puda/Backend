@@ -144,6 +144,8 @@ STATIC_URL = '/static/'
 
 STATIC_ROOT = 'static'
 
+MEDIA_ROOT = 'media'
+
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
