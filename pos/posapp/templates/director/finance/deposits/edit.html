@@ -1,7 +1,10 @@
 {% extends "_base.html" %}
 
 {% block page_name %}
-    <i class="fas fa-user-plus"></i>
+    <span class="fa-layers fa-fw">
+        <i class="fas fa-cash-register"></i>
+        <i class="text-light fas fa-cog" data-fa-transform="shrink-6 down-4.2 right-4"></i>
+    </span>
     {% if is_edit %}Edit{% else %}Create{% endif %} deposit
 {% endblock %}
 
