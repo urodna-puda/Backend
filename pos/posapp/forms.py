@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.validators import UnicodeUsernameValidator
 
-from posapp.models import User, PaymentMethod, Product, ItemInProduct, Item
+from posapp.models import User, PaymentMethod, Product, ItemInProduct, Item, Deposit
 
 
 class CreateUserForm(forms.ModelForm):
@@ -107,3 +107,25 @@ class AuthenticationForm(forms.Form):
 
     def authenticate(self):
         return authenticate(username=self.cleaned_data.get('username'), password=self.cleaned_data.get('password'))
+
+
+class CreateEditDepositForm(forms.ModelForm):
+    class Meta:
+        model = Deposit
+        fields = ['name', 'methods', 'changeMethod', 'depositAmount', 'enabled']
+
+    def __init__(self, *args, **kwargs):
+        super(CreateEditDepositForm, self).__init__(*args, **kwargs)
+        for visible in self.visible_fields():
+            if isinstance(visible.field.widget, forms.widgets.TextInput):
+                visible.field.widget.attrs['class'] = 'form-control'
+            elif isinstance(visible.field.widget, forms.widgets.NumberInput):
+                visible.field.widget.attrs['class'] = 'form-control'
+            elif isinstance(visible.field.widget, forms.widgets.Select):
+                visible.field.widget.attrs['class'] = 'form-control selectpicker'
+                visible.field.widget.attrs['data-live-search'] = 'true'
+            elif isinstance(visible.field.widget, forms.widgets.SelectMultiple):
+                visible.field.widget.attrs['class'] = 'form-control selectpicker'
+                visible.field.widget.attrs['data-live-search'] = 'true'
+            elif isinstance(visible.field.widget, forms.widgets.CheckboxInput):
+                visible.field.widget.attrs['class'] = 'form-check-input'

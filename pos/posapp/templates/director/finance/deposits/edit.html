@@ -1,0 +1,104 @@
+{% extends "_base.html" %}
+
+{% block page_name %}
+    <span class="fa-layers fa-fw">
+        <i class="fas fa-cash-register"></i>
+        <i class="text-light fas fa-cog" data-fa-transform="shrink-6 down-4.2 right-4"></i>
+    </span>
+    {% if is_edit %}Edit{% else %}Create{% endif %} deposit
+{% endblock %}
+
+{% block no_description %}{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director" %}">Director</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director/finance" %}">Finance</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director/finance/deposits" %}">Deposits</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{% if is_edit %}Edit{% else %}Create{% endif %} deposit</li>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row">
+            {% if form.non_field_errors %}
+                <div class="card bg-gradient-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+        </div>
+        <div class="row">
+            <div class="col-lg-8 col-sm-12">
+                <div class="card card-default">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-cogs"></i>
+                            Deposit details
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="
+                                {% if is_edit %}{% url "director/finance/deposits/deposit" id %}{% else %}{% url "director/finance/deposits/create" %}{% endif %}">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="{{ form.name.id_for_label }}">Deposit name:</label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                    <div class="text-danger">{{ form.name.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ form.methods.id_for_label }}">Methods:</label>
+                                {{ form.methods }}
+                                {% if form.methods.errors %}
+                                    <div class="text-danger">{{ form.methods.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ form.changeMethod.id_for_label }}">Change method:</label>
+                                {{ form.changeMethod }}
+                                {% if form.changeMethod.errors %}
+                                    <div class="text-danger">{{ form.changeMethod.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ form.depositAmount.id_for_label }}">Amount:</label>
+                                {{ form.depositAmount }}
+                                {% if form.depositAmount.errors %}
+                                    <div class="text-danger">{{ form.depositAmount.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="form-group form-check">
+                                {{ form.enabled }}
+                                <label class="form-check-label" for="{{ form.enabled.id_for_label }}">Enabled</label>
+                                {% if form.enabled.errors %}
+                                    <div class="text-danger">{{ form.enabled.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                {% if is_edit %}
+                                    <i class="far fa-save"></i> Save
+                                {% else %}
+
+                                    <i class="fas fa-plus"></i> Create
+                                {% endif %}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block extra_head %}
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/css/bootstrap-select.css"/>
+{% endblock %}
+{% block javascript %}
+    {{ block.super }}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/js/bootstrap-select.min.js"></script>
+    <script>
+        $('.selectpicker').selectpicker()
+    </script>
+{% endblock %}

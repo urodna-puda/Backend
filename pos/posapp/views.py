@@ -18,8 +18,8 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet, \
-    CreateItemForm, AuthenticationForm
-from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, TillPaymentOptions, TillMoneyCount, \
+    CreateItemForm, AuthenticationForm, CreateEditDepositForm
+from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, Deposit, TillMoneyCount, \
     PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest, TabTransferRequest
 from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, \
     DirectorLoginRequiredMixin
@@ -920,7 +920,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                 context = Context(self.request, "manager/tills/assign.html")
 
                 context["users"] = User.objects.filter(is_waiter=True, current_till=None)
-                context["options"] = TillPaymentOptions.objects.filter(enabled=True)
+                context["options"] = Deposit.objects.filter(enabled=True)
 
                 return context.render()
 
@@ -931,8 +931,11 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                     options_id = self.request.POST["options"]
 
                     try:
-                        options = TillPaymentOptions.objects.get(id=uuid.UUID(options_id))
-                        till = options.create_till()
+                        options = Deposit.objects.get(id=uuid.UUID(options_id))
+                        if options.enabled:
+                            till = options.create_till()
+                        else:
+                            messages.error(self.request, 'Can not create Till from disabled Deposit')
                         for username in usernames:
                             user = User.objects.get(username=username)
                             if user.current_till:
@@ -951,7 +954,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                         messages.success(self.request, "The till was assigned successfully")
                     except User.DoesNotExist:
                         messages.error(self.request, "One of the selected users does not exist")
-                    except TillPaymentOptions.DoesNotExist:
+                    except Deposit.DoesNotExist:
                         messages.error(self.request,
                                        "The selected payment options config does not exist. It may have also been "
                                        "disabled by a director.")
@@ -961,7 +964,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                     messages.error(self.request, "Some required fields are missing")
 
                 context["users"] = User.objects.filter(is_waiter=True, current_till=None)
-                context["options"] = TillPaymentOptions.objects.filter(enabled=True)
+                context["options"] = Deposit.objects.filter(enabled=True)
 
                 return context.render()
 
@@ -1242,6 +1245,9 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
         ("Finance", "director/finance", [
             ("Currencies", "director/finance/currencies", []),
             ("Payment methods", "director/finance/methods", []),
+            ("Deposits", "director/finance/deposits", [
+                ("Create deposit", "director/finance/deposits/create", []),
+            ]),
         ]),
         ("Units", "director/units", []),
         ("Menu", "director/menu", [
@@ -1259,6 +1265,9 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
         links = [
             ("Currencies", "director/finance/currencies", []),
             ("Payment methods", "director/finance/methods", []),
+            ("Deposits", "director/finance/deposits", [
+                ("Create deposit", "director/finance/deposits/create", []),
+            ]),
         ]
         breadcrumbs = [
             ("Home", "index"),
@@ -1341,6 +1350,72 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                                            "payments or tills depend on it. You can remove it from the deposits "
                                            "to prevent further use.")
                         return redirect(reverse("director/finance/methods"))
+
+        class Deposits(DirectorLoginRequiredMixin, BaseView):
+
+            def get(self, *args, **kwargs):
+                context = Context(self.request, 'director/finance/deposits/index.html')
+                search = self.request.GET.get('search', '')
+                activity_filter = self.request.GET.get('activity_filter', '')
+                deposits = Deposit.objects.filter(name__icontains=search)
+                if activity_filter == 'enabled':
+                    deposits = deposits.filter(enabled=True)
+                elif activity_filter == 'disabled':
+                    deposits = deposits.filter(enabled=False)
+                context.add_pagination_context(deposits, 'deposits')
+                context['search'] = search
+                context['activity_filter'] = activity_filter
+                return context.render()
+
+            def post(self, *args, **kwargs):
+                if 'deleteDepositId' in self.request.POST:
+                    id = uuid.UUID(self.request.POST['deleteDepositId'])
+                    try:
+                        deposit = Deposit.objects.get(id=id)
+                        deposit.delete()
+                        messages.success(self.request, f'Deposit {deposit.name} deleted successfully')
+                    except Deposit.DoesNotExist:
+                        messages.error(self.request, 'Deleting deposit failed, deposit does not exist')
+                return self.get(self.request)
+
+            class Edit(DirectorLoginRequiredMixin, BaseView):
+                def get(self, id=None, *args, **kwargs):
+                    context = Context(self.request, 'director/finance/deposits/edit.html')
+                    context['id'] = id
+                    if id:
+                        context['is_edit'] = True
+                        try:
+                            deposit = Deposit.objects.get(id=id)
+                            context['form'] = CreateEditDepositForm(instance=deposit)
+
+                        except Deposit.DoesNotExist:
+                            messages.warning(self.request, "This deposit does not exist")
+                            return redirect(reverse('director/finance/deposits'))
+                    else:
+                        context['form'] = CreateEditDepositForm()
+                    return context.render()
+
+                def post(self, id=None, *args, **kwargs):
+                    context = Context(self.request, 'director/finance/deposits/edit.html')
+                    context['id'] = id
+                    if id:
+                        context['is_edit'] = True
+                        try:
+                            deposit = Deposit.objects.get(id=id)
+                        except Deposit.DoesNotExist:
+                            messages.error(self.request, "This deposit does not exist, so it could not be saved")
+                            return redirect(reverse('director/finance/deposits'))
+                    else:
+                        deposit = Deposit()
+
+                    form = CreateEditDepositForm(self.request.POST, instance=deposit)
+                    if form.is_valid():
+                        form.save()
+                        messages.success(self.request, "Deposit saved successfully!")
+                        return redirect(reverse('director/finance/deposits'))
+                    else:
+                        context['form'] = form
+                        return context.render()
 
     class Units(DirectorLoginRequiredMixin, BaseView):
         def get(self, *args, **kwargs):
