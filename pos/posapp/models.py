@@ -383,19 +383,22 @@ class Deposit(models.Model):
         verbose_name_plural = "Till payment options"
 
     def create_till(self):
-        till = Till()
-        till.changeMethod = self.changeMethod
-        till.depositAmount = self.depositAmount
-        till.deposit = self.name
-        till.clean()
-        till.save()
-        for method in self.methods.all():
-            count = TillMoneyCount()
-            count.till = till
-            count.paymentMethod = method
-            count.clean()
-            count.save()
-        return till
+        if self.enabled:
+            till = Till()
+            till.changeMethod = self.changeMethod
+            till.depositAmount = self.depositAmount
+            till.deposit = self.name
+            till.clean()
+            till.save()
+            for method in self.methods.all():
+                count = TillMoneyCount()
+                count.till = till
+                count.paymentMethod = method
+                count.clean()
+                count.save()
+            return till
+        else:
+            return None
 
     @property
     def method_names(self):

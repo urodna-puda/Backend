@@ -1347,10 +1347,10 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
 
         class Deposits(DirectorLoginRequiredMixin, BaseView):
 
-            def get(self, request):
-                context = Context(request, 'director/finance/deposits/index.html')
-                search = request.GET.get('search', '')
-                activity_filter = request.GET.get('activity_filter', '')
+            def get(self, *args, **kwargs):
+                context = Context(self.request, 'director/finance/deposits/index.html')
+                search = self.request.GET.get('search', '')
+                activity_filter = self.request.GET.get('activity_filter', '')
                 deposits = Deposit.objects.filter(name__icontains=search)
                 if activity_filter == 'enabled':
                     deposits = deposits.filter(enabled=True)
@@ -1361,20 +1361,20 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                 context['activity_filter'] = activity_filter
                 return context.render()
 
-            def post(self, request):
-                if 'deleteDepositId' in request.POST:
-                    id = uuid.UUID(request.POST['deleteDepositId'])
+            def post(self, *args, **kwargs):
+                if 'deleteDepositId' in self.request.POST:
+                    id = uuid.UUID(self.request.POST['deleteDepositId'])
                     try:
                         deposit = Deposit.objects.get(id=id)
                         deposit.delete()
-                        messages.success(request, f'Deposit {deposit.name} deleted successfully')
+                        messages.success(self.request, f'Deposit {deposit.name} deleted successfully')
                     except Deposit.DoesNotExist:
-                        messages.error(request, 'Deleting deposit failed, deposit does not exist')
-                return self.get(request)
+                        messages.error(self.request, 'Deleting deposit failed, deposit does not exist')
+                return self.get(self.request)
 
             class Edit(DirectorLoginRequiredMixin, BaseView):
-                def get(self, request, id=None):
-                    context = Context(request, 'director/finance/deposits/edit.html')
+                def get(self, id=None, *args, **kwargs):
+                    context = Context(self.request, 'director/finance/deposits/edit.html')
                     context['id'] = id
                     if id:
                         context['is_edit'] = True
@@ -1383,29 +1383,29 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                             context['form'] = CreateEditDepositForm(instance=deposit)
 
                         except Deposit.DoesNotExist:
-                            messages.warning(request, "This deposit does not exist")
+                            messages.warning(self.request, "This deposit does not exist")
                             return redirect(reverse('director/finance/deposits'))
                     else:
                         context['form'] = CreateEditDepositForm()
                     return context.render()
 
-                def post(self, request, id=None):
-                    context = Context(request, 'director/finance/deposits/edit.html')
+                def post(self, id=None, *args, **kwargs):
+                    context = Context(self.request, 'director/finance/deposits/edit.html')
                     context['id'] = id
                     if id:
                         context['is_edit'] = True
                         try:
                             deposit = Deposit.objects.get(id=id)
                         except Deposit.DoesNotExist:
-                            messages.error(request, "This deposit does not exist, so it could not be saved")
+                            messages.error(self.request, "This deposit does not exist, so it could not be saved")
                             return redirect(reverse('director/finance/deposits'))
                     else:
                         deposit = Deposit()
 
-                    form = CreateEditDepositForm(request.POST, instance=deposit)
+                    form = CreateEditDepositForm(self.request.POST, instance=deposit)
                     if form.is_valid():
                         form.save()
-                        messages.success(request, "Deposit saved successfully!")
+                        messages.success(self.request, "Deposit saved successfully!")
                         return redirect(reverse('director/finance/deposits'))
                     else:
                         context['form'] = form
