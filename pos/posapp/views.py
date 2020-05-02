@@ -932,7 +932,10 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
 
                     try:
                         options = Deposit.objects.get(id=uuid.UUID(options_id))
-                        till = options.create_till()
+                        if options.enabled:
+                            till = options.create_till()
+                        else:
+                            messages.error(self.request, 'Can not create Till from disabled Deposit')
                         for username in usernames:
                             user = User.objects.get(username=username)
                             if user.current_till:
