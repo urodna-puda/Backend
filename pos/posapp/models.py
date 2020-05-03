@@ -18,6 +18,29 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 # Create your models here.
 
+def action(group="state"):
+    def action_decorator(method):
+        def wrapper(*args, **kwargs):
+            return method(*args, **kwargs)
+
+        wrapper.action_name = method.__name__
+        wrapper.action_group = group
+        return wrapper
+    return action_decorator
+
+
+class HasActionsMixin:
+    @classmethod
+    def list_actions(cls, group="state"):
+        actions = []
+        for func in cls.__dict__.values():
+            if callable(func):
+                if hasattr(func, "action_group") and getattr(func, "action_group") == group:
+                    if hasattr(func, "action_name"):
+                        actions.append(getattr(func, "action_name"))
+        return actions
+
+
 class User(AbstractUser):
     WAITER = "waiter"
     MANAGER = "manager"
