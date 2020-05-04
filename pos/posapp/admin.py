@@ -178,6 +178,12 @@ class PaymentInOrderAdmin(admin.ModelAdmin):
     ordering = ['order', 'method', 'amount']
 
 
+class ExpenseAdmin(admin.ModelAdmin):
+    fields = ['amount', 'description', 'requested_by', 'invoice_file']
+    list_filter = ['requested_at', 'requested_by']
+    readonly_fields = ['requested_at', 'state']
+
+
 admin.site.register(User, UserAdmin)
 admin.site.register(Product, ProductAdmin)
 admin.site.register(UnitGroup, UnitGroupAdmin)
@@ -191,3 +197,4 @@ admin.site.register(PaymentMethod, PaymentMethodAdmin)
 admin.site.register(Deposit, DepositAdmin)
 admin.site.register(Till, TillAdmin)
 # admin.site.register(PaymentInOrder, PaymentInOrderAdmin)
+admin.site.register(Expense, ExpenseAdmin)

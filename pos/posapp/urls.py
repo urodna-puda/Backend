@@ -1,6 +1,8 @@
-from django.urls import path
+from django.urls import path, register_converter
 
-from posapp import views
+from posapp import converters, views
+
+register_converter(converters.ExpenseTransitionConverter, "exp_tr")
 
 urlpatterns = [
     path('', views.index, name='index'),
@@ -44,6 +46,13 @@ urlpatterns = [
     path('manager/requests/transfer', views.Manager.Requests.Transfer.as_view(), name='manager/requests/transfer'),
     path('manager/requests/transfer/<uuid:id>/<str:resolution>', views.Manager.Requests.Transfer.Resolve.as_view(),
          name='manager/requests/transfer/request/resolve'),
+    path('manager/expenses', views.Manager.Expenses.as_view(), name='manager/expenses'),
+    path('manager/expenses/create', views.Manager.Expenses.Expense.as_view(), name='manager/expenses/create'),
+    path('manager/expenses/<uuid:id>', views.Manager.Expenses.Expense.as_view(), name='manager/expenses/expense'),
+    path('manager/expenses/<uuid:id>/invoice_file', views.Manager.Expenses.Expense.InvoiceFile.as_view(),
+         name='manager/expenses/expense/invoice_file'),
+    path(r'manager/expenses/<uuid:id>/<exp_tr:transition>',
+         views.Manager.Expenses.Expense.Transition.as_view(), name='manager/expenses/expense/transition'),
     path('director', views.Director.as_view(), name='director'),
     path('director/finance', views.Director.Finance.as_view(), name='director/finance'),
     path('director/finance/currencies', views.Director.Finance.Currencies.as_view(),

@@ -59,6 +59,31 @@
                     </li>
                 </ul>
             </li>
+            <li class="nav-item has-treeview {% isopen page "manager/tills" %}">
+                <a href="{% url "manager/expenses" %}" class="nav-link {% isactive page "manager/expenses" %}">
+                    <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                    <p>
+                        Expenses
+                        <i class="right fas fa-angle-left"></i>
+                    </p>
+                </a>
+                <ul class="nav nav-treeview">
+                    <li class="nav-item">
+                        <a href="{% url "manager/expenses" %}"
+                           class="nav-link {% isactive page "manager/expenses" "True" %}">
+                            <i class="nav-icon fas fa-table"></i>
+                            <p>Overview</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url "manager/expenses/create" %}"
+                           class="nav-link {% isactive page "manager/expenses/create" %}">
+                            <i class="nav-icon fas fa-plus-square"></i>
+                            <p>Create</p>
+                        </a>
+                    </li>
+                </ul>
+            </li>
             {% if manager_role %}
                 <li class="nav-item has-treeview {% isopen page "manager/tills" %}">
                     <a href="{% url "manager/tills" %}" class="nav-link {% isactive page "manager/tills" %}">

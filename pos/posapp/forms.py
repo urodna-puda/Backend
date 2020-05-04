@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.validators import UnicodeUsernameValidator
 
-from posapp.models import User, PaymentMethod, Product, ItemInProduct, Item, Deposit
+from posapp.models import User, PaymentMethod, Product, ItemInProduct, Item, Deposit, Expense
 
 
 class CreateUserForm(forms.ModelForm):
@@ -129,3 +129,14 @@ class CreateEditDepositForm(forms.ModelForm):
                 visible.field.widget.attrs['data-live-search'] = 'true'
             elif isinstance(visible.field.widget, forms.widgets.CheckboxInput):
                 visible.field.widget.attrs['class'] = 'form-check-input'
+
+
+class CreateEditExpenseForm(forms.ModelForm):
+    class Meta:
+        model = Expense
+        fields = ["amount", "description"]
+
+    def __init__(self, *args, **kwargs):
+        super(CreateEditExpenseForm, self).__init__(*args, **kwargs)
+        for visible in self.visible_fields():
+            visible.field.widget.attrs['class'] = 'form-control'

@@ -1,0 +1,103 @@
+{% extends "_base.html" %}
+{% load generic %}
+
+{% block page_name %}
+    <i class="fas fa-file-invoice-dollar"></i>
+    Expenses
+{% endblock %}
+
+{% block no_description %}{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager" %}">Manager</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Expenses</li>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header border-bottom-0 pb-0">
+                        <h2 class="card-title">
+                            <i class="fas fa-table"></i>&nbsp;
+                            {{ director_role|yesno:"All expenses,Your expenses" }}
+                        </h2>
+                        <div class="card-tools">
+                            <a href="{% url "manager/expenses/create" %}" class="btn btn-tool">
+                                <i class="fas fa-plus"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover table-striped table-valign-middle">
+                            <thead>
+                            <tr>
+                                <th scope="col">Amount</th>
+                                <th scope="col">Requested at</th>
+                                {% if director_role %}
+                                    <th scope="col">Requested by</th>
+                                {% endif %}
+                                <th scope="col">State</th>
+                                <th scope="col">Invoice</th>
+                                <th scope="col">&nbsp;</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for expense in expenses %}
+                                <tr>
+                                    <td>{{ expense.amount }}</td>
+                                    <td>{{ expense.requested_at }}</td>
+                                    {% if director_role %}
+                                        <td>{{ expense.requested_by }}</td>
+                                    {% endif %}
+                                    <td>
+                                        <span class="badge badge-{{ expense.state_color }}">{{ expense.get_state_display }}</span>
+                                    </td>
+                                    <td>
+                                        {% if expense.invoice_file %}
+                                            <a href="{% url "manager/expenses/expense/invoice_file" expense.id %}"
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-file-download"></i> Download
+                                            </a>
+                                        {% else %}
+                                            <a href="{% url "manager/expenses/expense" expense.id %}"
+                                               class="btn btn-sm btn-outline-secondary">
+                                                <i class="fas fa-file-upload"></i>&nbsp;Add now
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url "manager/expenses/expense" expense.id %}"
+                                               class="btn btn-secondary">
+                                                {{ expense.button_comment }}
+                                            </a>
+                                            {% if expense.can_submit %}
+                                                <button type="button" class="btn btn-primary">Submit</button>
+                                            {% endif %}
+                                            {% if expense.can_accept %}
+                                                <button type="button" class="btn btn-success">Accept</button>
+                                            {% endif %}
+                                            {% if expense.can_reject %}
+                                                <button type="button" class="btn btn-danger">Reject</button>
+                                            {% endif %}
+                                            {% if expense.can_appeal %}
+                                                <button type="button" class="btn btn-warning">Appeal</button>
+                                            {% endif %}
+                                            {% if expense.can_pay %}
+                                                <button type="button" class="btn btn-info">Pay</button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,7 +1,13 @@
+import io
+import mimetypes
 import os
+import re
 from datetime import datetime
 from uuid import uuid4
 
+from PIL import Image
+from PyPDF2 import PdfFileReader
+from PyPDF2.utils import PdfReadError
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.contrib.auth.models import AbstractUser
@@ -11,7 +17,7 @@ from django.db import models
 from django.dispatch import receiver
 from django.urls import reverse
 from django_countries.fields import CountryField
-from django_fsm import FSMField, transition, ConcurrentTransitionMixin
+from django_fsm import FSMField, transition, ConcurrentTransitionMixin, has_transition_perm
 from django_fsm_log.decorators import fsm_log_by
 from phonenumber_field.modelfields import PhoneNumberField
 
@@ -757,7 +763,7 @@ def generate_expense_upload_to_filename(instance, filename):
     return f"posapp/expenses/{instance.id}/{filename}"
 
 
-class Expense(ConcurrentTransitionMixin, models.Model):
+class Expense(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
     NEW = "new"
     REQUESTED = "requested"
     ACCEPTED = "accepted"
@@ -772,43 +778,69 @@ class Expense(ConcurrentTransitionMixin, models.Model):
         (APPEALED, "Appealed"),
         (PAID, "Paid"),
     ]
+    STATE_COLORS = {
+        NEW: "secondary",
+        REQUESTED: "primary",
+        ACCEPTED: "success",
+        REJECTED: "danger",
+        APPEALED: "warning",
+        PAID: "info",
+    }
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
-    amount = models.DecimalField(max_digits=15, decimal_places=3)
+    amount = models.DecimalField(max_digits=15, decimal_places=3, validators=[MinValueValidator(0)])
     requested_at = models.DateTimeField(auto_now_add=True)
     requested_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="expenses_requested")
     description = models.TextField()
-    invoice_file = models.FileField(upload_to=generate_expense_upload_to_filename)
+    invoice_file = models.FileField(upload_to=generate_expense_upload_to_filename, null=True, blank=True)
     state = FSMField(default='new', choices=STATES, protected=True)
 
     @fsm_log_by
     @transition(field=state, source=NEW, target=REQUESTED,
                 permission=lambda instance, user: instance.requested_by == user,
                 conditions=[lambda instance: instance.invoice_file])
+    @action()
     def submit(self):
         pass
 
     @fsm_log_by
     @transition(field=state, source=[REQUESTED, APPEALED], target=ACCEPTED,
                 permission=lambda instance, user: user.is_director)
+    @action()
     def accept(self, by):
         pass
 
     @fsm_log_by
     @transition(field=state, source=[REQUESTED, APPEALED], target=REJECTED,
                 permission=lambda instance, user: user.is_director)
+    @action()
     def reject(self, by):
         pass
 
     @fsm_log_by
     @transition(field=state, source=REJECTED, target=APPEALED,
-                permission=lambda instance, user: user == instance.requested_by or user.is_director)
+                permission=lambda instance, user: instance.requested_by == user or user.is_director)
+    @action()
     def appeal(self, by):
         pass
 
     @fsm_log_by
     @transition(field=state, source=ACCEPTED, target=PAID, permission=lambda instance, user: user.is_director)
+    @action()
     def pay(self):
         pass
+
+    @property
+    def state_color(self):
+        return self.STATE_COLORS[self.state]
+
+    @property
+    def is_editable(self):
+        return self.state in [Expense.NEW, Expense.APPEALED]
+
+    @property
+    def invoice_file_type(self):
+        guess, _ = mimetypes.guess_type(self.invoice_file.name)
+        return "image/*" if re.compile(r'^image/.*$').match(guess) else guess
 
     def clean(self):
         super(Expense, self).clean()
@@ -833,7 +865,8 @@ def auto_delete_file_on_change(sender, instance, **kwargs):
     except Expense.DoesNotExist:
         return False
 
-    new_file = instance.invoice_file
-    if not old_file == new_file:
-        if os.path.isfile(old_file.path):
-            os.remove(old_file.path)
+    if old_file:
+        new_file = instance.invoice_file
+        if not old_file == new_file:
+            if os.path.isfile(old_file.path):
+                os.remove(old_file.path)

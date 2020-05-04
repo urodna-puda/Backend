@@ -1,9 +1,15 @@
 import decimal
+import io
+import mimetypes
+import os
 import random
 import string
 import uuid
 
+from PIL import Image, UnidentifiedImageError
 # Create your views here.
+from PyPDF2 import PdfFileReader
+from PyPDF2.utils import PdfReadError
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django import views
@@ -13,14 +19,16 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db.models import Q, ProtectedError
-from django.http import HttpResponseForbidden
+from django.db.transaction import atomic
+from django.http import HttpResponseForbidden, HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse
+from django_fsm import has_transition_perm
 
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet, \
-    CreateItemForm, AuthenticationForm, CreateEditDepositForm
+    CreateItemForm, AuthenticationForm, CreateEditDepositForm, CreateEditExpenseForm
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, Deposit, TillMoneyCount, \
-    PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest, TabTransferRequest
+    PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest, TabTransferRequest, Expense
 from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, \
     DirectorLoginRequiredMixin
 
@@ -1238,6 +1246,152 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
 
                     return redirect(reverse("manager/requests/transfer"))
 
+    class Expenses(ManagerLoginRequiredMixin, BaseView):
+        def get(self, *args, **kwargs):
+            context = Context(self.request, "manager/expenses/index.html")
+            if self.request.user.is_director:
+                context["expenses"] = Expense.objects.all()
+            else:
+                context["expenses"] = Expense.objects.filter(requested_by=self.request.user)
+
+            for expense in context["expenses"]:
+                expense.can_submit = has_transition_perm(expense.submit, self.request.user)
+                expense.can_accept = has_transition_perm(expense.accept, self.request.user)
+                expense.can_reject = has_transition_perm(expense.reject, self.request.user)
+                expense.can_appeal = has_transition_perm(expense.appeal, self.request.user)
+                expense.can_pay = has_transition_perm(expense.pay, self.request.user)
+                expense.button_comment = "Edit" if expense.requested_by == self.request.user and expense.is_editable \
+                    else "Review"
+            return context.render()
+
+        def post(self, *args, **kwargs):
+            return self.get(*args, **kwargs)
+
+        class Expense(ManagerLoginRequiredMixin, BaseView):
+            def get(self, id=None, form=None, *args, **kwargs):
+                context = Context(self.request, "manager/expenses/expense.html")
+                if id:
+                    try:
+                        expense = Expense.objects.get(id=id)
+                        context["invoice_file_type"] = expense.invoice_file_type
+                        if self.request.user.is_director:
+                            context["is_review"] = True
+                            context["expense"] = expense
+                            context["header"] = "Review expense"
+                        if expense.requested_by == self.request.user and expense.is_editable:
+                            context["is_edit"] = True
+                            context["form"] = form or CreateEditExpenseForm(instance=expense)
+                            context["header"] = "Edit expense"
+                            return context.render()
+                        else:
+                            messages.warning(self.request, "You need to be a director to access someone else's expense")
+                            return redirect(reverse("manager/expenses"))
+                    except Expense.DoesNotExist:
+                        messages.warning(self.request, "That expense does not exist")
+                        return redirect(reverse("manager/expenses"))
+                else:
+                    context["form"] = form or CreateEditExpenseForm()
+                    context["header"] = "Create expense"
+                    return context.render()
+
+            def post(self, id=None, *args, **kwargs):
+                if id:
+                    expense = Expense.objects.filter(id=id).first()
+                else:
+                    expense = Expense()
+                    expense.requested_by = self.request.user
+
+                form = None
+                if expense:
+                    if expense.requested_by == self.request.user and expense.is_editable:
+                        form = CreateEditExpenseForm(self.request.POST, instance=expense)
+                        if form.is_valid():
+                            form.save()
+                            return redirect(reverse("manager/expenses/expense", kwargs={"id": expense.id}))
+                    else:
+                        messages.error(self.request,
+                                       "Only the expense owner may edit it, and only in editable states")
+                return self.get(id, form, *args, **kwargs)
+
+            class InvoiceFile(ManagerLoginRequiredMixin, BaseView):
+                def get(self, id, *args, **kwargs):
+                    try:
+                        expense = Expense.objects.get(id=id)
+                        if self.request.user.is_director or expense.requested_by == self.request.user:
+                            file_path = os.path.join(settings.MEDIA_ROOT, expense.invoice_file.name)
+                            if os.path.exists(file_path):
+                                with open(file_path, 'rb') as f:
+                                    response = HttpResponse(f.read(),
+                                                            content_type=mimetypes.guess_type(
+                                                                expense.invoice_file.name))
+                                    name = expense.invoice_file.name.split('/')[-1]
+                                    response['Content-Disposition'] = f'inline;filename={name}'
+                                    return response
+                        else:
+                            messages.warning(self.request, "You need to be a director to access someone else's expense")
+                    except Expense.DoesNotExist:
+                        messages.error(self.request, "That expense does not exist")
+                    return redirect(reverse("manager/expenses"))
+
+                def post(self, id, *args, **kwargs):
+                    try:
+                        expense = Expense.objects.get(id=id)
+                        if expense.requested_by == self.request.user and expense.is_editable:
+                            if "invoice_file" in self.request.FILES:
+                                invoice_file = self.request.FILES["invoice_file"]
+                                data = io.BytesIO(invoice_file.read())
+                                try:
+                                    Image.open(data)
+                                    expense.invoice_file = invoice_file
+                                    expense.clean()
+                                    expense.save()
+                                except UnidentifiedImageError:
+                                    try:
+                                        PdfFileReader(data)
+                                        expense.invoice_file = invoice_file
+                                        expense.clean()
+                                        expense.save()
+                                    except PdfReadError:
+                                        messages.error(self.request,
+                                                       "Only image or PDF files are allowed. Upload one of those")
+                            else:
+                                messages.warning(self.request,
+                                                 "The file was missing in the request. Please try it again.")
+                        else:
+                            messages.error(self.request,
+                                           "Only the expense owner may edit it, and only in editable states")
+                        return redirect(reverse("manager/expenses/expense", kwargs={"id": id}))
+                    except Expense.DoesNotExist:
+                        messages.error(self.request, "That expense does not exist")
+                        return redirect(reverse("manager/expenses/expense", kwargs={"id": id}))
+                    except ValidationError as err:
+                        messages.error(self.request, f"Something went wrong while saving the file: {err.message}")
+                    return redirect(reverse("manager/expenses"))
+
+            class Transition(ManagerLoginRequiredMixin, BaseView):
+                def get(self, id, transition, *args, **kwargs):
+                    try:
+                        expense = Expense.objects.get(id=id)
+                        transition_method = getattr(expense, transition)
+
+                        if has_transition_perm(transition_method, self.request.user):
+                            with atomic():
+                                transition_method()
+                                expense.clean()
+                                expense.save()
+                                messages.success(self.request, "Expense state updated")
+                        else:
+                            messages.warning(self.request,
+                                             f"You don't have permission to perform {transition} on this expense or "
+                                             "its state does not allow it.")
+                    except Expense.DoesNotExist:
+                        messages.error(self.request, "An Expense with that ID does not exist")
+                        return redirect(reverse("manager/expenses"))
+                    except ValidationError as err:
+                        messages.error(self.request, "Error saving expense: " + err.message)
+
+                    return redirect(reverse("manager/expenses/expense", kwargs={"id": id}))
+
 
 class Director(DirectorLoginRequiredMixin, DisambiguationView):
     name = "Director"
@@ -1257,7 +1411,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
     ]
     breadcrumbs = [
         ("Home", "index"),
-        ("Director", ),
+        ("Director",),
     ]
 
     class Finance(DirectorLoginRequiredMixin, DisambiguationView):
@@ -1272,7 +1426,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
         breadcrumbs = [
             ("Home", "index"),
             ("Director", "director"),
-            ("Finance", ),
+            ("Finance",),
         ]
 
         class Currencies(DirectorLoginRequiredMixin, BaseView):
@@ -1482,7 +1636,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
         breadcrumbs = [
             ("Home", "index"),
             ("Director", "director"),
-            ("Menu", ),
+            ("Menu",),
         ]
 
         class Products(DirectorLoginRequiredMixin, BaseView):
