@@ -855,8 +855,8 @@ class Expense(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
         self.can_reject = has_transition_perm(self.reject, user)
         self.can_appeal = has_transition_perm(self.appeal, user)
         self.can_pay = has_transition_perm(self.pay, user)
-        self.button_comment = "Edit" if self.requested_by == user and self.is_editable \
-            else "Review"
+        self.can_edit = self.requested_by == user and self.is_editable
+        self.button_comment = "Edit" if self.can_edit else "Review"
 
 
 @receiver(models.signals.post_delete, sender=Expense)

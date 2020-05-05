@@ -61,11 +61,15 @@
                                                class="btn btn-sm btn-outline-primary">
                                                 <i class="fas fa-file-download"></i> Download
                                             </a>
-                                        {% else %}
+                                        {% elif expense.can_edit %}
                                             <a href="{% url "manager/expenses/expense" expense.id %}"
-                                               class="btn btn-sm btn-outline-secondary">
+                                               class="btn btn-sm btn-outline-success">
                                                 <i class="fas fa-file-upload"></i>&nbsp;Add now
                                             </a>
+                                        {% else %}
+                                            <span class="btn btn-sm btn-outline-secondary">
+                                                <i class="fas fa-spinner"></i> Waiting
+                                            </span>
                                         {% endif %}
                                     </td>
                                     <td>
@@ -76,7 +80,7 @@
                                             </a>
                                             {% if expense.can_submit %}
                                                 <a href="{% url "manager/expenses/expense/transition" expense.id "submit" %}"
-                                                class="btn btn-primary">Submit</a>
+                                                   class="btn btn-primary">Submit</a>
                                             {% endif %}
                                             {% if expense.can_accept %}
                                                 <a href="{% url "manager/expenses/expense/transition" expense.id "accept" %}"
