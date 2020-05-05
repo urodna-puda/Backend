@@ -29,7 +29,7 @@ def action(group="state"):
         def wrapper(*args, **kwargs):
             return method(*args, **kwargs)
 
-        wrapper.action_name = method.__name__
+        wrapper.__name__ = method.__name__
         wrapper.action_group = group
         return wrapper
     return action_decorator
@@ -42,8 +42,7 @@ class HasActionsMixin:
         for func in cls.__dict__.values():
             if callable(func):
                 if hasattr(func, "action_group") and getattr(func, "action_group") == group:
-                    if hasattr(func, "action_name"):
-                        actions.append(getattr(func, "action_name"))
+                    actions.append(func.__name__)
         return actions
 
 
