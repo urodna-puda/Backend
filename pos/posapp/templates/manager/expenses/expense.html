@@ -3,7 +3,11 @@
 
 {% block page_name %}
     <i class="fas fa-file-invoice-dollar"></i>
-    {{ expense.button_comment }} expense
+    {% if expense %}
+        {{ expense.button_comment }} expense
+    {% else %}
+        Create expense
+    {% endif %}
     <span class="badge badge-{{ expense.state_color }}">{{ expense.get_state_display }}</span>
 {% endblock %}
 
@@ -93,7 +97,7 @@
                             </div>
                         {% endif %}
                     </div>
-                    {% if is_edit %}
+                    {% if is_edit or not is_review %}
                         <div class="card-footer">
                             <button type="submit" class="btn btn-primary float-right" form="editForm">
                                 <i class="fas fa-save"></i>&nbsp;Save changes
@@ -102,61 +106,65 @@
                     {% endif %}
                 </div>
             </div>
-            <div class="col-6">
-                <div class="card">
-                    {% if expense.invoice_file %}
-                        {% if invoice_file_type == "image/*" %}
-                            <img class="card-img-top"
-                                 src="{% url "manager/expenses/expense/invoice_file" expense.id %}">
-                        {% elif invoice_file_type == "application/pdf" %}
-                            <div class="card-header">
-                                <h2 class="card-title">A PDF file</h2>
-                                <div class="card-tools">
-                                    <a class="btn btn-outline-primary"
-                                       href="{% url "manager/expenses/expense/invoice_file" expense.id %}">
-                                        <i class="far fa-file-pdf"></i> Download
-                                    </a>
+            {% if is_edit or is_review %}
+                <div class="col-6">
+                    <div class="card">
+                        {% if expense.invoice_file %}
+                            {% if invoice_file_type == "image/*" %}
+                                <img class="card-img-top"
+                                     src="{% url "manager/expenses/expense/invoice_file" expense.id %}">
+                            {% elif invoice_file_type == "application/pdf" %}
+                                <div class="card-header">
+                                    <h2 class="card-title">A PDF file</h2>
+                                    <div class="card-tools">
+                                        <a class="btn btn-outline-primary"
+                                           href="{% url "manager/expenses/expense/invoice_file" expense.id %}">
+                                            <i class="far fa-file-pdf"></i> Download
+                                        </a>
+                                    </div>
                                 </div>
-                            </div>
+                            {% else %}
+                                <div class="card-header">
+                                    <h2 class="card-title">Unknown file type</h2>
+                                    <div class="card-tools">
+                                        <a class="btn btn-outline-primary"
+                                           href="{% url "manager/expenses/expense/invoice_file" expense.id %}">
+                                            <i class="far fa-download"></i> Download
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endif %}
                         {% else %}
-                            <div class="card-header">
-                                <h2 class="card-title">Unknown file type</h2>
-                                <div class="card-tools">
-                                    <a class="btn btn-outline-primary"
-                                       href="{% url "manager/expenses/expense/invoice_file" expense.id %}">
-                                        <i class="far fa-download"></i> Download
-                                    </a>
-                                </div>
+                            <div class="card-header"><h2 class="card-title">No invoice file - upload one now</h2></div>
+                        {% endif %}
+                        {% if is_edit %}
+                            <div class="card-body">
+                                <form action="{% url "manager/expenses/expense/invoice_file" expense.id %}"
+                                      method="post"
+                                      id="newInvoiceFileForm" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <div class="input-group mb-3">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"
+                                                  id="newInvoiceFileLabel">New invoice file</span>
+                                        </div>
+                                        <div class="custom-file">
+                                            <input type="file" class="custom-file-input" id="newInputFile" required
+                                                   name="invoice_file" aria-describedby="newInvoiceFileLabel">
+                                            <label class="custom-file-label" for="newInputFile">Choose file</label>
+                                        </div>
+                                        <div class="input-group-append">
+                                            <button type="submit" form="newInvoiceFileForm" class="btn btn-primary">
+                                                <i class="fas fa-upload"></i>&nbsp;Upload
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
                             </div>
                         {% endif %}
-                    {% else %}
-                        <div class="card-header"><h2 class="card-title">No invoice file - upload one now</h2></div>
-                    {% endif %}
-                    {% if is_edit %}
-                        <div class="card-body">
-                            <form action="{% url "manager/expenses/expense/invoice_file" expense.id %}" method="post"
-                                  id="newInvoiceFileForm" enctype="multipart/form-data">
-                                {% csrf_token %}
-                                <div class="input-group mb-3">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text" id="newInvoiceFileLabel">New invoice file</span>
-                                    </div>
-                                    <div class="custom-file">
-                                        <input type="file" class="custom-file-input" id="newInputFile" required
-                                               name="invoice_file" aria-describedby="newInvoiceFileLabel">
-                                        <label class="custom-file-label" for="newInputFile">Choose file</label>
-                                    </div>
-                                    <div class="input-group-append">
-                                        <button type="submit" form="newInvoiceFileForm" class="btn btn-primary">
-                                            <i class="fas fa-upload"></i>&nbsp;Upload
-                                        </button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    {% endif %}
+                    </div>
                 </div>
-            </div>
+            {% endif %}
         </div>
         <div class="row">
             <div class="col-12">
