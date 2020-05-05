@@ -1,6 +1,7 @@
 image: docker.gitlab.blep.cz/blep.cz/pipenv-runner
 
 before_script:
+  - 'which git || ( apt-get update -y && apt-get install git -y )'
   - eval $(ssh-agent -s)
   - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
   - mkdir -p ~/.ssh
