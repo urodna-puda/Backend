@@ -19,24 +19,23 @@
 {% block page_actions %}
     <div class="btn-group float-right" role="group">
         {% if expense.can_submit %}
-            <a href="{% url "manager/expenses/expense/transition" expense.id "submit" %}"
-               class="btn btn-primary">Submit</a>
+            <button type="submit" form="submitForm" class="btn btn-primary">Submit</button>
         {% endif %}
         {% if expense.can_accept %}
-            <a href="{% url "manager/expenses/expense/transition" expense.id "accept" %}"
-               class="btn btn-success">Accept</a>
+            <button type="submit" form="acceptForm" class="btn btn-success">Accept</button>
         {% endif %}
         {% if expense.can_reject %}
-            <a href="{% url "manager/expenses/expense/transition" expense.id "reject" %}"
-               class="btn btn-danger">Reject</a>
+            <button type="button" data-toggle="modal" data-target="#rejectionModal" class="btn btn-danger">
+                Reject
+            </button>
         {% endif %}
         {% if expense.can_appeal %}
-            <a href="{% url "manager/expenses/expense/transition" expense.id "appeal" %}"
-               class="btn btn-warning">Appeal</a>
+            <button type="button" data-toggle="modal" data-target="#appealModal" class="btn btn-warning">
+                Appeal
+            </button>
         {% endif %}
         {% if expense.can_pay %}
-            <a href="{% url "manager/expenses/expense/transition" expense.id "pay" %}"
-               class="btn btn-info">Pay</a>
+            <button type="submit" form="payForm" class="btn btn-info">Pay</button>
         {% endif %}
     </div>
 {% endblock %}
@@ -165,4 +164,80 @@
             </div>
         </div>
     </div>
+    <!--MODALS-->
+    {% if expense.can_reject %}
+        <div class="modal fade" tabindex="-1" role="dialog" id="rejectionModal">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Reject expense</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="post" id="rejectionForm"
+                              action="{% url "manager/expenses/expense/transition" expense.id "reject" %}">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="description">Reason of rejection</label>
+                                <textarea name="description" id="description" class="form-control"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" form="rejectionForm" class="btn btn-danger">Reject expense</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    {% if expense.can_appeal %}
+        <div class="modal fade" tabindex="-1" role="dialog" id="appealModal">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Appeal rejection</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="post" id="appealForm"
+                              action="{% url "manager/expenses/expense/transition" expense.id "appeal" %}">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="description">Reason of appeal</label>
+                                <textarea name="description" id="description" class="form-control"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" form="appealForm" class="btn btn-warning">Appeal rejection</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    <!--FAKE FORMS-->
+    {% if expense.can_submit %}
+        <form method="post" id="submitForm"
+              action="{% url "manager/expenses/expense/transition" expense.id "submit" %}">
+            {% csrf_token %}
+        </form>
+    {% endif %}
+    {% if expense.can_accept %}
+        <form method="post" id="acceptForm"
+              action="{% url "manager/expenses/expense/transition" expense.id "accept" %}">
+            {% csrf_token %}
+        </form>
+    {% endif %}
+    {% if expense.can_pay %}
+        <form method="post" id="payForm"
+              action="{% url "manager/expenses/expense/transition" expense.id "pay" %}">
+            {% csrf_token %}
+        </form>
+    {% endif %}
 {% endblock %}

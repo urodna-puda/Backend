@@ -18,7 +18,7 @@ from django.dispatch import receiver
 from django.urls import reverse
 from django_countries.fields import CountryField
 from django_fsm import FSMField, transition, ConcurrentTransitionMixin, has_transition_perm
-from django_fsm_log.decorators import fsm_log_by
+from django_fsm_log.decorators import fsm_log_by, fsm_log_description
 from phonenumber_field.modelfields import PhoneNumberField
 
 
@@ -799,34 +799,36 @@ class Expense(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
                 permission=lambda instance, user: instance.requested_by == user,
                 conditions=[lambda instance: instance.invoice_file])
     @action()
-    def submit(self, by):
+    def submit(self, by, description):
         pass
 
     @fsm_log_by
     @transition(field=state, source=[REQUESTED], target=ACCEPTED,
                 permission=lambda instance, user: user.is_director)
     @action()
-    def accept(self, by):
+    def accept(self, by, description):
         pass
 
     @fsm_log_by
+    @fsm_log_description
     @transition(field=state, source=[REQUESTED], target=REJECTED,
                 permission=lambda instance, user: user.is_director)
     @action()
-    def reject(self, by):
+    def reject(self, by, description):
         pass
 
     @fsm_log_by
+    @fsm_log_description
     @transition(field=state, source=REJECTED, target=APPEALED,
                 permission=lambda instance, user: instance.requested_by == user or user.is_director)
     @action()
-    def appeal(self, by):
+    def appeal(self, by, description):
         pass
 
     @fsm_log_by
     @transition(field=state, source=ACCEPTED, target=PAID, permission=lambda instance, user: user.is_director)
     @action()
-    def pay(self, by):
+    def pay(self, by, description):
         pass
 
     @property

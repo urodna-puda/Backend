@@ -1462,14 +1462,15 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                     return redirect(reverse("manager/expenses"))
 
             class Transition(ManagerLoginRequiredMixin, BaseView):
-                def get(self, id, transition, *args, **kwargs):
+                def post(self, id, transition, *args, **kwargs):
                     try:
                         expense = Expense.objects.get(id=id)
                         transition_method = getattr(expense, transition)
 
                         if has_transition_perm(transition_method, self.request.user):
                             with atomic():
-                                transition_method(by=self.request.user)
+                                transition_method(by=self.request.user,
+                                                  description=self.request.POST.get('description', ''))
                                 expense.clean()
                                 expense.save()
                                 messages.success(self.request, "Expense state updated")
