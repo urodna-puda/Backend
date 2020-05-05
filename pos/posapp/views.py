@@ -1398,6 +1398,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                 else:
                     context["form"] = form or CreateEditExpenseForm()
                     context["header"] = "Create expense"
+                    context["is_create"] = True
                     return context.render()
 
             def post(self, id=None, *args, **kwargs):

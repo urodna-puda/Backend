@@ -25,7 +25,7 @@
                             {{ director_role|yesno:"All expenses,Your expenses" }}
                         </h2>
                         <div class="card-tools">
-                            {% if manager_role %}
+                            {% if director_role %}
                                 <select id="userSelect" onchange="refreshPage()" data-live-search="true">
                                     <option value="">User filter...</option>
                                     {% for user in user_options %}
@@ -88,7 +88,10 @@
                                             </a>
                                         {% else %}
                                             <span class="btn btn-sm btn-outline-secondary">
-                                                <i class="fas fa-spinner"></i> Waiting
+                                                <span class="fa-layers">
+                                                    <i class="far fa-file"></i>
+                                                    <i class="fas fa-times" data-fa-transform="shrink-8 left-0.6 down-1"></i>
+                                                </span> No file
                                             </span>
                                         {% endif %}
                                     </td>

@@ -56,7 +56,7 @@
                         </h2>
                     </div>
                     <div class="card-body">
-                        {% if is_edit or not is_review %}
+                        {% if is_edit or is_create %}
                             <form method="post" id="editForm">
                                 {% csrf_token %}
                                 <div class="form-group">
@@ -135,7 +135,16 @@
                                 </div>
                             {% endif %}
                         {% else %}
-                            <div class="card-header"><h2 class="card-title">No invoice file - upload one now</h2></div>
+                            <div class="card-header">
+                                <h2 class="card-title">
+                                    No invoice file -
+                                    {% if is_edit %}
+                                        upload one now
+                                    {% else %}
+                                        wait for {{ expense.requested_by.name }} to upload one
+                                    {% endif %}
+                                </h2>
+                            </div>
                         {% endif %}
                         {% if is_edit %}
                             <div class="card-body">
