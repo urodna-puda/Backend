@@ -23,7 +23,9 @@ from django.db.transaction import atomic
 from django.http import HttpResponseForbidden, HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse
+from django.utils.formats import localize
 from django_fsm import has_transition_perm
+from django_fsm_log.models import StateLog
 
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet, \
     CreateItemForm, AuthenticationForm, CreateEditDepositForm, CreateEditExpenseForm
@@ -53,6 +55,51 @@ class Notifications(list):
     def header(self):
         total = self.total
         return "1 Notification" if total == 1 else f"{total} Notifications"
+
+
+class TimelineItem:
+    def __init__(self, timestamp):
+        self.timestamp = timestamp
+        self.icon = '<i class="{classes} ion"></i>'
+        self.icon_classes = ''
+        self.header = ''
+        self.body = ''
+        self.footer = ''
+
+
+class Timeline:
+    def __init__(self, time_label_classes='bg-red', reverse=False):
+        self.time_label_classes = time_label_classes
+        self.reverse = reverse
+        self.items = []
+
+    def add_item(self, item: TimelineItem):
+        self.items.append(item)
+
+    def generate_html(self):
+        self.items.sort(reverse=self.reverse, key=lambda item: item.timestamp)
+        last_timestamp = ''
+        html = '<div class="timeline">'
+        for item in self.items:
+            date = item.timestamp.date()
+            if date != last_timestamp:
+                html += f'<div class="time-label"><span class="bg-info">{localize(date)}</span></div>'
+                last_timestamp = date
+            html += f'''
+            <div>
+                {item.icon.format(classes=item.icon_classes)}
+                <div class="timeline-item">
+                    <span class="time"><i class="fas fa-clock"></i> {localize(item.timestamp.time())}</span>
+                    <h3 class="timeline-header">{item.header}</h3>
+
+            '''
+            if item.body:
+                html += f'<div class="timeline-body">{item.body}</div>'
+            if item.footer:
+                html += f'<div class="timeline-footer">{item.footer}</div>'
+            html += '</div></div>'
+        html += '</div>'
+        return html
 
 
 class Context:
@@ -1278,6 +1325,59 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                         if not self.request.user.is_director and not expense.requested_by == self.request.user:
                             messages.warning(self.request, "You need to be a director to access someone else's expense")
                             return redirect(reverse("manager/expenses"))
+
+                        log_items = StateLog.objects.for_(expense)
+                        timeline = Timeline(time_label_classes='bg-info')
+                        for item in log_items:
+                            ti = TimelineItem(item.timestamp)
+                            if item.state == Expense.REQUESTED:
+                                ti.icon = '''
+                                <i class="bg-primary ion fa-layers">
+                                    <i class="far fa-comment-alt" data-fa-transform="right-0.5"></i>
+                                    <i class="fas fa-question" data-fa-transform="shrink-8 up-1.5"></i>
+                                </i>
+                                '''
+                                ti.header = f'<a href="#">{item.by.name}</a> submitted this expense for review'
+                            elif item.state == Expense.ACCEPTED:
+                                ti.icon = '''
+                                <i class="bg-success ion fa-layers">
+                                    <i class="far fa-comment-alt" data-fa-transform="right-0.5 flip-h"></i>
+                                    <i class="fas fa-check" data-fa-transform="shrink-8 up-1.5 right-0.8"></i>
+                                </i>
+                                '''
+                                ti.header = f'<a href="#">{item.by.name}</a> accepted this expense'
+                            elif item.state == Expense.REJECTED:
+                                ti.icon = '''
+                                <i class="bg-danger ion fa-layers">
+                                    <i class="far fa-comment-alt" data-fa-transform="right-0.5 flip-h"></i>
+                                    <i class="fas fa-times" data-fa-transform="shrink-8 up-1.5 right-0.8"></i>
+                                </i>
+                                '''
+                                ti.header = f'<a href="#">{item.by.name}</a> rejected this expense'
+                                ti.body = item.description
+                            elif item.state == Expense.APPEALED:
+                                ti.icon = '''
+                                <i class="bg-warning ion fa-layers">
+                                    <i class="far fa-comment-alt" data-fa-transform="right-0.5"></i>
+                                    <i class="fas fa-exclamation" data-fa-transform="shrink-8 up-1.5"></i>
+                                </i>
+                                '''
+                                ti.header = f'<a href="#">{item.by.name}</a> appealed the rejection'
+                                ti.body = item.description
+                            elif item.state == Expense.PAID:
+                                ti.icon = '''
+                                <i class="bg-info ion fa-layers">
+                                    <i class="far fa-comment-alt" data-fa-transform="right-0.5 flip-h"></i>
+                                    <i class="fas fa-dollar-sign" data-fa-transform="shrink-8 up-1.5 right-0.8"></i>
+                                </i>
+                                '''
+                                ti.header = f'<a href="#">{item.by.name}</a> paid this expense'
+                            timeline.add_item(ti)
+                        ti = TimelineItem(expense.requested_at)
+                        ti.icon_classes = 'bg-secondary fas fa-asterisk'
+                        ti.header = f'<a href="#">{expense.requested_by.name}</a> created this expense'
+                        timeline.add_item(ti)
+                        context["timeline"] = timeline.generate_html()
                         return context.render()
                     except Expense.DoesNotExist:
                         messages.warning(self.request, "That expense does not exist")
