@@ -1255,13 +1255,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                 context["expenses"] = Expense.objects.filter(requested_by=self.request.user)
 
             for expense in context["expenses"]:
-                expense.can_submit = has_transition_perm(expense.submit, self.request.user)
-                expense.can_accept = has_transition_perm(expense.accept, self.request.user)
-                expense.can_reject = has_transition_perm(expense.reject, self.request.user)
-                expense.can_appeal = has_transition_perm(expense.appeal, self.request.user)
-                expense.can_pay = has_transition_perm(expense.pay, self.request.user)
-                expense.button_comment = "Edit" if expense.requested_by == self.request.user and expense.is_editable \
-                    else "Review"
+                expense.set_transition_permissions(self.request.user)
             return context.render()
 
         def post(self, *args, **kwargs):
@@ -1274,18 +1268,17 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                     try:
                         expense = Expense.objects.get(id=id)
                         context["invoice_file_type"] = expense.invoice_file_type
+                        expense.set_transition_permissions(self.request.user)
                         if self.request.user.is_director:
                             context["is_review"] = True
                             context["expense"] = expense
-                            context["header"] = "Review expense"
                         if expense.requested_by == self.request.user and expense.is_editable:
                             context["is_edit"] = True
                             context["form"] = form or CreateEditExpenseForm(instance=expense)
-                            context["header"] = "Edit expense"
-                            return context.render()
-                        else:
+                        if not self.request.user.is_director and not expense.requested_by == self.request.user:
                             messages.warning(self.request, "You need to be a director to access someone else's expense")
                             return redirect(reverse("manager/expenses"))
+                        return context.render()
                     except Expense.DoesNotExist:
                         messages.warning(self.request, "That expense does not exist")
                         return redirect(reverse("manager/expenses"))
@@ -1376,7 +1369,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
 
                         if has_transition_perm(transition_method, self.request.user):
                             with atomic():
-                                transition_method()
+                                transition_method(by=self.request.user)
                                 expense.clean()
                                 expense.save()
                                 messages.success(self.request, "Expense state updated")

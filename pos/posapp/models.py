@@ -799,7 +799,7 @@ class Expense(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
                 permission=lambda instance, user: instance.requested_by == user,
                 conditions=[lambda instance: instance.invoice_file])
     @action()
-    def submit(self):
+    def submit(self, by):
         pass
 
     @fsm_log_by
@@ -826,7 +826,7 @@ class Expense(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
     @fsm_log_by
     @transition(field=state, source=ACCEPTED, target=PAID, permission=lambda instance, user: user.is_director)
     @action()
-    def pay(self):
+    def pay(self, by):
         pass
 
     @property
@@ -839,6 +839,8 @@ class Expense(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
 
     @property
     def invoice_file_type(self):
+        if not self.invoice_file:
+            return "empty"
         guess, _ = mimetypes.guess_type(self.invoice_file.name)
         return "image/*" if re.compile(r'^image/.*$').match(guess) else guess
 
@@ -846,6 +848,15 @@ class Expense(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
         super(Expense, self).clean()
         if not self.invoice_file and self.state != "new":
             raise ValidationError("Invoice field may only be empty if the state is new.")
+
+    def set_transition_permissions(self, user):
+        self.can_submit = has_transition_perm(self.submit, user)
+        self.can_accept = has_transition_perm(self.accept, user)
+        self.can_reject = has_transition_perm(self.reject, user)
+        self.can_appeal = has_transition_perm(self.appeal, user)
+        self.can_pay = has_transition_perm(self.pay, user)
+        self.button_comment = "Edit" if self.requested_by == user and self.is_editable \
+            else "Review"
 
 
 @receiver(models.signals.post_delete, sender=Expense)

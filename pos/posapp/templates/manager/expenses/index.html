@@ -75,19 +75,24 @@
                                                 {{ expense.button_comment }}
                                             </a>
                                             {% if expense.can_submit %}
-                                                <button type="button" class="btn btn-primary">Submit</button>
+                                                <a href="{% url "manager/expenses/expense/transition" expense.id "submit" %}"
+                                                class="btn btn-primary">Submit</a>
                                             {% endif %}
                                             {% if expense.can_accept %}
-                                                <button type="button" class="btn btn-success">Accept</button>
+                                                <a href="{% url "manager/expenses/expense/transition" expense.id "accept" %}"
+                                                   class="btn btn-success">Accept</a>
                                             {% endif %}
                                             {% if expense.can_reject %}
-                                                <button type="button" class="btn btn-danger">Reject</button>
+                                                <a href="{% url "manager/expenses/expense/transition" expense.id "reject" %}"
+                                                   class="btn btn-danger">Reject</a>
                                             {% endif %}
                                             {% if expense.can_appeal %}
-                                                <button type="button" class="btn btn-warning">Appeal</button>
+                                                <a href="{% url "manager/expenses/expense/transition" expense.id "appeal" %}"
+                                                   class="btn btn-warning">Appeal</a>
                                             {% endif %}
                                             {% if expense.can_pay %}
-                                                <button type="button" class="btn btn-info">Pay</button>
+                                                <a href="{% url "manager/expenses/expense/transition" expense.id "pay" %}"
+                                                   class="btn btn-info">Pay</a>
                                             {% endif %}
                                         </div>
                                     </td>

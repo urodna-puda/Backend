@@ -3,7 +3,8 @@
 
 {% block page_name %}
     <i class="fas fa-file-invoice-dollar"></i>
-    {{ header }} <span class="badge badge-{{ expense.state_color }}">{{ expense.get_state_display }}</span>
+    {{ expense.button_comment }} expense
+    <span class="badge badge-{{ expense.state_color }}">{{ expense.get_state_display }}</span>
 {% endblock %}
 
 {% block no_description %}{% endblock %}
@@ -16,21 +17,26 @@
 {% endblock %}
 
 {% block page_actions %}
-    <div class="text-right">
-        {% if can_submit %}
-            <button type="button" class="btn btn-primary">Submit</button>
+    <div class="btn-group float-right" role="group">
+        {% if expense.can_submit %}
+            <a href="{% url "manager/expenses/expense/transition" expense.id "submit" %}"
+               class="btn btn-primary">Submit</a>
         {% endif %}
-        {% if can_react %}
-            <div class="btn-group" role="group">
-                <button type="button" class="btn btn-success">Accept</button>
-                <button type="button" class="btn btn-danger">Reject</button>
-            </div>
+        {% if expense.can_accept %}
+            <a href="{% url "manager/expenses/expense/transition" expense.id "accept" %}"
+               class="btn btn-success">Accept</a>
         {% endif %}
-        {% if can_appeal %}
-            <button type="button" class="btn btn-warning">Appeal</button>
+        {% if expense.can_reject %}
+            <a href="{% url "manager/expenses/expense/transition" expense.id "reject" %}"
+               class="btn btn-danger">Reject</a>
         {% endif %}
-        {% if can_pay %}
-            <button type="button" class="btn btn-info">Pay</button>
+        {% if expense.can_appeal %}
+            <a href="{% url "manager/expenses/expense/transition" expense.id "appeal" %}"
+               class="btn btn-warning">Appeal</a>
+        {% endif %}
+        {% if expense.can_pay %}
+            <a href="{% url "manager/expenses/expense/transition" expense.id "pay" %}"
+               class="btn btn-info">Pay</a>
         {% endif %}
     </div>
 {% endblock %}
@@ -65,6 +71,15 @@
                                     {% endif %}
                                 </div>
                             </form>
+                        {% else %}
+                            <div class="form-group">
+                                <label for="amount">Amount</label>
+                                <span class="form-control" id="amount">{{ expense.amount }}</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="description">Description</label>
+                                <div class="form-control" id="description">{{ expense.description }}</div>
+                            </div>
                         {% endif %}
                         {% if expense.requested_by %}
                             <div class="form-group">
@@ -79,44 +94,46 @@
                             </div>
                         {% endif %}
                     </div>
-                    <div class="card-footer">
-                        <button type="submit" class="btn btn-primary float-right" form="editForm">
-                            <i class="fas fa-save"></i>&nbsp;Save changes
-                        </button>
-                    </div>
+                    {% if is_edit %}
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary float-right" form="editForm">
+                                <i class="fas fa-save"></i>&nbsp;Save changes
+                            </button>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
-            {% if is_edit %}
-                <div class="col-6">
-                    <div class="card">
-                        {% if expense.invoice_file %}
-                            {% if invoice_file_type == "image/*" %}
-                                <img class="card-img-top"
-                                     src="{% url "manager/expenses/expense/invoice_file" expense.id %}">
-                            {% elif invoice_file_type == "application/pdf" %}
-                                <div class="card-header">
-                                    <h2 class="card-title">A PDF file</h2>
-                                    <div class="card-tools">
-                                        <a class="btn btn-outline-primary"
-                                           href="{% url "manager/expenses/expense/invoice_file" expense.id %}">
-                                            <i class="far fa-file-pdf"></i> Download
-                                        </a>
-                                    </div>
+            <div class="col-6">
+                <div class="card">
+                    {% if expense.invoice_file %}
+                        {% if invoice_file_type == "image/*" %}
+                            <img class="card-img-top"
+                                 src="{% url "manager/expenses/expense/invoice_file" expense.id %}">
+                        {% elif invoice_file_type == "application/pdf" %}
+                            <div class="card-header">
+                                <h2 class="card-title">A PDF file</h2>
+                                <div class="card-tools">
+                                    <a class="btn btn-outline-primary"
+                                       href="{% url "manager/expenses/expense/invoice_file" expense.id %}">
+                                        <i class="far fa-file-pdf"></i> Download
+                                    </a>
                                 </div>
-                            {% else %}
-                                <div class="card-header">
-                                    <h2 class="card-title">Unknown file type</h2>
-                                    <div class="card-tools">
-                                        <a class="btn btn-outline-primary"
-                                           href="{% url "manager/expenses/expense/invoice_file" expense.id %}">
-                                            <i class="far fa-download"></i> Download
-                                        </a>
-                                    </div>
-                                </div>
-                            {% endif %}
+                            </div>
                         {% else %}
-                            <div class="card-header"><h2 class="card-title">No invoice file - upload one now</h2></div>
+                            <div class="card-header">
+                                <h2 class="card-title">Unknown file type</h2>
+                                <div class="card-tools">
+                                    <a class="btn btn-outline-primary"
+                                       href="{% url "manager/expenses/expense/invoice_file" expense.id %}">
+                                        <i class="far fa-download"></i> Download
+                                    </a>
+                                </div>
+                            </div>
                         {% endif %}
+                    {% else %}
+                        <div class="card-header"><h2 class="card-title">No invoice file - upload one now</h2></div>
+                    {% endif %}
+                    {% if is_edit %}
                         <div class="card-body">
                             <form action="{% url "manager/expenses/expense/invoice_file" expense.id %}" method="post"
                                   id="newInvoiceFileForm" enctype="multipart/form-data">
@@ -138,9 +155,9 @@
                                 </div>
                             </form>
                         </div>
-                    </div>
+                    {% endif %}
                 </div>
-            {% endif %}
+            </div>
         </div>
     </div>
 {% endblock %}
