@@ -1,9 +1,15 @@
 import decimal
+import io
+import mimetypes
+import os
 import random
 import string
 import uuid
 
+from PIL import Image, UnidentifiedImageError
 # Create your views here.
+from PyPDF2 import PdfFileReader
+from PyPDF2.utils import PdfReadError
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django import views
@@ -13,14 +19,18 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db.models import Q, ProtectedError
-from django.http import HttpResponseForbidden
+from django.db.transaction import atomic
+from django.http import HttpResponseForbidden, HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse
+from django.utils.formats import localize
+from django_fsm import has_transition_perm
+from django_fsm_log.models import StateLog
 
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet, \
-    CreateItemForm, AuthenticationForm, CreateEditDepositForm
+    CreateItemForm, AuthenticationForm, CreateEditDepositForm, CreateEditExpenseForm
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, Deposit, TillMoneyCount, \
-    PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest, TabTransferRequest
+    PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest, TabTransferRequest, Expense
 from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, \
     DirectorLoginRequiredMixin
 
@@ -45,6 +55,51 @@ class Notifications(list):
     def header(self):
         total = self.total
         return "1 Notification" if total == 1 else f"{total} Notifications"
+
+
+class TimelineItem:
+    def __init__(self, timestamp):
+        self.timestamp = timestamp
+        self.icon = '<i class="{classes} ion"></i>'
+        self.icon_classes = ''
+        self.header = ''
+        self.body = ''
+        self.footer = ''
+
+
+class Timeline:
+    def __init__(self, time_label_classes='bg-red', reverse=False):
+        self.time_label_classes = time_label_classes
+        self.reverse = reverse
+        self.items = []
+
+    def add_item(self, item: TimelineItem):
+        self.items.append(item)
+
+    def generate_html(self):
+        self.items.sort(reverse=self.reverse, key=lambda item: item.timestamp)
+        last_timestamp = ''
+        html = '<div class="timeline">'
+        for item in self.items:
+            date = item.timestamp.date()
+            if date != last_timestamp:
+                html += f'<div class="time-label"><span class="bg-info">{localize(date)}</span></div>'
+                last_timestamp = date
+            html += f'''
+            <div>
+                {item.icon.format(classes=item.icon_classes)}
+                <div class="timeline-item">
+                    <span class="time"><i class="fas fa-clock"></i> {localize(item.timestamp.time())}</span>
+                    <h3 class="timeline-header">{item.header}</h3>
+
+            '''
+            if item.body:
+                html += f'<div class="timeline-body">{item.body}</div>'
+            if item.footer:
+                html += f'<div class="timeline-footer">{item.footer}</div>'
+            html += '</div></div>'
+        html += '</div>'
+        return html
 
 
 class Context:
@@ -1238,6 +1293,212 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
 
                     return redirect(reverse("manager/requests/transfer"))
 
+    class Expenses(ManagerLoginRequiredMixin, BaseView):
+        def get(self, *args, **kwargs):
+            context = Context(self.request, "manager/expenses/index.html")
+            username_filter = self.request.GET.get('username', '')
+            state_filter = self.request.GET.get('state', '')
+
+            context["state_options"] = [{"value": value, "display": display} for value, display in Expense.STATES]
+            if self.request.user.is_director:
+                expenses = Expense.objects.all()
+                context["user_options"] = [{"username": username, "name": name} for username, name in set(
+                    (expense.requested_by.username, expense.requested_by.name) for expense in expenses)]
+            else:
+                expenses = Expense.objects.filter(requested_by=self.request.user)
+
+            if username_filter:
+                expenses = expenses.filter(requested_by__username=username_filter)
+            if state_filter:
+                expenses = expenses.filter(state=state_filter)
+            expenses = expenses.order_by("state_sort", "requested_at")
+
+            context.add_pagination_context(expenses, "expenses")
+            for expense in context["expenses"]["data"]:
+                expense.set_transition_permissions(self.request.user)
+
+            context["user_filter"] = username_filter
+            context["state_filter"] = state_filter
+            return context.render()
+
+        class Expense(ManagerLoginRequiredMixin, BaseView):
+            def get(self, id=None, form=None, *args, **kwargs):
+                context = Context(self.request, "manager/expenses/expense.html")
+                if id:
+                    try:
+                        expense = Expense.objects.get(id=id)
+                        context["invoice_file_type"] = expense.invoice_file_type
+                        expense.set_transition_permissions(self.request.user)
+                        if self.request.user.is_director:
+                            context["is_review"] = True
+                            context["expense"] = expense
+                        if expense.requested_by == self.request.user and expense.is_editable:
+                            context["is_edit"] = True
+                            context["form"] = form or CreateEditExpenseForm(instance=expense)
+                        if not self.request.user.is_director and not expense.requested_by == self.request.user:
+                            messages.warning(self.request, "You need to be a director to access someone else's expense")
+                            return redirect(reverse("manager/expenses"))
+
+                        log_items = StateLog.objects.for_(expense)
+                        timeline = Timeline(time_label_classes='bg-info')
+                        for item in log_items:
+                            ti = TimelineItem(item.timestamp)
+                            if item.state == Expense.REQUESTED:
+                                ti.icon = '''
+                                <i class="bg-primary ion fa-layers">
+                                    <i class="far fa-comment-alt" data-fa-transform="right-0.5"></i>
+                                    <i class="fas fa-question" data-fa-transform="shrink-8 up-1.5"></i>
+                                </i>
+                                '''
+                                ti.header = f'<a href="#">{item.by.name}</a> submitted this expense for review'
+                            elif item.state == Expense.ACCEPTED:
+                                ti.icon = '''
+                                <i class="bg-success ion fa-layers">
+                                    <i class="far fa-comment-alt" data-fa-transform="right-0.5 flip-h"></i>
+                                    <i class="fas fa-check" data-fa-transform="shrink-8 up-1.5 right-0.8"></i>
+                                </i>
+                                '''
+                                ti.header = f'<a href="#">{item.by.name}</a> accepted this expense'
+                            elif item.state == Expense.REJECTED:
+                                ti.icon = '''
+                                <i class="bg-danger ion fa-layers">
+                                    <i class="far fa-comment-alt" data-fa-transform="right-0.5 flip-h"></i>
+                                    <i class="fas fa-times" data-fa-transform="shrink-8 up-1.5 right-0.8"></i>
+                                </i>
+                                '''
+                                ti.header = f'<a href="#">{item.by.name}</a> rejected this expense'
+                                ti.body = item.description
+                            elif item.state == Expense.APPEALED:
+                                ti.icon = '''
+                                <i class="bg-warning ion fa-layers">
+                                    <i class="far fa-comment-alt" data-fa-transform="right-0.5"></i>
+                                    <i class="fas fa-exclamation" data-fa-transform="shrink-8 up-1.5"></i>
+                                </i>
+                                '''
+                                ti.header = f'<a href="#">{item.by.name}</a> appealed the rejection'
+                                ti.body = item.description
+                            elif item.state == Expense.PAID:
+                                ti.icon = '''
+                                <i class="bg-info ion fa-layers">
+                                    <i class="far fa-comment-alt" data-fa-transform="right-0.5 flip-h"></i>
+                                    <i class="fas fa-dollar-sign" data-fa-transform="shrink-8 up-1.5 right-0.8"></i>
+                                </i>
+                                '''
+                                ti.header = f'<a href="#">{item.by.name}</a> paid this expense'
+                            timeline.add_item(ti)
+                        ti = TimelineItem(expense.requested_at)
+                        ti.icon_classes = 'bg-secondary fas fa-asterisk'
+                        ti.header = f'<a href="#">{expense.requested_by.name}</a> created this expense'
+                        timeline.add_item(ti)
+                        context["timeline"] = timeline.generate_html()
+                        return context.render()
+                    except Expense.DoesNotExist:
+                        messages.warning(self.request, "That expense does not exist")
+                        return redirect(reverse("manager/expenses"))
+                else:
+                    context["form"] = form or CreateEditExpenseForm()
+                    context["header"] = "Create expense"
+                    return context.render()
+
+            def post(self, id=None, *args, **kwargs):
+                if id:
+                    expense = Expense.objects.filter(id=id).first()
+                else:
+                    expense = Expense()
+                    expense.requested_by = self.request.user
+
+                form = None
+                if expense:
+                    if expense.requested_by == self.request.user and expense.is_editable:
+                        form = CreateEditExpenseForm(self.request.POST, instance=expense)
+                        if form.is_valid():
+                            form.save()
+                            return redirect(reverse("manager/expenses/expense", kwargs={"id": expense.id}))
+                    else:
+                        messages.error(self.request,
+                                       "Only the expense owner may edit it, and only in editable states")
+                return self.get(id, form, *args, **kwargs)
+
+            class InvoiceFile(ManagerLoginRequiredMixin, BaseView):
+                def get(self, id, *args, **kwargs):
+                    try:
+                        expense = Expense.objects.get(id=id)
+                        if self.request.user.is_director or expense.requested_by == self.request.user:
+                            file_path = os.path.join(settings.MEDIA_ROOT, expense.invoice_file.name)
+                            if os.path.exists(file_path):
+                                with open(file_path, 'rb') as f:
+                                    response = HttpResponse(f.read(),
+                                                            content_type=mimetypes.guess_type(
+                                                                expense.invoice_file.name))
+                                    name = expense.invoice_file.name.split('/')[-1]
+                                    response['Content-Disposition'] = f'inline;filename={name}'
+                                    return response
+                        else:
+                            messages.warning(self.request, "You need to be a director to access someone else's expense")
+                    except Expense.DoesNotExist:
+                        messages.error(self.request, "That expense does not exist")
+                    return redirect(reverse("manager/expenses"))
+
+                def post(self, id, *args, **kwargs):
+                    try:
+                        expense = Expense.objects.get(id=id)
+                        if expense.requested_by == self.request.user and expense.is_editable:
+                            if "invoice_file" in self.request.FILES:
+                                invoice_file = self.request.FILES["invoice_file"]
+                                data = io.BytesIO(invoice_file.read())
+                                try:
+                                    Image.open(data)
+                                    expense.invoice_file = invoice_file
+                                    expense.clean()
+                                    expense.save()
+                                except UnidentifiedImageError:
+                                    try:
+                                        PdfFileReader(data)
+                                        expense.invoice_file = invoice_file
+                                        expense.clean()
+                                        expense.save()
+                                    except PdfReadError:
+                                        messages.error(self.request,
+                                                       "Only image or PDF files are allowed. Upload one of those")
+                            else:
+                                messages.warning(self.request,
+                                                 "The file was missing in the request. Please try it again.")
+                        else:
+                            messages.error(self.request,
+                                           "Only the expense owner may edit it, and only in editable states")
+                        return redirect(reverse("manager/expenses/expense", kwargs={"id": id}))
+                    except Expense.DoesNotExist:
+                        messages.error(self.request, "That expense does not exist")
+                        return redirect(reverse("manager/expenses/expense", kwargs={"id": id}))
+                    except ValidationError as err:
+                        messages.error(self.request, f"Something went wrong while saving the file: {err.message}")
+                    return redirect(reverse("manager/expenses"))
+
+            class Transition(ManagerLoginRequiredMixin, BaseView):
+                def post(self, id, transition, *args, **kwargs):
+                    try:
+                        expense = Expense.objects.get(id=id)
+                        transition_method = getattr(expense, transition)
+
+                        if has_transition_perm(transition_method, self.request.user):
+                            with atomic():
+                                transition_method(by=self.request.user,
+                                                  description=self.request.POST.get('description', ''))
+                                expense.clean()
+                                expense.save()
+                                messages.success(self.request, "Expense state updated")
+                        else:
+                            messages.warning(self.request,
+                                             f"You don't have permission to perform {transition} on this expense or "
+                                             "its state does not allow it.")
+                    except Expense.DoesNotExist:
+                        messages.error(self.request, "An Expense with that ID does not exist")
+                        return redirect(reverse("manager/expenses"))
+                    except ValidationError as err:
+                        messages.error(self.request, "Error saving expense: " + err.message)
+
+                    return redirect(reverse("manager/expenses/expense", kwargs={"id": id}))
+
 
 class Director(DirectorLoginRequiredMixin, DisambiguationView):
     name = "Director"
@@ -1257,7 +1518,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
     ]
     breadcrumbs = [
         ("Home", "index"),
-        ("Director", ),
+        ("Director",),
     ]
 
     class Finance(DirectorLoginRequiredMixin, DisambiguationView):
@@ -1272,7 +1533,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
         breadcrumbs = [
             ("Home", "index"),
             ("Director", "director"),
-            ("Finance", ),
+            ("Finance",),
         ]
 
         class Currencies(DirectorLoginRequiredMixin, BaseView):
@@ -1482,7 +1743,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
         breadcrumbs = [
             ("Home", "index"),
             ("Director", "director"),
-            ("Menu", ),
+            ("Menu",),
         ]
 
         class Products(DirectorLoginRequiredMixin, BaseView):

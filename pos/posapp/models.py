@@ -1,18 +1,51 @@
+import io
+import mimetypes
+import os
+import re
 from datetime import datetime
 from uuid import uuid4
 
+from PIL import Image
+from PyPDF2 import PdfFileReader
+from PyPDF2.utils import PdfReadError
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.dispatch import receiver
 from django.urls import reverse
 from django_countries.fields import CountryField
+from django_fsm import FSMField, transition, ConcurrentTransitionMixin, has_transition_perm
+from django_fsm_log.decorators import fsm_log_by, fsm_log_description
 from phonenumber_field.modelfields import PhoneNumberField
 
 
 # Create your models here.
+
+def action(group="state"):
+    def action_decorator(method):
+        def wrapper(*args, **kwargs):
+            return method(*args, **kwargs)
+
+        wrapper.action_name = method.__name__
+        wrapper.action_group = group
+        return wrapper
+    return action_decorator
+
+
+class HasActionsMixin:
+    @classmethod
+    def list_actions(cls, group="state"):
+        actions = []
+        for func in cls.__dict__.values():
+            if callable(func):
+                if hasattr(func, "action_group") and getattr(func, "action_group") == group:
+                    if hasattr(func, "action_name"):
+                        actions.append(getattr(func, "action_name"))
+        return actions
+
 
 class User(AbstractUser):
     WAITER = "waiter"
@@ -724,3 +757,130 @@ class TabTransferRequest(models.Model):
             return "Claim"
         else:
             return "Nonsense"
+
+
+def generate_expense_upload_to_filename(instance, filename):
+    return f"posapp/expenses/{instance.id}/{filename}"
+
+
+class Expense(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
+    NEW = "new"
+    REQUESTED = "requested"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    APPEALED = "appealed"
+    PAID = "paid"
+    STATES = [
+        (NEW, "New"),
+        (REQUESTED, "Requested"),
+        (ACCEPTED, "Accepted"),
+        (REJECTED, "Rejected"),
+        (APPEALED, "Appealed"),
+        (PAID, "Paid"),
+    ]
+    STATE_COLORS = {
+        NEW: "secondary",
+        REQUESTED: "primary",
+        ACCEPTED: "success",
+        REJECTED: "danger",
+        APPEALED: "warning",
+        PAID: "info",
+    }
+    id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
+    amount = models.DecimalField(max_digits=15, decimal_places=3, validators=[MinValueValidator(0)])
+    requested_at = models.DateTimeField(auto_now_add=True)
+    requested_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="expenses_requested")
+    description = models.TextField()
+    invoice_file = models.FileField(upload_to=generate_expense_upload_to_filename, null=True, blank=True)
+    state = FSMField(default='new', choices=STATES, protected=True)
+    state_sort = models.IntegerField(default=0)
+
+    @fsm_log_by
+    @transition(field=state, source=[NEW, APPEALED], target=REQUESTED,
+                permission=lambda instance, user: instance.requested_by == user,
+                conditions=[lambda instance: instance.invoice_file])
+    @action()
+    def submit(self, by, description):
+        self.state_sort = 1
+
+    @fsm_log_by
+    @transition(field=state, source=[REQUESTED], target=ACCEPTED,
+                permission=lambda instance, user: user.is_director)
+    @action()
+    def accept(self, by, description):
+        self.state_sort = 2
+
+    @fsm_log_by
+    @fsm_log_description
+    @transition(field=state, source=[REQUESTED], target=REJECTED,
+                permission=lambda instance, user: user.is_director)
+    @action()
+    def reject(self, by, description):
+        self.state_sort = 2
+
+    @fsm_log_by
+    @fsm_log_description
+    @transition(field=state, source=REJECTED, target=APPEALED,
+                permission=lambda instance, user: instance.requested_by == user or user.is_director)
+    @action()
+    def appeal(self, by, description):
+        self.state_sort = 3
+
+    @fsm_log_by
+    @transition(field=state, source=ACCEPTED, target=PAID, permission=lambda instance, user: user.is_director)
+    @action()
+    def pay(self, by, description):
+        self.state_sort = 4
+
+    @property
+    def state_color(self):
+        return self.STATE_COLORS[self.state]
+
+    @property
+    def is_editable(self):
+        return self.state in [Expense.NEW, Expense.APPEALED]
+
+    @property
+    def invoice_file_type(self):
+        if not self.invoice_file:
+            return "empty"
+        guess, _ = mimetypes.guess_type(self.invoice_file.name)
+        return "image/*" if re.compile(r'^image/.*$').match(guess) else guess
+
+    def clean(self):
+        super(Expense, self).clean()
+        if not self.invoice_file and self.state != "new":
+            raise ValidationError("Invoice field may only be empty if the state is new.")
+
+    def set_transition_permissions(self, user):
+        self.can_submit = has_transition_perm(self.submit, user)
+        self.can_accept = has_transition_perm(self.accept, user)
+        self.can_reject = has_transition_perm(self.reject, user)
+        self.can_appeal = has_transition_perm(self.appeal, user)
+        self.can_pay = has_transition_perm(self.pay, user)
+        self.can_edit = self.requested_by == user and self.is_editable
+        self.button_comment = "Edit" if self.can_edit else "Review"
+
+
+@receiver(models.signals.post_delete, sender=Expense)
+def auto_delete_file_on_delete(sender, instance, **kwargs):
+    if instance.invoice_file:
+        if os.path.isfile(instance.invoice_file.path):
+            os.remove(instance.invoice_file.path)
+
+
+@receiver(models.signals.pre_save, sender=Expense)
+def auto_delete_file_on_change(sender, instance, **kwargs):
+    if not instance.pk:
+        return False
+
+    try:
+        old_file = Expense.objects.get(pk=instance.pk).invoice_file
+    except Expense.DoesNotExist:
+        return False
+
+    if old_file:
+        new_file = instance.invoice_file
+        if not old_file == new_file:
+            if os.path.isfile(old_file.path):
+                os.remove(old_file.path)

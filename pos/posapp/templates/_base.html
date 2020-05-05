@@ -3,9 +3,10 @@
 
 {% block javascript %}
     <script type="text/javascript">
-        window.FontAwesomeConfig = {autoReplaceSvg: false}
+        window.FontAwesomeConfig = {autoReplaceSvg: "nest"}
     </script>
     <script src="https://kit.fontawesome.com/7635efe91d.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.4.456/pdf.min.js" integrity="sha256-O6polm3ZRTZEOAneYbvsKty3c3KRcDf20McwtlCga5s=" crossorigin="anonymous"></script>
     {{ block.super }}
     <script>
         $(function () {

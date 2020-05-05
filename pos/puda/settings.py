@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'adminlte3_theme',
     'django.contrib.admin',
     'channels',
+    'django_fsm',
+    'django_fsm_log',
 ]
 
 MIDDLEWARE = [
@@ -141,6 +143,8 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 STATIC_ROOT = 'static'
+
+MEDIA_ROOT = 'media'
 
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"

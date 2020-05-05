@@ -8,6 +8,7 @@ services:
     restart: unless-stopped
     volumes:
       - static_volume:/usr/src/pos/static/
+      - media_volume:/usr/src/pos/media/
     depends_on:
       - db
     networks:
@@ -21,6 +22,8 @@ services:
     image: pudapos:${VERSION}
     command: daphne -b 0.0.0.0 -p 8000 puda.asgi:application
     restart: unless-stopped
+    volumes:
+      - media_volume:/usr/src/pos/media/
     depends_on:
       - db
       - redis
@@ -74,6 +77,7 @@ services:
 volumes:
   postgres_data:
   static_volume:
+  media_volume:
 
 networks:
   puda:

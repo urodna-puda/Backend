@@ -1,0 +1,243 @@
+{% extends "_base.html" %}
+{% load generic %}
+
+{% block page_name %}
+    <i class="fas fa-file-invoice-dollar"></i>
+    {{ expense.button_comment }} expense
+    <span class="badge badge-{{ expense.state_color }}">{{ expense.get_state_display }}</span>
+{% endblock %}
+
+{% block no_description %}{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager" %}">Manager</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "manager/expenses" %}">Expenses</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Expense</li>
+{% endblock %}
+
+{% block page_actions %}
+    <div class="btn-group float-right" role="group">
+        {% if expense.can_submit %}
+            <button type="submit" form="submitForm" class="btn btn-primary">Submit</button>
+        {% endif %}
+        {% if expense.can_accept %}
+            <button type="submit" form="acceptForm" class="btn btn-success">Accept</button>
+        {% endif %}
+        {% if expense.can_reject %}
+            <button type="button" data-toggle="modal" data-target="#rejectionModal" class="btn btn-danger">
+                Reject
+            </button>
+        {% endif %}
+        {% if expense.can_appeal %}
+            <button type="button" data-toggle="modal" data-target="#appealModal" class="btn btn-warning">
+                Appeal
+            </button>
+        {% endif %}
+        {% if expense.can_pay %}
+            <button type="submit" form="payForm" class="btn btn-info">Pay</button>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-pencil-alt"></i>&nbsp;
+                            Expense details
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        {% if is_edit or not is_review %}
+                            <form method="post" id="editForm">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    <label for="{{ form.amount.id_for_label }}">Amount</label>
+                                    {{ form.amount }}
+                                    {% if form.amount.errors %}
+                                        <div class="text-danger">{{ form.amount.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="form-group">
+                                    <label for="{{ form.description.id_for_label }}">Description</label>
+                                    {{ form.description }}
+                                    {% if form.description.errors %}
+                                        <div class="text-danger">{{ form.description.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </form>
+                        {% else %}
+                            <div class="form-group">
+                                <label for="amount">Amount</label>
+                                <span class="form-control" id="amount">{{ expense.amount }}</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="description">Description</label>
+                                <div class="form-control" id="description">{{ expense.description }}</div>
+                            </div>
+                        {% endif %}
+                        {% if expense.requested_by %}
+                            <div class="form-group">
+                                <label for="requestedBy">Requested by</label>
+                                <span class="form-control" id="requestedBy">{{ expense.requested_by.name }}</span>
+                            </div>
+                        {% endif %}
+                        {% if expense.requested_at %}
+                            <div class="form-group">
+                                <label for="requestedBy">Requested at</label>
+                                <span class="form-control" id="requestedBy">{{ expense.requested_at }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% if is_edit %}
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary float-right" form="editForm">
+                                <i class="fas fa-save"></i>&nbsp;Save changes
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="card">
+                    {% if expense.invoice_file %}
+                        {% if invoice_file_type == "image/*" %}
+                            <img class="card-img-top"
+                                 src="{% url "manager/expenses/expense/invoice_file" expense.id %}">
+                        {% elif invoice_file_type == "application/pdf" %}
+                            <div class="card-header">
+                                <h2 class="card-title">A PDF file</h2>
+                                <div class="card-tools">
+                                    <a class="btn btn-outline-primary"
+                                       href="{% url "manager/expenses/expense/invoice_file" expense.id %}">
+                                        <i class="far fa-file-pdf"></i> Download
+                                    </a>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="card-header">
+                                <h2 class="card-title">Unknown file type</h2>
+                                <div class="card-tools">
+                                    <a class="btn btn-outline-primary"
+                                       href="{% url "manager/expenses/expense/invoice_file" expense.id %}">
+                                        <i class="far fa-download"></i> Download
+                                    </a>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="card-header"><h2 class="card-title">No invoice file - upload one now</h2></div>
+                    {% endif %}
+                    {% if is_edit %}
+                        <div class="card-body">
+                            <form action="{% url "manager/expenses/expense/invoice_file" expense.id %}" method="post"
+                                  id="newInvoiceFileForm" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text" id="newInvoiceFileLabel">New invoice file</span>
+                                    </div>
+                                    <div class="custom-file">
+                                        <input type="file" class="custom-file-input" id="newInputFile" required
+                                               name="invoice_file" aria-describedby="newInvoiceFileLabel">
+                                        <label class="custom-file-label" for="newInputFile">Choose file</label>
+                                    </div>
+                                    <div class="input-group-append">
+                                        <button type="submit" form="newInvoiceFileForm" class="btn btn-primary">
+                                            <i class="fas fa-upload"></i>&nbsp;Upload
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                {{ timeline|safe }}
+            </div>
+        </div>
+    </div>
+    <!--MODALS-->
+    {% if expense.can_reject %}
+        <div class="modal fade" tabindex="-1" role="dialog" id="rejectionModal">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Reject expense</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="post" id="rejectionForm"
+                              action="{% url "manager/expenses/expense/transition" expense.id "reject" %}">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="description">Reason of rejection</label>
+                                <textarea name="description" id="description" class="form-control"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" form="rejectionForm" class="btn btn-danger">Reject expense</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    {% if expense.can_appeal %}
+        <div class="modal fade" tabindex="-1" role="dialog" id="appealModal">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Appeal rejection</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="post" id="appealForm"
+                              action="{% url "manager/expenses/expense/transition" expense.id "appeal" %}">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="description">Reason of appeal</label>
+                                <textarea name="description" id="description" class="form-control"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" form="appealForm" class="btn btn-warning">Appeal rejection</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    <!--FAKE FORMS-->
+    {% if expense.can_submit %}
+        <form method="post" id="submitForm"
+              action="{% url "manager/expenses/expense/transition" expense.id "submit" %}">
+            {% csrf_token %}
+        </form>
+    {% endif %}
+    {% if expense.can_accept %}
+        <form method="post" id="acceptForm"
+              action="{% url "manager/expenses/expense/transition" expense.id "accept" %}">
+            {% csrf_token %}
+        </form>
+    {% endif %}
+    {% if expense.can_pay %}
+        <form method="post" id="payForm"
+              action="{% url "manager/expenses/expense/transition" expense.id "pay" %}">
+            {% csrf_token %}
+        </form>
+    {% endif %}
+{% endblock %}
