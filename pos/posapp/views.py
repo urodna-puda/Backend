@@ -1329,9 +1329,9 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                         expense = Expense.objects.get(id=id)
                         context["invoice_file_type"] = expense.invoice_file_type
                         expense.set_transition_permissions(self.request.user)
+                        context["expense"] = expense
                         if self.request.user.is_director:
                             context["is_review"] = True
-                            context["expense"] = expense
                         if expense.requested_by == self.request.user and expense.is_editable:
                             context["is_edit"] = True
                             context["form"] = form or CreateEditExpenseForm(instance=expense)
