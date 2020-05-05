@@ -1296,17 +1296,30 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
     class Expenses(ManagerLoginRequiredMixin, BaseView):
         def get(self, *args, **kwargs):
             context = Context(self.request, "manager/expenses/index.html")
+            username_filter = self.request.GET.get('username', '')
+            state_filter = self.request.GET.get('state', '')
+
+            context["state_options"] = [{"value": value, "display": display} for value, display in Expense.STATES]
             if self.request.user.is_director:
-                context["expenses"] = Expense.objects.all()
+                expenses = Expense.objects.all()
+                context["user_options"] = [{"username": username, "name": name} for username, name in set(
+                    (expense.requested_by.username, expense.requested_by.name) for expense in expenses)]
             else:
-                context["expenses"] = Expense.objects.filter(requested_by=self.request.user)
+                expenses = Expense.objects.filter(requested_by=self.request.user)
 
-            for expense in context["expenses"]:
+            if username_filter:
+                expenses = expenses.filter(requested_by__username=username_filter)
+            if state_filter:
+                expenses = expenses.filter(state=state_filter)
+            expenses = expenses.order_by("state_sort", "requested_at")
+
+            context.add_pagination_context(expenses, "expenses")
+            for expense in context["expenses"]["data"]:
                 expense.set_transition_permissions(self.request.user)
-            return context.render()
 
-        def post(self, *args, **kwargs):
-            return self.get(*args, **kwargs)
+            context["user_filter"] = username_filter
+            context["state_filter"] = state_filter
+            return context.render()
 
         class Expense(ManagerLoginRequiredMixin, BaseView):
             def get(self, id=None, form=None, *args, **kwargs):

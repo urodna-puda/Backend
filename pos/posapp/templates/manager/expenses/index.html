@@ -25,6 +25,26 @@
                             {{ director_role|yesno:"All expenses,Your expenses" }}
                         </h2>
                         <div class="card-tools">
+                            {% if manager_role %}
+                                <select id="userSelect" onchange="refreshPage()" data-live-search="true">
+                                    <option value="">User filter...</option>
+                                    {% for user in user_options %}
+                                        <option value="{{ user.username }}"
+                                                {% if user.username == user_filter %}selected{% endif %}>
+                                            {{ user.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            {% endif %}
+                            <select id="stateSelect" onchange="refreshPage()" data-live-search="true">
+                                <option value="">State filter...</option>
+                                {% for state in state_options %}
+                                    <option value="{{ state.value }}"
+                                            {% if state.value == state_filter %}selected{% endif %}>
+                                        {{ state.display }}
+                                    </option>
+                                {% endfor %}
+                            </select>
                             <a href="{% url "manager/expenses/create" %}" class="btn btn-tool">
                                 <i class="fas fa-plus"></i>
                             </a>
@@ -45,7 +65,7 @@
                             </tr>
                             </thead>
                             <tbody>
-                            {% for expense in expenses %}
+                            {% for expense in expenses.data %}
                                 <tr>
                                     <td>{{ expense.amount }}</td>
                                     <td>{{ expense.requested_at }}</td>
@@ -83,8 +103,90 @@
                             </tbody>
                         </table>
                     </div>
+                    <div class="card-footer border-top">
+                        <div class="row">
+                            <div class="col-6">
+                                Showing items {{ expenses.showing.from|add_one }}
+                                through {{ expenses.showing.to|add_one }}
+                                of {{ expenses.showing.of }}.
+                                &nbsp;
+                                Items per page:
+                                <select onchange="refreshPage();" id="pageLengthSelect">
+                                    {% for option in expenses.pages.page_length.options %}
+                                        <option value="{{ option }}"
+                                                {% if option == expenses.pages.page_length.value %}selected{% endif %}>{{ option }}
+                                            items
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-6 text-right">
+                                <div class="btn-group" role="group">
+                                    {% if expenses.pages.showPrevious %}
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="refreshPage(0);">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="refreshPage({{ expenses.pages.previous }})">
+                                            <i class=" fas fa-angle-left"></i>
+                                        </button>
+                                    {% endif %}
+                                    {% for link in expenses.pages.links %}
+                                        <button type="button"
+                                                class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
+                                                onclick="refreshPage({{ link.page }})">
+                                            {{ link.page|add_one }}
+                                        </button>
+                                    {% endfor %}
+                                    {% if expenses.pages.showNext %}
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="refreshPage({{ expenses.pages.next }})">
+                                            <i class="fas fa-angle-right"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="refreshPage({{ expenses.pages.last }})">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/css/bootstrap-select.min.css">
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/js/bootstrap-select.min.js"></script>
+    <script>
+        let userSelect = $('#userSelect');
+        let stateSelect = $('#stateSelect');
+
+        userSelect.selectpicker();
+        stateSelect.selectpicker();
+
+        function refreshPage(pageNumber) {
+            let page = (pageNumber || pageNumber === 0) ? pageNumber : {{ expenses.pages.page }};
+            let pageLength = $('#pageLengthSelect').val();
+            let username = userSelect.val();
+            let state = stateSelect.val();
+
+            let params = {};
+            if (page) params.page = page;
+            if (pageLength) params.page_length = pageLength;
+            if (username) params.username = username;
+            if (state) params.state = state;
+
+            window.location = `{% url "manager/expenses" %}?${$.param(params)}`;
+        }
+    </script>
 {% endblock %}

@@ -793,6 +793,7 @@ class Expense(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
     description = models.TextField()
     invoice_file = models.FileField(upload_to=generate_expense_upload_to_filename, null=True, blank=True)
     state = FSMField(default='new', choices=STATES, protected=True)
+    state_sort = models.IntegerField(default=0)
 
     @fsm_log_by
     @transition(field=state, source=[NEW, APPEALED], target=REQUESTED,
@@ -800,14 +801,14 @@ class Expense(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
                 conditions=[lambda instance: instance.invoice_file])
     @action()
     def submit(self, by, description):
-        pass
+        self.state_sort = 1
 
     @fsm_log_by
     @transition(field=state, source=[REQUESTED], target=ACCEPTED,
                 permission=lambda instance, user: user.is_director)
     @action()
     def accept(self, by, description):
-        pass
+        self.state_sort = 2
 
     @fsm_log_by
     @fsm_log_description
@@ -815,7 +816,7 @@ class Expense(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
                 permission=lambda instance, user: user.is_director)
     @action()
     def reject(self, by, description):
-        pass
+        self.state_sort = 2
 
     @fsm_log_by
     @fsm_log_description
@@ -823,13 +824,13 @@ class Expense(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
                 permission=lambda instance, user: instance.requested_by == user or user.is_director)
     @action()
     def appeal(self, by, description):
-        pass
+        self.state_sort = 3
 
     @fsm_log_by
     @transition(field=state, source=ACCEPTED, target=PAID, permission=lambda instance, user: user.is_director)
     @action()
     def pay(self, by, description):
-        pass
+        self.state_sort = 4
 
     @property
     def state_color(self):
