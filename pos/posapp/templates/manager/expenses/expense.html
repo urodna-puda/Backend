@@ -47,7 +47,7 @@
 {% block content %}
     <div class="container-fluid">
         <div class="row">
-            <div class="col-6">
+            <div class="col-12 col-lg-6">
                 <div class="card">
                     <div class="card-header">
                         <h2 class="card-title">
@@ -97,17 +97,27 @@
                             </div>
                         {% endif %}
                     </div>
-                    {% if is_edit or not is_review %}
-                        <div class="card-footer">
-                            <button type="submit" class="btn btn-primary float-right" form="editForm">
+                    {% if is_edit or is_create %}
+                        <div class="card-footer text-right">
+                            <button type="submit" class="btn btn-primary" form="editForm">
                                 <i class="fas fa-save"></i>&nbsp;Save changes
                             </button>
+                            {% if expense.can_submit %}
+                                <button type="submit" form="submitForm" class="btn btn-primary" data-toggle="tooltip"
+                                        title="This button does NOT save last changes of amount and description">
+                                    <span class="fa-layers">
+                                        <i class="far fa-comment-alt" data-fa-transform="right-0.5"></i>
+                                        <i class="fas fa-question" data-fa-transform="shrink-8 up-1.5"></i>
+                                    </span>&nbsp;
+                                    Submit
+                                </button>
+                            {% endif %}
                         </div>
                     {% endif %}
                 </div>
             </div>
             {% if is_edit or is_review %}
-                <div class="col-6">
+                <div class="col-12 col-lg-6">
                     <div class="card">
                         {% if expense.invoice_file %}
                             {% if invoice_file_type == "image/*" %}

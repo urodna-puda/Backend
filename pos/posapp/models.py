@@ -821,7 +821,7 @@ class Expense(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
     @fsm_log_by
     @fsm_log_description
     @transition(field=state, source=REJECTED, target=APPEALED,
-                permission=lambda instance, user: instance.requested_by == user or user.is_director)
+                permission=lambda instance, user: instance.requested_by == user)
     @action()
     def appeal(self, by, description):
         self.state_sort = 3

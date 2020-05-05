@@ -1414,6 +1414,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                         form = CreateEditExpenseForm(self.request.POST, instance=expense)
                         if form.is_valid():
                             form.save()
+                            messages.success(self.request, "Expense updated")
                             return redirect(reverse("manager/expenses/expense", kwargs={"id": expense.id}))
                     else:
                         messages.error(self.request,
@@ -1452,12 +1453,14 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                                     expense.invoice_file = invoice_file
                                     expense.clean()
                                     expense.save()
+                                    messages.success(self.request, "Image uploaded successfully, see for yourself")
                                 except UnidentifiedImageError:
                                     try:
                                         PdfFileReader(data)
                                         expense.invoice_file = invoice_file
                                         expense.clean()
                                         expense.save()
+                                        messages.success(self.request, "PDF uploaded successfully")
                                     except PdfReadError:
                                         messages.error(self.request,
                                                        "Only image or PDF files are allowed. Upload one of those")
