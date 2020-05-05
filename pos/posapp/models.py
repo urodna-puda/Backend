@@ -795,7 +795,7 @@ class Expense(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
     state = FSMField(default='new', choices=STATES, protected=True)
 
     @fsm_log_by
-    @transition(field=state, source=NEW, target=REQUESTED,
+    @transition(field=state, source=[NEW, APPEALED], target=REQUESTED,
                 permission=lambda instance, user: instance.requested_by == user,
                 conditions=[lambda instance: instance.invoice_file])
     @action()
@@ -803,14 +803,14 @@ class Expense(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
         pass
 
     @fsm_log_by
-    @transition(field=state, source=[REQUESTED, APPEALED], target=ACCEPTED,
+    @transition(field=state, source=[REQUESTED], target=ACCEPTED,
                 permission=lambda instance, user: user.is_director)
     @action()
     def accept(self, by):
         pass
 
     @fsm_log_by
-    @transition(field=state, source=[REQUESTED, APPEALED], target=REJECTED,
+    @transition(field=state, source=[REQUESTED], target=REJECTED,
                 permission=lambda instance, user: user.is_director)
     @action()
     def reject(self, by):

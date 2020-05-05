@@ -43,125 +43,126 @@
 
 {% block content %}
     <div class="container-fluid">
-    <div class="row">
-        <div class="col-6">
-            <div class="card">
-                <div class="card-header">
-                    <h2 class="card-title">
-                        <i class="fas fa-pencil-alt"></i>&nbsp;
-                        Expense details
-                    </h2>
-                </div>
-                <div class="card-body">
-                    {% if is_edit or not is_review %}
-                        <form method="post" id="editForm">
-                            {% csrf_token %}
-                            <div class="form-group">
-                                <label for="{{ form.amount.id_for_label }}">Amount</label>
-                                {{ form.amount }}
-                                {% if form.amount.errors %}
-                                    <div class="text-danger">{{ form.amount.errors }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="form-group">
-                                <label for="{{ form.description.id_for_label }}">Description</label>
-                                {{ form.description }}
-                                {% if form.description.errors %}
-                                    <div class="text-danger">{{ form.description.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </form>
-                    {% else %}
-                        <div class="form-group">
-                            <label for="amount">Amount</label>
-                            <span class="form-control" id="amount">{{ expense.amount }}</span>
-                        </div>
-                        <div class="form-group">
-                            <label for="description">Description</label>
-                            <div class="form-control" id="description">{{ expense.description }}</div>
-                        </div>
-                    {% endif %}
-                    {% if expense.requested_by %}
-                        <div class="form-group">
-                            <label for="requestedBy">Requested by</label>
-                            <span class="form-control" id="requestedBy">{{ expense.requested_by.name }}</span>
-                        </div>
-                    {% endif %}
-                    {% if expense.requested_at %}
-                        <div class="form-group">
-                            <label for="requestedBy">Requested at</label>
-                            <span class="form-control" id="requestedBy">{{ expense.requested_at }}</span>
-                        </div>
-                    {% endif %}
-                </div>
-                {% if is_edit %}
-                    <div class="card-footer">
-                        <button type="submit" class="btn btn-primary float-right" form="editForm">
-                            <i class="fas fa-save"></i>&nbsp;Save changes
-                        </button>
+        <div class="row">
+            <div class="col-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-pencil-alt"></i>&nbsp;
+                            Expense details
+                        </h2>
                     </div>
-                {% endif %}
-            </div>
-        </div>
-        <div class="col-6">
-            <div class="card">
-                {% if expense.invoice_file %}
-                    {% if invoice_file_type == "image/*" %}
-                        <img class="card-img-top"
-                             src="{% url "manager/expenses/expense/invoice_file" expense.id %}">
-                    {% elif invoice_file_type == "application/pdf" %}
-                        <div class="card-header">
-                            <h2 class="card-title">A PDF file</h2>
-                            <div class="card-tools">
-                                <a class="btn btn-outline-primary"
-                                   href="{% url "manager/expenses/expense/invoice_file" expense.id %}">
-                                    <i class="far fa-file-pdf"></i> Download
-                                </a>
-                            </div>
-                        </div>
-                    {% else %}
-                        <div class="card-header">
-                            <h2 class="card-title">Unknown file type</h2>
-                            <div class="card-tools">
-                                <a class="btn btn-outline-primary"
-                                   href="{% url "manager/expenses/expense/invoice_file" expense.id %}">
-                                    <i class="far fa-download"></i> Download
-                                </a>
-                            </div>
-                        </div>
-                    {% endif %}
-                {% else %}
-                    <div class="card-header"><h2 class="card-title">No invoice file - upload one now</h2></div>
-                {% endif %}
-                {% if is_edit %}
                     <div class="card-body">
-                        <form action="{% url "manager/expenses/expense/invoice_file" expense.id %}" method="post"
-                              id="newInvoiceFileForm" enctype="multipart/form-data">
-                            {% csrf_token %}
-                            <div class="input-group mb-3">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text" id="newInvoiceFileLabel">New invoice file</span>
+                        {% if is_edit or not is_review %}
+                            <form method="post" id="editForm">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    <label for="{{ form.amount.id_for_label }}">Amount</label>
+                                    {{ form.amount }}
+                                    {% if form.amount.errors %}
+                                        <div class="text-danger">{{ form.amount.errors }}</div>
+                                    {% endif %}
                                 </div>
-                                <div class="custom-file">
-                                    <input type="file" class="custom-file-input" id="newInputFile" required
-                                           name="invoice_file" aria-describedby="newInvoiceFileLabel">
-                                    <label class="custom-file-label" for="newInputFile">Choose file</label>
+                                <div class="form-group">
+                                    <label for="{{ form.description.id_for_label }}">Description</label>
+                                    {{ form.description }}
+                                    {% if form.description.errors %}
+                                        <div class="text-danger">{{ form.description.errors }}</div>
+                                    {% endif %}
                                 </div>
-                                <div class="input-group-append">
-                                    <button type="submit" form="newInvoiceFileForm" class="btn btn-primary">
-                                        <i class="fas fa-upload"></i>&nbsp;Upload
-                                    </button>
+                            </form>
+                        {% else %}
+                            <div class="form-group">
+                                <label for="amount">Amount</label>
+                                <span class="form-control" id="amount">{{ expense.amount }}</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="description">Description</label>
+                                <div class="form-control" id="description">{{ expense.description }}</div>
+                            </div>
+                        {% endif %}
+                        {% if expense.requested_by %}
+                            <div class="form-group">
+                                <label for="requestedBy">Requested by</label>
+                                <span class="form-control" id="requestedBy">{{ expense.requested_by.name }}</span>
+                            </div>
+                        {% endif %}
+                        {% if expense.requested_at %}
+                            <div class="form-group">
+                                <label for="requestedBy">Requested at</label>
+                                <span class="form-control" id="requestedBy">{{ expense.requested_at }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% if is_edit %}
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary float-right" form="editForm">
+                                <i class="fas fa-save"></i>&nbsp;Save changes
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="card">
+                    {% if expense.invoice_file %}
+                        {% if invoice_file_type == "image/*" %}
+                            <img class="card-img-top"
+                                 src="{% url "manager/expenses/expense/invoice_file" expense.id %}">
+                        {% elif invoice_file_type == "application/pdf" %}
+                            <div class="card-header">
+                                <h2 class="card-title">A PDF file</h2>
+                                <div class="card-tools">
+                                    <a class="btn btn-outline-primary"
+                                       href="{% url "manager/expenses/expense/invoice_file" expense.id %}">
+                                        <i class="far fa-file-pdf"></i> Download
+                                    </a>
                                 </div>
                             </div>
-                        </form>
-                    </div>
-                {% endif %}
+                        {% else %}
+                            <div class="card-header">
+                                <h2 class="card-title">Unknown file type</h2>
+                                <div class="card-tools">
+                                    <a class="btn btn-outline-primary"
+                                       href="{% url "manager/expenses/expense/invoice_file" expense.id %}">
+                                        <i class="far fa-download"></i> Download
+                                    </a>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="card-header"><h2 class="card-title">No invoice file - upload one now</h2></div>
+                    {% endif %}
+                    {% if is_edit %}
+                        <div class="card-body">
+                            <form action="{% url "manager/expenses/expense/invoice_file" expense.id %}" method="post"
+                                  id="newInvoiceFileForm" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text" id="newInvoiceFileLabel">New invoice file</span>
+                                    </div>
+                                    <div class="custom-file">
+                                        <input type="file" class="custom-file-input" id="newInputFile" required
+                                               name="invoice_file" aria-describedby="newInvoiceFileLabel">
+                                        <label class="custom-file-label" for="newInputFile">Choose file</label>
+                                    </div>
+                                    <div class="input-group-append">
+                                        <button type="submit" form="newInvoiceFileForm" class="btn btn-primary">
+                                            <i class="fas fa-upload"></i>&nbsp;Upload
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
-    </div>
-    <div class="row">
-        <div class="col-12">
-            {{ timeline|safe }}
+        <div class="row">
+            <div class="col-12">
+                {{ timeline|safe }}
+            </div>
         </div>
     </div>
 {% endblock %}
