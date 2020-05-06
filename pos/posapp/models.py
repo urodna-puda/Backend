@@ -1,13 +1,10 @@
-import io
 import mimetypes
 import os
 import re
 from datetime import datetime
+from hashlib import md5
 from uuid import uuid4
 
-from PIL import Image
-from PyPDF2 import PdfFileReader
-from PyPDF2.utils import PdfReadError
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.contrib.auth.models import AbstractUser
@@ -32,6 +29,7 @@ def action(group="state"):
         wrapper.__name__ = method.__name__
         wrapper.action_group = group
         return wrapper
+
     return action_decorator
 
 
@@ -78,6 +76,10 @@ class User(AbstractUser):
 
     def __str__(self):
         return f"{self.name} ({self.username})"
+
+    @property
+    def email_hash(self):
+        return md5(self.email.encode('utf-8')).hexdigest()
 
 
 class UnitGroup(models.Model):

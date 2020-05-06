@@ -13,6 +13,12 @@
             $('[data-toggle="tooltip"]').tooltip({sanitize: false})
         });
 
+        $(document).ready(e => {
+            let hash = "{{ user.email_hash }}";
+            let url = `https://www.gravatar.com/avatar/${hash}&d=identicon`
+            $('.profile-picture, .user-panel>.image>img').attr('src', url);
+        });
+
         $('[data-toggle="collapse-toggle"]').each(function () {
             let button = $(this);
             let target = $(`${button.data('target')}`);
