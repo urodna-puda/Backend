@@ -159,9 +159,7 @@ class Context:
                 dates.append({"date": date, "items": []})
                 last_date = date
             dates[-1]["items"].append(item)
-        self[key] = render_to_string("components/timeline.html",
-                                     {"dates": dates, "time_label_classes": time_label_classes},
-                                     self.request)
+        self[key] = {"dates": dates, "time_label_classes": time_label_classes}
 
     def render(self, content_type=None, status=None, using=None):
         return render(self.request, self.template_name, dict(self), content_type, status, using)

@@ -187,7 +187,7 @@
         </div>
         <div class="row">
             <div class="col-12">
-                {{ timeline|safe }}
+                {% include "components/timeline.html" with timeline=timeline only %}
             </div>
         </div>
     </div>

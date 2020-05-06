@@ -1,8 +1,8 @@
 {% load tz %}
 
 <div class="timeline">
-    {% for date in dates %}
-        <div class="time-label"><span class="{{ time_label_classes }}">{{ date.date }}</span></div>
+    {% for date in timeline.dates %}
+        <div class="time-label"><span class="{{ timeline.time_label_classes }}">{{ date.date }}</span></div>
         {% for item in date.items %}
             <div>
                 {{ item.final_icon|safe }}
