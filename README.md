@@ -46,3 +46,37 @@ Type "help", "copyright", "credits" or "license" for more information.
 - `musl-dev`
 - `libffi-dev`
 - `gcc`
+- `jpeg-dev`
+- `zlib-dev`
+
+## Deployment
+Deploying PUDA POS is quite easy. This repository contains a `docker-compose.yml` file 
+that can be used. The only changes required are in the `.env` file, you need to change
+the `SECRET_KEY` variable to something, well, secret and then keep it constant when 
+upgrading. If you change the key later, you risk destroying all user sessions and
+password reset requests. Here is a script that is used together with Gitlab CI to deploy
+out rest environments. It assumes there is a gzipped backend copied from CI, it then unpacks
+said archive, changes the key and `docker-compose up`s is. Because PUDA POS stores all data
+in named volumes, the `backend` folder can be safely deleted and replaced with the new version.
+```bash
+#!/bin/bash
+SECRET_KEY="CHANGE_THIS_KEY_TO_ANYTHING_SUFFICIENTLY_LONG_AND_RANDOM"
+cd ~/beta/backend
+docker-compose -p pudapos down
+cd ..
+rm -rf backend
+mkdir backend
+tar -C backend -zxf backend.tar.gz
+cd backend
+sed -ie 's~^SECRET_KEY=.*$~SECRET_KEY='"$SECRET_KEY"'~g' .env
+docker-compose -p pudapos up -d --build
+```
+The `backend.tar.gz` file can be downloaded from the releases tab.
+
+It is also possible to use git to pull a new version from the repo and then use a similar
+script to start it. One thing to keep in mind is to always `down` the docker before
+pulling. Something might have changed in the `docker-compose.yml` file and if it did, the 
+`down` will fail.
+
+If for whatever reason you need to run multiple instances of PUDA POS, try changing the
+`-p pudapos` parameter of `docker-compose` to something else, like `-p pudapos_1`.
