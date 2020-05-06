@@ -1,0 +1,24 @@
+{% load tz %}
+
+<div class="timeline">
+    {% for date in dates %}
+        <div class="time-label"><span class="{{ time_label_classes }}">{{ date.date }}</span></div>
+        {% for item in date.items %}
+            <div>
+                {{ item.final_icon|safe }}
+                <div class="timeline-item">
+                    <span class="time"><i class="fas fa-clock"></i> {{ item.timestamp|time }}</span>
+                    <h3 class="timeline-header">{{ item.header|safe }}</h3>
+                    {% if item.body %}
+                        <div class="timeline-body">
+                            {{ item.body|safe }}
+                        </div>
+                    {% endif %}
+                    {% if item.footer %}
+                        <div class="timeline-footer">{{ item.footer|safe }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    {% endfor %}
+</div>

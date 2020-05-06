@@ -22,8 +22,8 @@ from django.db.models import Q, ProtectedError
 from django.db.transaction import atomic
 from django.http import HttpResponseForbidden, HttpResponse
 from django.shortcuts import render, redirect
+from django.template.loader import render_to_string
 from django.urls import reverse
-from django.utils.formats import localize
 from django_fsm import has_transition_perm
 from django_fsm_log.models import StateLog
 
@@ -66,40 +66,9 @@ class TimelineItem:
         self.body = ''
         self.footer = ''
 
-
-class Timeline:
-    def __init__(self, time_label_classes='bg-red', reverse=False):
-        self.time_label_classes = time_label_classes
-        self.reverse = reverse
-        self.items = []
-
-    def add_item(self, item: TimelineItem):
-        self.items.append(item)
-
-    def generate_html(self):
-        self.items.sort(reverse=self.reverse, key=lambda item: item.timestamp)
-        last_timestamp = ''
-        html = '<div class="timeline">'
-        for item in self.items:
-            date = item.timestamp.date()
-            if date != last_timestamp:
-                html += f'<div class="time-label"><span class="bg-info">{localize(date)}</span></div>'
-                last_timestamp = date
-            html += f'''
-            <div>
-                {item.icon.format(classes=item.icon_classes)}
-                <div class="timeline-item">
-                    <span class="time"><i class="fas fa-clock"></i> {localize(item.timestamp.time())}</span>
-                    <h3 class="timeline-header">{item.header}</h3>
-
-            '''
-            if item.body:
-                html += f'<div class="timeline-body">{item.body}</div>'
-            if item.footer:
-                html += f'<div class="timeline-footer">{item.footer}</div>'
-            html += '</div></div>'
-        html += '</div>'
-        return html
+    @property
+    def final_icon(self):
+        return self.icon.format(classes=self.icon_classes)
 
 
 class Context:
@@ -179,6 +148,20 @@ class Context:
 
         if page_length not in self[key]["pages"]["page_length"]["options"]:
             self[key]["pages"]["page_length"]["options"].append(page_length)
+
+    def add_timeline_context(self, items, key, time_label_classes='bg-danger', reverse=False):
+        items = sorted(items, key=lambda item: item.timestamp, reverse=reverse)
+        dates = []
+        last_date = None
+        for item in items:
+            date = item.timestamp.date()
+            if date != last_date:
+                dates.append({"date": date, "items": []})
+                last_date = date
+            dates[-1]["items"].append(item)
+        self[key] = render_to_string("components/timeline.html",
+                                     {"dates": dates, "time_label_classes": time_label_classes},
+                                     self.request)
 
     def render(self, content_type=None, status=None, using=None):
         return render(self.request, self.template_name, dict(self), content_type, status, using)
@@ -1340,7 +1323,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                             return redirect(reverse("manager/expenses"))
 
                         log_items = StateLog.objects.for_(expense)
-                        timeline = Timeline(time_label_classes='bg-info')
+                        timeline = []
                         for item in log_items:
                             ti = TimelineItem(item.timestamp)
                             if item.state == Expense.REQUESTED:
@@ -1385,12 +1368,12 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                                 </i>
                                 '''
                                 ti.header = f'<a href="#">{item.by.name}</a> paid this expense'
-                            timeline.add_item(ti)
+                            timeline.append(ti)
                         ti = TimelineItem(expense.requested_at)
                         ti.icon_classes = 'bg-secondary fas fa-asterisk'
                         ti.header = f'<a href="#">{expense.requested_by.name}</a> created this expense'
-                        timeline.add_item(ti)
-                        context["timeline"] = timeline.generate_html()
+                        timeline.append(ti)
+                        context.add_timeline_context(timeline, "timeline", 'bg-info')
                         return context.render()
                     except Expense.DoesNotExist:
                         messages.warning(self.request, "That expense does not exist")
