@@ -4,7 +4,16 @@ This is a POS tool used in a church that I frequently visit. It is a basic
 restaurant cashier program with open ticket capability and storage level
 keeping. What more do we need?
 
+## GitHub note
+
+If you are accessing this repository via GitHub, please note that it is only a mirror
+of our [GitLab repo](https://gitlab.blep.cz/puda-pos/backend). Issues in this repo
+**will** be monitored, however most of the feature issues will be maintained there.
+Pull requests will not be accepted through GitHub as it should remain a read-only
+mirror.
+
 ## Running the project
+
 1. Clone this repo to `~/backend`
 1. Move into the Django directory: `cd ~/backend/pos`
 1. Create a virtual environment: `virtualenv venv -p python3.8`
@@ -13,6 +22,7 @@ keeping. What more do we need?
 1. Start Django internal test server: `./manage.py runserver`
 
 ## Creating first user
+
 To create the first user you have two options:
 - Use Django's `cratesuperuser` command. If you use this method, the app will 
 keep redirecting you back to the login form unless you explicitly go to `/admin`. 
@@ -41,6 +51,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 ```
 
 ## Non-pip dependencies (install using your distro's package manager)
+
 - `python3.8` and `python3.8-dev`
 - `postgresql` or `postgresql-dev`
 - `musl-dev`
@@ -50,6 +61,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 - `zlib-dev`
 
 ## Deployment
+
 Deploying PUDA POS is quite easy. This repository contains a `docker-compose.yml` file 
 that can be used. The only changes required are in the `.env` file, you need to change
 the `SECRET_KEY` variable to something, well, secret and then keep it constant when 
