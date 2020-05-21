@@ -1,5 +1,9 @@
 image: docker.gitlab.blep.cz/blep.cz/pipenv-runner
 
+include:
+  - template: Dependency-Scanning.gitlab-ci.yml
+  - template: License-Scanning.gitlab-ci.yml
+
 before_script:
   - eval $(ssh-agent -s)
   - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
