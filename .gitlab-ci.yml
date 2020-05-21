@@ -18,12 +18,12 @@ stages:
     - chmod 600 ~/.ssh/known_hosts
 
 dependency_scanning:
-  before_script:
-    - cd pos
+  variables:
+    PIP_REQUIREMENTS_FILE: pos/requirements.txt
 
 license_scanning:
-  before_script:
-    - cd pos
+  variables:
+    LICENSE_FINDER_CLI_OPTS: --pip-requirements-path=pos/requirements.txt
 
 django:
   extends: .base_job
