@@ -19,6 +19,7 @@ stages:
 
 variables:
   PIP_REQUIREMENTS_FILE: pos/requirements.txt
+  DS_DISABLE_DIND: "true"
 
 license_scanning:
   variables:
