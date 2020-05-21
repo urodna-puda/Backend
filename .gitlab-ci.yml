@@ -17,9 +17,13 @@ stages:
     - echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
     - chmod 600 ~/.ssh/known_hosts
 
-gemnasium-dependency_scanning:
-  variables:
-    PIP_REQUIREMENS_FILE: "pos/requirements.txt"
+dependency_scanning:
+  before_script:
+    - cd pos
+
+license_scanning:
+  before_script:
+    - cd pos
 
 django:
   extends: .base_job
