@@ -20,6 +20,7 @@ stages:
 dependency_scanning:
   variables:
     PIP_REQUIREMENTS_FILE: pos/requirements.txt
+    DS_DISABLE_DIND: "false"
 
 license_scanning:
   variables:
