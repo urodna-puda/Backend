@@ -1,0 +1,31 @@
+# Integration with Issue Tracker
+#
+# (note that '\' need to be escaped).
+
+[issuetracker "GitLab MRs"]
+  regex = "((?:\\w[\\w.\\-]*\\/)+\\w[\\w.\\-]*)!(\\d+)"
+  url = "https://gitlab.blep.cz/$1/-/merge_requests/$2"
+
+[issuetracker "GitLab Issues"]
+  regex = "((?:\\w[\\w.\\-]*\\/)+\\w[\\w.\\-]*)#(\\d+)"
+  url = "https://gitlab.blep.cz/$1/-/issues/$2"
+
+[issuetracker "GitLab Milestones"]
+  regex = "((?:\\w[\\w.\\-]*\\/)+\\w[\\w.\\-]*)%(\\d+)"
+  url = "https://gitlab.blep.cz/$1/-/milestones/$2"
+
+[issuetracker "Issues"]
+  regex = "#(\\d+)"
+  url = "https://gitlab.blep.cz/puda-pos/backend/-/issues/$1"
+
+[issuetracker "MRs"]
+  regex = "!(\\d+)"
+  url = "https://gitlab.blep.cz/puda-pos/backend/-/merge_requests/$1"
+
+[issuetracker "Milestones"]
+  regex = "%(\\d+)"
+  url = "https://gitlab.blep.cz/puda-pos/backend/-/milestones/$1"
+
+[issuetracker "Commit Refs"]
+  regex = "\\b([0-9a-fA-F]{8}|[0-9a-fA-F]{40})\\b"
+  url = "https://gitlab.blep.cz/puda-pos/backend/-/commit/$1"
