@@ -3,6 +3,7 @@ image: docker.gitlab.blep.cz/blep.cz/pipenv-runner
 include:
   - template: Dependency-Scanning.gitlab-ci.yml
   - template: License-Scanning.gitlab-ci.yml
+  - template: SAST.gitlab-ci.yml
 
 stages:
   - test
@@ -19,7 +20,6 @@ stages:
 
 variables:
   PIP_REQUIREMENTS_FILE: pos/requirements.txt
-  DS_DISABLE_DIND: "true"
 
 license_scanning:
   variables:
