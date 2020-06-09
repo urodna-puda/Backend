@@ -1,5 +1,7 @@
 # PŮDA POS
 
+[![pipeline status](https://gitlab.blep.cz/puda-pos/backend/badges/master/pipeline.svg)](https://gitlab.blep.cz/puda-pos/backend/-/commits/master)
+
 This is a POS tool used in a church that I frequently visit. It is a basic
 restaurant cashier program with open ticket capability and storage level
 keeping. What more do we need?
