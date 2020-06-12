@@ -12,7 +12,7 @@ channels-redis==2.4.2
 constantly==15.1.0
 cryptography==2.9
 daphne==2.5.0
-Django==3.0.5
+Django==3.0.7
 django-adminlte3==0.1.6
 django-appconf==1.0.4
 django-countries==6.1.2
