@@ -44,8 +44,9 @@ beta-server:
     - tar -czf /tmp/backend.tar.gz .
     - scp /tmp/backend.tar.gz pudapos@10.1.1.1:~/beta/backend.tar.gz
     - ssh pudapos@10.1.1.1 "bash ~/deploy_pudapos_beta.sh"
-  only:
-    - master
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: on_success
 
 test-server:
   extends: .base_job
@@ -58,5 +59,6 @@ test-server:
     - tar -czf /tmp/backend.tar.gz .
     - scp /tmp/backend.tar.gz pudapos@10.1.1.1:~/test/backend.tar.gz
     - ssh pudapos@10.1.1.1 "bash ~/deploy_pudapos_test.sh"
-  except:
-    - master
+  rules:
+      - if: '$CI_COMMIT_BRANCH != "master"'
+        when: on_success
