@@ -125,7 +125,7 @@ class UserToggles(APIView):
             new_state = user.is_active
             comment = "active"
         else:
-            assert False
+            return Response(f"Unknown role \"{role}\"", status.HTTP_400_BAD_REQUEST)
 
         return Response({
             'status': 200,
