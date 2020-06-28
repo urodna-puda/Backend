@@ -72,9 +72,10 @@ class TimelineItem:
 
 
 class Context:
-    def __init__(self, request, template_name):
+    def __init__(self, request, template_name, title=""):
         self.request = request
         self.template_name = template_name
+        self.title = title
         self.page = self.request.get_full_path()[1:]
         self.waiter_role = self.request.user.is_waiter
         self.manager_role = self.request.user.is_manager
@@ -171,13 +172,14 @@ class Context:
         self.data[key] = value
 
     def __len__(self):
-        return 6 + len(self.data)
+        return 7 + len(self.data)
 
     def __contains__(self, item):
         return item in self.data
 
     def __iter__(self):
         yield 'page', self.page
+        yield 'title', self.title
         yield 'waiter_role', self.waiter_role
         yield 'manager_role', self.manager_role
         yield 'director_role', self.director_role
