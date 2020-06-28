@@ -43,8 +43,8 @@ beta-server:
     - sed -ie 's~^DEBUG=\(.*\)$~DEBUG=1~g' .env
     - sed -ie 's~^DEFAULT_PAGE_TITLE=\(.*\)$~DEFAULT_PAGE_TITLE=PUDA POS Beta~g' .env
     - tar -czf /tmp/backend.tar.gz .
-    - scp /tmp/backend.tar.gz pudapos@10.1.1.1:~/beta/backend.tar.gz
-    - ssh pudapos@10.1.1.1 "bash ~/deploy_pudapos_beta.sh"
+    - scp /tmp/backend.tar.gz pudapos@evans.blep.cz:~/beta/backend.tar.gz
+    - ssh pudapos@evans.blep.cz "bash ~/deploy_pudapos_beta.sh"
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
       when: on_success
@@ -59,8 +59,10 @@ test-server:
     - sed -ie 's~^VERSION=\(.*\)$~VERSION=\1-'"$CI_COMMIT_SHORT_SHA"'~g' .env
     - sed -ie 's~^DEFAULT_PAGE_TITLE=\(.*\)$~DEFAULT_PAGE_TITLE=PUDA POS Test~g' .env
     - tar -czf /tmp/backend.tar.gz .
-    - scp /tmp/backend.tar.gz pudapos@10.1.1.1:~/test/backend.tar.gz
-    - ssh pudapos@10.1.1.1 "bash ~/deploy_pudapos_test.sh"
+    - scp /tmp/backend.tar.gz pudapos@evans.blep.cz:~/test/backend.tar.gz
+    - ssh pudapos@evans.blep.cz "bash ~/deploy_pudapos_test.sh"
   rules:
       - if: '$CI_COMMIT_BRANCH != "master"'
         when: on_success
+  except:
+    - merge_requests
