@@ -62,6 +62,7 @@ test-server:
     - scp /tmp/backend.tar.gz pudapos@evans.blep.cz:~/test/backend.tar.gz
     - ssh pudapos@evans.blep.cz "bash ~/deploy_pudapos_test.sh"
   rules:
-      - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
+      - if: '$CI_MERGE_REQUEST_IID'
+        when: never
       - if: '$CI_COMMIT_BRANCH != "master"'
         when: on_success
