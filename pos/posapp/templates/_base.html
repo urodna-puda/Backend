@@ -1,5 +1,8 @@
 {% extends "adminlte/base.html" %}
 {% load static %}
+{% load generic %}
+
+{% block title %}{{ title|format_title }}{% endblock %}
 
 {% block javascript %}
     <script type="text/javascript">
