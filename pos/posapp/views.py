@@ -319,7 +319,7 @@ class TabBaseView(WaiterLoginRequiredMixin, BaseView):
     next_url = ""
 
     def fill_data(self, tab, update=False):
-        context = Context(self.request, self.template_name)
+        context = Context(self.request, self.template_name, f"{tab}")
         context["id"] = tab.id
         context["tab_open"] = tab.state == Tab.OPEN
         context["tab_my"] = tab.owner == self.request.user
@@ -404,7 +404,8 @@ class DisambiguationView(BaseView):
     """
 
     def get(self, *args, **kwargs):
-        context = Context(self.request, "disambiguation.html")
+        title = f"{self.name} disambiguation" if self.name else "Disambiguation"
+        context = Context(self.request, "disambiguation.html", title)
         context["name"] = self.name
         context["links"] = DisambiguationView.generate_ul(self.links)
         context["breadcrumbs"] = self.breadcrumbs
@@ -450,7 +451,7 @@ class Waiter(WaiterLoginRequiredMixin, DisambiguationView):
 
     class Tabs(WaiterLoginRequiredMixin, BaseView):
         def get(self, *args, **kwargs):
-            context = Context(self.request, "waiter/tabs/index.html")
+            context = Context(self.request, "waiter/tabs/index.html", "Tabs")
             tabs = []
             tabs_list = Tab.objects.filter(state=Tab.OPEN, temp_tab_owner__isnull=True)
             for tab in tabs_list:
@@ -601,7 +602,7 @@ class Waiter(WaiterLoginRequiredMixin, DisambiguationView):
 
     class Orders(WaiterLoginRequiredMixin, BaseView):
         def get(self, *args, **kwargs):
-            context = Context(self.request, "waiter/orders/index.html")
+            context = Context(self.request, "waiter/orders/index.html", "Orders")
             context["waiting"] = ProductInTab.objects.filter(state=ProductInTab.ORDERED).order_by("orderedAt")
             context["preparing"] = ProductInTab.objects.filter(state=ProductInTab.PREPARING).order_by("preparingAt")
             context["prepared"] = ProductInTab.objects.filter(state=ProductInTab.TO_SERVE).order_by("preparedAt")
@@ -686,7 +687,8 @@ class Waiter(WaiterLoginRequiredMixin, DisambiguationView):
 
             class AuthenticateAndVoid(WaiterLoginRequiredMixin, BaseView):
                 def get(self, id, *args, **kwargs):
-                    context = Context(self.request, "waiter/orders/order/authenticateAndVoid.html")
+                    context = Context(self.request, "waiter/orders/order/authenticateAndVoid.html",
+                                      "Order void authenticatoin")
                     try:
                         context["id"] = id
                         context["order"] = ProductInTab.objects.get(id=id)
@@ -732,7 +734,7 @@ class Waiter(WaiterLoginRequiredMixin, DisambiguationView):
 
         class New(WaiterLoginRequiredMixin, BaseView):
             def get(self, *args, **kwargs):
-                context = Context(self.request, "waiter/direct/new.html")
+                context = Context(self.request, "waiter/direct/new.html", "New direct order")
                 if self.request.user.current_temp_tab:
                     messages.warning(self.request, "You already have an open order. No need to start a new one.")
                     return redirect(reverse("waiter/direct"))
@@ -760,7 +762,7 @@ class Waiter(WaiterLoginRequiredMixin, DisambiguationView):
 
         class Order(WaiterLoginRequiredMixin, BaseView):
             def get(self, *args, **kwargs):
-                context = Context(self.request, "waiter/direct/order.html")
+                context = Context(self.request, "waiter/direct/order.html", "Direct order")
                 if not self.request.user.current_temp_tab:
                     messages.warning(self.request, "You don't have an open order. Start one now.")
                     return redirect(reverse("waiter/direct"))
@@ -815,7 +817,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
 
     class Users(ManagerLoginRequiredMixin, BaseView):
         def get(self, *args, **kwargs):
-            context = Context(self.request, "manager/users/index.html")
+            context = Context(self.request, "manager/users/index.html", "Users")
             search = self.request.GET.get("search", "")
 
             users = User.objects.filter(
@@ -836,6 +838,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                 try:
                     user = User.objects.get(username=username)
                     context["user"] = user
+                    context.title = str(user)
                     if username == self.request.user.username:
                         context["password_change_blocked"] = 1
                     elif not self.request.user.can_change_password(user):
@@ -844,12 +847,14 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                         context["password_change_blocked"] = 0
                 except User.DoesNotExist:
                     context["user"] = False
+                    context.title = "Unknown user"
                 return context.render()
 
             def post(self, username, *args, **kwargs):
                 context = Context(self.request, "manager/users/user.html")
                 try:
                     user = User.objects.get(username=username)
+                    context.title = str(user)
                     if username == self.request.user.username:
                         context["password_change_blocked"] = 1
                     elif not self.request.user.can_change_password(user):
@@ -880,11 +885,12 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                     context["user"] = user
                 except User.DoesNotExist:
                     context["user"] = False
+                    context.title = "Unknown user"
                 return context.render()
 
         class Create(ManagerLoginRequiredMixin, BaseView):
             def get(self, *args, **kwargs):
-                context = Context(self.request, "manager/users/create.html")
+                context = Context(self.request, "manager/users/create.html", "Create new user")
                 context["form"] = CreateUserForm()
                 return context.render()
 
@@ -906,13 +912,13 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                     messages.success(self.request, f"The user {form.cleaned_data['username']} was created successfully")
                     return redirect(reverse("manager/users"))
 
-                context = Context(self.request, "manager/users/create.html")
+                context = Context(self.request, "manager/users/create.html", "Create new user")
                 context["form"] = form
                 return context.render()
 
     class Tills(ManagerLoginRequiredMixin, BaseView):
         def get(self, *args, **kwargs):
-            context = Context(self.request, "manager/tills/index.html")
+            context = Context(self.request, "manager/tills/index.html", "Tills")
             search = self.request.GET.get("search", "")
             deposit_filter = self.request.GET.get("deposit_filter", "")
 
@@ -955,7 +961,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
 
         class Assign(ManagerLoginRequiredMixin, BaseView):
             def get(self, *args, **kwargs):
-                context = Context(self.request, "manager/tills/assign.html")
+                context = Context(self.request, "manager/tills/assign.html", "Assign till")
 
                 context["users"] = User.objects.filter(is_waiter=True, current_till=None)
                 context["options"] = Deposit.objects.filter(enabled=True)
@@ -963,7 +969,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                 return context.render()
 
             def post(self, *args, **kwargs):
-                context = Context(self.request, "manager/tills/assign.html")
+                context = Context(self.request, "manager/tills/assign.html", "Assign till")
                 if check_dict(self.request.POST, ["users", "options"]):
                     usernames = self.request.POST.getlist("users")
                     options_id = self.request.POST["options"]
@@ -1008,7 +1014,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
 
         class Till(ManagerLoginRequiredMixin, BaseView):
             def get(self, id, *args, **kwargs):
-                context = Context(self.request, "manager/tills/till/index.html")
+                context = Context(self.request, "manager/tills/till/index.html", "Till details")
                 try:
                     till = Till.objects.filter(state=Till.COUNTED).get(id=id)
                     context["id"] = id
@@ -1052,6 +1058,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
 
                     context["show_value"] = True
                 except Till.DoesNotExist:
+                    # TODO create 404 view
                     pass
                 return context.render()
 
@@ -1073,7 +1080,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
 
             class Count(ManagerLoginRequiredMixin, BaseView):
                 def get(self, id, zeroed=None, *args, **kwargs):
-                    context = Context(self.request, "manager/tills/till/count.html")
+                    context = Context(self.request, "manager/tills/till/count.html", "Count till")
                     context["id"] = id
                     zeroed = zeroed or []
 
@@ -1158,7 +1165,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
 
             class Edit(ManagerLoginRequiredMixin, BaseView):
                 def get(self, id, *args, **kwargs):
-                    context = Context(self.request, "manager/tills/till/edit.html")
+                    context = Context(self.request, "manager/tills/till/edit.html", "Edit till")
                     try:
                         till = Till.objects.filter(state=Till.COUNTED).get(id=id)
                         context["id"] = id
@@ -1171,7 +1178,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                     return context.render()
 
                 def post(self, id, *args, **kwargs):
-                    context = Context(self.request, "manager/tills/till/edit.html")
+                    context = Context(self.request, "manager/tills/till/edit.html", "Edit till")
                     try:
                         till = Till.objects.filter(state=Till.COUNTED).get(id=id)
                         if "save" in self.request.POST:
@@ -1206,14 +1213,14 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
 
     class Requests(ManagerLoginRequiredMixin, BaseView):
         def get(self, *args, **kwargs):
-            context = Context(self.request, "manager/requests/index.html")
+            context = Context(self.request, "manager/requests/index.html", "Requests")
             context["void_requests_open"] = OrderVoidRequest.objects.filter(resolution__isnull=True)
             context["transfer_requests_open"] = TabTransferRequest.objects.all()
             return context.render()
 
         class Void(ManagerLoginRequiredMixin, BaseView):
             def get(self, *args, **kwargs):
-                context = Context(self.request, "manager/requests/void.html")
+                context = Context(self.request, "manager/requests/void.html", "Void requests")
                 context["void_requests_open"] = OrderVoidRequest.objects.filter(resolution__isnull=True)
                 context.add_pagination_context(OrderVoidRequest.objects.exclude(resolution__isnull=True),
                                                "closed_requests")
@@ -1278,7 +1285,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
 
     class Expenses(ManagerLoginRequiredMixin, BaseView):
         def get(self, *args, **kwargs):
-            context = Context(self.request, "manager/expenses/index.html")
+            context = Context(self.request, "manager/expenses/index.html", "Expenses")
             username_filter = self.request.GET.get('username', '')
             state_filter = self.request.GET.get('state', '')
 
@@ -1306,7 +1313,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
 
         class Expense(ManagerLoginRequiredMixin, BaseView):
             def get(self, id=None, form=None, *args, **kwargs):
-                context = Context(self.request, "manager/expenses/expense.html")
+                context = Context(self.request, "manager/expenses/expense.html", "Expense details")
                 if id:
                     try:
                         expense = Expense.objects.get(id=id)
@@ -1525,7 +1532,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
 
         class Currencies(DirectorLoginRequiredMixin, BaseView):
             def get(self, *args, **kwargs):
-                context = Context(self.request, "director/finance/currencies.html")
+                context = Context(self.request, "director/finance/currencies.html", "Currencies")
                 search = self.request.GET.get('search', '')
                 activity_filter = self.request.GET.get('activity_filter', '')
 
@@ -1546,7 +1553,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
 
         class Methods(DirectorLoginRequiredMixin, BaseView):
             def get(self, form=None, show_modal=False, *args, **kwargs):
-                context = Context(self.request, "director/finance/methods.html")
+                context = Context(self.request, "director/finance/methods.html", "Payment methods")
 
                 form = form or CreatePaymentMethodForm()
                 context['form'] = form
@@ -1602,7 +1609,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
         class Deposits(DirectorLoginRequiredMixin, BaseView):
 
             def get(self, *args, **kwargs):
-                context = Context(self.request, 'director/finance/deposits/index.html')
+                context = Context(self.request, 'director/finance/deposits/index.html', "Deposits")
                 search = self.request.GET.get('search', '')
                 activity_filter = self.request.GET.get('activity_filter', '')
                 deposits = Deposit.objects.filter(name__icontains=search)
@@ -1635,12 +1642,13 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                         try:
                             deposit = Deposit.objects.get(id=id)
                             context['form'] = CreateEditDepositForm(instance=deposit)
-
+                            context.title = str(deposit)
                         except Deposit.DoesNotExist:
                             messages.warning(self.request, "This deposit does not exist")
                             return redirect(reverse('director/finance/deposits'))
                     else:
                         context['form'] = CreateEditDepositForm()
+                        context.title = "Create new deposit"
                     return context.render()
 
                 def post(self, id=None, *args, **kwargs):
@@ -1650,11 +1658,13 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                         context['is_edit'] = True
                         try:
                             deposit = Deposit.objects.get(id=id)
+                            context.title = str(deposit)
                         except Deposit.DoesNotExist:
                             messages.error(self.request, "This deposit does not exist, so it could not be saved")
                             return redirect(reverse('director/finance/deposits'))
                     else:
                         deposit = Deposit()
+                        context.title = "Create new deposit"
 
                     form = CreateEditDepositForm(self.request.POST, instance=deposit)
                     if form.is_valid():
@@ -1667,13 +1677,13 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
 
     class Units(DirectorLoginRequiredMixin, BaseView):
         def get(self, *args, **kwargs):
-            context = Context(self.request, 'director/units/index.html')
+            context = Context(self.request, 'director/units/index.html', "Units")
             context['groups'] = UnitGroup.objects.all()
 
             return context.render()
 
         def post(self, *args, **kwargs):
-            context = Context(self.request, 'director/units/index.html')
+            context = Context(self.request, 'director/units/index.html', "Units")
             if check_dict(self.request.POST, ['newUnitGroupName', 'newUnitGroupSymbol']):
                 group = UnitGroup()
                 group.name = self.request.POST['newUnitGroupName']
@@ -1735,7 +1745,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
 
         class Products(DirectorLoginRequiredMixin, BaseView):
             def fill_data(self, request):
-                context = Context(self.request, 'director/menu/products/index.html')
+                context = Context(self.request, 'director/menu/products/index.html', "Products")
                 search = self.request.GET.get('search', '')
                 activity_filter = self.request.GET.get('activity_filter', '')
 
@@ -1782,8 +1792,10 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                         context["form"] = form
                         context["items_formset"] = items_formset
                         context["show_form"] = True
+                        context.title = str(product)
                     except Product.DoesNotExist:
                         context["show_does_not_exist"] = True
+                        context.title = "Unknown product"
                     return context.render()
 
                 def post(self, id, *args, **kwargs):
@@ -1791,6 +1803,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                     context["id"] = id
                     try:
                         product = Product.objects.get(id=id)
+                        context.title = str(product)
                         if "formSelector" in self.request.POST:
                             product_changed = self.request.POST["formSelector"] == "product"
                             product_form = CreateEditProductForm(self.request.POST if product_changed else None,
@@ -1826,6 +1839,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                             messages.error(self.request, "Something went wrong, please retry your last action")
                     except Product.DoesNotExist:
                         context["show_does_not_exist"] = True
+                        context.title = "Unknown product"
                     return context.render()
 
                 class Delete(DirectorLoginRequiredMixin, BaseView):
@@ -1843,7 +1857,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
 
         class Items(BaseView):
             def fill_data(self, request):
-                context = Context(self.request, 'director/menu/items/index.html')
+                context = Context(self.request, 'director/menu/items/index.html', "Items")
                 search = self.request.GET.get('search', '')
                 unit_group_id = uuid.UUID(self.request.GET['unit_group']) \
                     if "unit_group" in self.request.GET and self.request.GET["unit_group"] else None
