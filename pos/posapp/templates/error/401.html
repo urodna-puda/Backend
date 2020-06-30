@@ -5,10 +5,25 @@
         <h2 class="headline text-warning"> 401</h2>
         <div class="error-content">
             <h3><i class="fas fa-exclamation-triangle text-warning"></i> Oops! Unauthorised.</h3>
-            <p>
-                To access this page you need to log in. Please follow <a href="{% url "login" %}">this link</a> to the
-                login form to prove your worthiness.
-            </p>
+            {% if user.is_authorised %}
+                <p>
+                    To access this page you need to log in. Please follow <a href="{% url "login" %}">this link</a> to
+                    the login form to prove your worthiness.
+                </p>
+            {% else %}
+                <p>To access this page you need a higher permission level. Your permissions include:</p>
+                <ul>
+                    {% if waiter_role %}
+                        <li>Waiter</li>
+                    {% endif %}
+                    {% if manager_role %}
+                        <li>Manager</li>
+                    {% endif %}
+                    {% if director_role %}
+                        <li>Director</li>
+                    {% endif %}
+                </ul>
+            {% endif %}
         </div>
     </div>
 {% endblock %}
