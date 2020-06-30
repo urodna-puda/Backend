@@ -1,5 +1,6 @@
 import decimal
 import io
+import logging
 import mimetypes
 import os
 import random
@@ -33,6 +34,8 @@ from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, Depo
     PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest, TabTransferRequest, Expense
 from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, \
     DirectorLoginRequiredMixin
+
+logger = logging.getLogger(__name__)
 
 
 class Notification:
@@ -276,14 +279,23 @@ class BaseView(views.View):
     def dispatch(self, request, *args, **kwargs):
         if self.request.method.lower() == "options":
             return self.options(request, *args, **kwargs)
-        elif self.request.method.lower() in self.http_method_names:
-            handler = getattr(self, request.method.lower(), self.http_method_not_allowed)
+        elif self.request.method in self._allowed_methods():
+            return getattr(self, request.method.lower())(*args, **kwargs)
         else:
-            handler = self.http_method_not_allowed
-        return handler(*args, **kwargs)
+            return self.http_method_not_allowed(request, *args, **kwargs)
 
     def _allowed_methods(self):
         return [m.upper() for m in self.http_method_names if not hasattr(getattr(self, m), 'is_base')]
+
+    def http_method_not_allowed(self, request, *args, **kwargs):
+        logger.warning(
+            'Method Not Allowed (%s): %s', request.method, request.path,
+            extra={'status_code': 405, 'request': request}
+        )
+        error_view = ErrorView(request, 405)
+        error_view.context["method"] = request.method
+        error_view.context["allowed_methods"] = self._allowed_methods()
+        return error_view.render()
 
     @base_method
     def get(self, *args, **kwargs):
