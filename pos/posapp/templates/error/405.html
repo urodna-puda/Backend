@@ -1,0 +1,17 @@
+{% extends "_base.html" %}
+
+{% block content %}
+    <div class="error-page">
+        <h2 class="headline text-warning"> 405</h2>
+        <div class="error-content">
+            <h3><i class="fas fa-exclamation-triangle text-warning"></i> Oops! Method not allowed.</h3>
+            <p>
+                The resource you are trying to access does not allow method <code>{{ method }}</code>, only the
+                following ones: {% for method in allowed_methods %}<code>{{ method }}</code>{% if not forloop.last %}
+                , {% endif %}{% endfor %}.
+                Meanwhile, you may <a href="#" onclick="history.back();return false;">go back a step</a> and try doing
+                what you intended to do once again.
+            </p>
+        </div>
+    </div>
+{% endblock %}
