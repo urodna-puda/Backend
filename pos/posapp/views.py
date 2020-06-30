@@ -314,6 +314,20 @@ class BaseView(views.View):
         pass
 
 
+class ErrorView:
+    context: Context
+    error: int
+
+    def __init__(self, request, error: int, title="", comment=""):
+        self.context = Context(request, f"error/{error}.html", f"Error {error}")
+        self.context["title"] = title
+        self.context["comment"] = comment
+        self.error = error
+
+    def render(self):
+        return self.context.render(status=self.error)
+
+
 class TabBaseView(WaiterLoginRequiredMixin, BaseView):
     template_name = ""
     next_url = ""
