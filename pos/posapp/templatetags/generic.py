@@ -1,4 +1,5 @@
 from django import template
+from django.conf import settings
 
 register = template.Library()
 
@@ -22,3 +23,9 @@ def replace_spaces(value):
 @register.filter
 def empty_none(value):
     return value if value else ""
+
+
+@register.filter
+def format_title(value):
+    title_suffix = settings.DEFAULT_PAGE_TITLE or "PUDA POS"
+    return f"{value} - {title_suffix}" if value else title_suffix

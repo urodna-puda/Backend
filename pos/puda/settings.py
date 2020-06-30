@@ -154,3 +154,5 @@ AUTH_USER_MODEL = 'posapp.User'
 PHONENUMBER_DEFAULT_REGION = 'CZ'
 
 VERSION = os.environ.get("VERSION", default="dev")
+
+DEFAULT_PAGE_TITLE = os.environ.get("DEFAULT_PAGE_TITLE", default="PUDA POS")
