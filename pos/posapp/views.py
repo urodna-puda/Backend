@@ -1084,8 +1084,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
 
                     context["show_value"] = True
                 except Till.DoesNotExist:
-                    # TODO create 404 view
-                    pass
+                    return ErrorView(self.request, 404, title="Till").render()
                 return context.render()
 
             class Stop(ManagerLoginRequiredMixin, BaseView):
