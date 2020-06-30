@@ -330,7 +330,7 @@ class ErrorView:
     context: Context
     error: int
 
-    def __init__(self, request, error: int, title="", comment=""):
+    def __init__(self, request, error: int, *, title="", comment=""):
         self.context = Context(request, f"error/{error}.html", f"Error {error}")
         self.context["title"] = title
         self.context["comment"] = comment
@@ -512,9 +512,7 @@ class Waiter(WaiterLoginRequiredMixin, DisambiguationView):
                     context = self.fill_data(tab)
                     return context.render()
                 except Tab.DoesNotExist:
-                    messages.error(self.request, "Invalid request: specified Tab does not exist. "
-                                                 "Go back to previous page and try it again.")
-                    return redirect(reverse("waiter/tabs"))
+                    return ErrorView(self.request, 404, title="Tab").render()
 
             def post(self, id, *args, **kwargs):
                 self.next_url = reverse("waiter/tabs/tab", kwargs={"id": id})
@@ -560,11 +558,12 @@ class Waiter(WaiterLoginRequiredMixin, DisambiguationView):
                                 messages.warning(self.request,
                                                  f"Only the tab owner can request transfers to another user.")
                         except Tab.DoesNotExist:
-                            messages.error(self.request, "That tab does not exist.")
+                            return ErrorView(self.request, 404, title="Tab").render()
                         except User.DoesNotExist:
-                            messages.error(self.request, "The requested new user does not exist.")
+                            messages.error(self.request, "Can't transfer tab: the requested new owner does not exist.")
                         except ValidationError as err:
-                            messages.error(self.request, f"Request creation failed: {err.message}")
+                            return ErrorView(self.request, 500,
+                                             comment=f"Request creation failed: {err.message}").render()
                     else:
                         messages.warning(self.request, "newOwnerUsername parameter was missing. Please try it again.")
                     return redirect(reverse("waiter/tabs/tab", kwargs={"id": id}))
@@ -599,11 +598,9 @@ class Waiter(WaiterLoginRequiredMixin, DisambiguationView):
                         else:
                             messages.warning(self.request, f"The tab owner can't request claims on his own tabs.")
                     except Tab.DoesNotExist:
-                        messages.error(self.request, "That tab does not exist.")
-                    except User.DoesNotExist:
-                        messages.error(self.request, "The requested new user does not exist.")
+                        return ErrorView(self.request, 404, title="Tab").render()
                     except ValidationError as err:
-                        messages.error(self.request, f"Request creation failed: {err.message}")
+                        return ErrorView(self.request, 500, comment=f"Request creation failed: {err.message}").render()
                     return redirect(reverse("waiter/tabs/tab", kwargs={"id": id}))
 
             class ChangeOwner(ManagerLoginRequiredMixin, BaseView):
@@ -617,11 +614,12 @@ class Waiter(WaiterLoginRequiredMixin, DisambiguationView):
                             tab.save()
                             messages.success(self.request, f"Owner was changed.")
                         except Tab.DoesNotExist:
-                            messages.error(self.request, "That tab does not exist.")
+                            return ErrorView(self.request, 404, title="Tab").render()
                         except User.DoesNotExist:
-                            messages.error(self.request, "The requested new owbner does not exist.")
+                            messages.error(self.request,
+                                           "Can't change tab owner: the requested new owner does not exist.")
                         except ValidationError as err:
-                            messages.error(self.request, f"Owner change failed: {err.message}")
+                            return ErrorView(self.request, 500, comment=f"Owner change failed: {err.message}").render()
                     else:
                         messages.warning(self.request, "newOwnerUsername parameter was missing. Please try it again.")
                     return redirect(reverse("waiter/tabs/tab", kwargs={"id": id}))
@@ -651,9 +649,9 @@ class Waiter(WaiterLoginRequiredMixin, DisambiguationView):
                                                  "it can only take so much.")
                                 break
                     except ProductInTab.DoesNotExist:
-                        messages.error(self.request, "The Product order can't be found and thus wasn't bumped.")
+                        return ErrorView(self.request, 404, title="Order").render()
                     except ValidationError as err:
-                        messages.error(self.request, f"An error occurred while bumping the product: {err.message}")
+                        return ErrorView(self.request, 500, comment=err.message).render()
                     return redirect(reverse("waiter/orders"))
 
             class RequestVoid(WaiterLoginRequiredMixin, BaseView):
@@ -692,9 +690,9 @@ class Waiter(WaiterLoginRequiredMixin, DisambiguationView):
                         )
                         messages.success(self.request, f"Void of a {order.product.name} requested")
                     except ValidationError as err:
-                        messages.error(self.request, err.message)
+                        return ErrorView(self.request, 500, comment=err.message).render()
                     except ProductInTab.DoesNotExist:
-                        messages.error(self.request, "The Product order can't be found and thus void wasn't requested.")
+                        return ErrorView(self.request, 404, title="Order").render()
                     return redirect(
                         self.request.GET["next"] if "next" in self.request.GET else reverse("waiter/orders"))
 
@@ -705,16 +703,19 @@ class Waiter(WaiterLoginRequiredMixin, DisambiguationView):
                         order.void()
                         messages.success(self.request, f"Order of a {order.product.name} voided")
                     except ProductInTab.DoesNotExist:
-                        messages.error(self.request, "The Product order can't be found and thus wasn't voided.")
+                        return ErrorView(self.request, 404, title="Order").render()
                     except ValidationError as err:
-                        messages.error(self.request, f"Failed voiding order of {order.product.name}: {err.message}")
+                        return ErrorView(
+                            self.request, 500,
+                            comment=f"Failed voiding order of {order.product.name}: {err.message}"
+                        ).render()
                     return redirect(
                         self.request.GET["next"] if "next" in self.request.GET else reverse("waiter/orders"))
 
             class AuthenticateAndVoid(WaiterLoginRequiredMixin, BaseView):
                 def get(self, id, *args, **kwargs):
                     context = Context(self.request, "waiter/orders/order/authenticateAndVoid.html",
-                                      "Order void authenticatoin")
+                                      "Order void authentication")
                     try:
                         context["id"] = id
                         context["order"] = ProductInTab.objects.get(id=id)
@@ -723,9 +724,7 @@ class Waiter(WaiterLoginRequiredMixin, DisambiguationView):
                             context["next"] = self.request.GET["next"]
                         return context.render()
                     except ProductInTab.DoesNotExist:
-                        messages.error(self.request, "The Product order can't be found and thus wasn't voided.")
-                    return redirect(
-                        self.request.GET["next"] if "next" in self.request.GET else reverse("waiter/orders"))
+                        return ErrorView(self.request, 404, title="Order").render()
 
                 def post(self, id, *args, **kwargs):
                     if check_dict(self.request.POST, ["username", "password"]):
@@ -742,9 +741,12 @@ class Waiter(WaiterLoginRequiredMixin, DisambiguationView):
                             else:
                                 messages.warning(self.request, "Wrong username/password")
                         except ProductInTab.DoesNotExist:
-                            messages.error(self.request, "The Product order can't be found and thus wasn't voided.")
+                            return ErrorView(self.request, 404, title="Order").render()
                         except ValidationError as err:
-                            messages.error(self.request, f"Failed voiding order of {order.product.name}: {err.message}")
+                            return ErrorView(
+                                self.request, 500,
+                                comment=f"Failed voiding order of {order.product.name}: {err.message}"
+                            ).render()
                     else:
                         messages.error(self.request, "Username or password was missing in the self.request")
 
@@ -783,7 +785,8 @@ class Waiter(WaiterLoginRequiredMixin, DisambiguationView):
                     self.request.user.clean()
                     self.request.user.save()
                 except ValidationError as err:
-                    messages.error(self.request, "Something went wrong when starting order: " + err.message)
+                    return ErrorView(self.request, 500,
+                                     comment="Something went wrong when starting order: " + err.message).render()
                 return redirect(reverse("waiter/direct"))
 
         class Order(WaiterLoginRequiredMixin, BaseView):
@@ -872,8 +875,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                     else:
                         context["password_change_blocked"] = 0
                 except User.DoesNotExist:
-                    context["user"] = False
-                    context.title = "Unknown user"
+                    return ErrorView(self.request, 404, title="User").render()
                 return context.render()
 
             def post(self, username, *args, **kwargs):
@@ -910,8 +912,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                             messages.warning(self.request, "You can't change password of this user")
                     context["user"] = user
                 except User.DoesNotExist:
-                    context["user"] = False
-                    context.title = "Unknown user"
+                    return ErrorView(self.request, 404, title="User").render()
                 return context.render()
 
         class Create(ManagerLoginRequiredMixin, BaseView):
@@ -1029,7 +1030,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                                        "The selected payment options config does not exist. It may have also been "
                                        "disabled by a director.")
                     except ValidationError as err:
-                        messages.error(self.request, f"Failed creating the Till: {err.message}")
+                        return ErrorView(self.request, 500, comment=f"Failed creating the Till: {err.message}").render()
                 else:
                     messages.error(self.request, "Some required fields are missing")
 
@@ -1042,7 +1043,12 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
             def get(self, id, *args, **kwargs):
                 context = Context(self.request, "manager/tills/till/index.html", "Till details")
                 try:
-                    till = Till.objects.filter(state=Till.COUNTED).get(id=id)
+                    till = Till.objects.get(id=id)
+                    if till.state != Till.COUNTED:
+                        return ErrorView(
+                            self.request, 403,
+                            comment=f"It is not allowed to display a till in the state {till.get_state_display()}"
+                        ).render()
                     context["id"] = id
                     counts = till.tillmoneycount_set.all()
                     context["counts"] = []
@@ -1098,9 +1104,9 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                             messages.warning(self.request,
                                              f'The till is in a state from which it cannot be closed: {till.state}')
                     except Till.DoesNotExist:
-                        messages.error(self.request, 'The specified till does not exist.')
+                        return ErrorView(self.request, 404, title="Till").render()
                     except ValidationError as err:
-                        messages.error(self.request, f"Failed stopping Till: {err.message}")
+                        return ErrorView(self.request, 500, comment=f"Failed stopping Till: {err.message}").render()
                     return redirect(reverse("manager/tills"))
 
             class Count(ManagerLoginRequiredMixin, BaseView):
@@ -1146,9 +1152,9 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                         if context["totals"]["variance"] < 0:
                             context["totals"]["danger"] = "Some money is (still) missing!"
                     except Till.DoesNotExist:
-                        messages.error(self.request, "The specified till does not exist")
+                        return ErrorView(self.request, 404, title="Till").render()
                     except KeyError:
-                        messages.error(self.request, "One of the counts required was missing in the self.request. "
+                        messages.error(self.request, "One of the counts required was missing in the request. "
                                                      "Please fill all counts.")
 
                     return context.render()
@@ -1183,29 +1189,37 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                             messages.warning(self.request,
                                              f'The till is in a state from which it cannot be closed: {till.state}')
                     except Till.DoesNotExist:
-                        messages.error(self.request, 'The specified till does not exist.')
+                        return ErrorView(self.request, 404, title="Till").render()
                     except ValidationError as err:
-                        messages.error(self.request, f"Failed closing Till: {err.message}")
+                        return ErrorView(self.request, 500, comment=f"Failed closing Till: {err.message}").render()
                     return redirect(reverse("manager/tills"))
 
             class Edit(ManagerLoginRequiredMixin, BaseView):
                 def get(self, id, *args, **kwargs):
                     context = Context(self.request, "manager/tills/till/edit.html", "Edit till")
                     try:
-                        till = Till.objects.filter(state=Till.COUNTED).get(id=id)
+                        till = Till.objects.get(id=id)
+                        if till.state != Till.COUNTED:
+                            return ErrorView(
+                                self.request, 403,
+                                comment=f"It is not allowed to edit a till in the state {till.get_state_display()}"
+                            ).render()
                         context["id"] = id
                         context["counts"] = till.tillmoneycount_set.all()
                     except Till.DoesNotExist:
-                        messages.error(self.request,
-                                       'The selected till is not available for edits. It either does not exist or '
-                                       'is in a state that does not allow edits.')
+                        return ErrorView(self.request, 404, title="Till").render()
 
                     return context.render()
 
                 def post(self, id, *args, **kwargs):
                     context = Context(self.request, "manager/tills/till/edit.html", "Edit till")
                     try:
-                        till = Till.objects.filter(state=Till.COUNTED).get(id=id)
+                        till = Till.objects.get(id=id)
+                        if till.state != Till.COUNTED:
+                            return ErrorView(
+                                self.request, 403,
+                                comment=f"It is not allowed to edit a till in the state {till.get_state_display()}"
+                            ).render()
                         if "save" in self.request.POST:
                             try:
                                 count_id = self.request.POST["count"]
@@ -1230,9 +1244,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                         context["id"] = id
                         context["counts"] = till.tillmoneycount_set.all()
                     except Till.DoesNotExist:
-                        messages.error(self.request,
-                                       'The selected till is not available for edits. It either does not exist or '
-                                       'is in a state that does not allow edits.')
+                        return ErrorView(self.request, 404, title="Till").render()
 
                     return context.render()
 
@@ -1273,9 +1285,10 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                                                                f"{void_request.get_resolution_display().lower()} "
                                                                "earlier.")
                         except OrderVoidRequest.DoesNotExist:
-                            messages.error(self.request, "The specified Void request does not exist.")
+                            return ErrorView(self.request, 404, title="Void request").render()
                         except ValidationError as err:
-                            messages.error(self.request, f"Resolving void request failed: {err.message}")
+                            return ErrorView(self.request, 500,
+                                             comment=f"Resolving void request failed: {err.message}").render()
 
                     return redirect(reverse("manager/requests/void"))
 
@@ -1286,8 +1299,9 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
             class Resolve(ManagerLoginRequiredMixin, BaseView):
                 def get(self, id, resolution, *args, **kwargs):
                     if resolution not in ["approve", "reject"]:
-                        messages.error(self.request, f"The specified resolution '{resolution}' is not valid. "
-                                                     "It must be either approve or reject.")
+                        return ErrorView(self.request, 400,
+                                         comment=f"The specified resolution '{resolution}' is not valid. "
+                                                 f"It must be either approve or reject.").render()
                     else:
                         try:
                             transfer_request = TabTransferRequest.objects.get(id=id)
@@ -1302,9 +1316,10 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                                                                f"to transfer tab {transfer_request.tab.name} to "
                                                                f"{transfer_request.new_owner.name} was rejected.")
                         except TabTransferRequest.DoesNotExist:
-                            messages.error(self.request, "The specified Transfer request does not exist.")
+                            return ErrorView(self.request, 404, title="Tab transfer request").render()
                         except ValidationError as err:
-                            messages.error(self.request, f"Resolving transfer request failed: {err.message}")
+                            return ErrorView(self.request, 500,
+                                             comment=f"Resolving transfer request failed: {err.message}").render()
 
                     return redirect(reverse("manager/requests/transfer"))
 
@@ -1408,8 +1423,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                         context.add_timeline_context(timeline, "timeline", 'bg-info')
                         return context.render()
                     except Expense.DoesNotExist:
-                        messages.warning(self.request, "That expense does not exist")
-                        return redirect(reverse("manager/expenses"))
+                        return ErrorView(self.request, 404, title="Expense").render()
                 else:
                     context["form"] = form or CreateEditExpenseForm()
                     context["header"] = "Create expense"
@@ -1453,7 +1467,7 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                         else:
                             messages.warning(self.request, "You need to be a director to access someone else's expense")
                     except Expense.DoesNotExist:
-                        messages.error(self.request, "That expense does not exist")
+                        return ErrorView(self.request, 404, title="Expense").render()
                     return redirect(reverse("manager/expenses"))
 
                 def post(self, id, *args, **kwargs):
@@ -1487,11 +1501,10 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                                            "Only the expense owner may edit it, and only in editable states")
                         return redirect(reverse("manager/expenses/expense", kwargs={"id": id}))
                     except Expense.DoesNotExist:
-                        messages.error(self.request, "That expense does not exist")
-                        return redirect(reverse("manager/expenses/expense", kwargs={"id": id}))
+                        return ErrorView(self.request, 404, title="Expense").render()
                     except ValidationError as err:
-                        messages.error(self.request, f"Something went wrong while saving the file: {err.message}")
-                    return redirect(reverse("manager/expenses"))
+                        return ErrorView(self.request, 500,
+                                         comment=f"Something went wrong while saving the file: {err.message}").render()
 
             class Transition(ManagerLoginRequiredMixin, BaseView):
                 def post(self, id, transition, *args, **kwargs):
@@ -1511,10 +1524,9 @@ class Manager(ManagerLoginRequiredMixin, DisambiguationView):
                                              f"You don't have permission to perform {transition} on this expense or "
                                              "its state does not allow it.")
                     except Expense.DoesNotExist:
-                        messages.error(self.request, "An Expense with that ID does not exist")
-                        return redirect(reverse("manager/expenses"))
+                        return ErrorView(self.request, 404, title="Expense").render()
                     except ValidationError as err:
-                        messages.error(self.request, "Error saving expense: " + err.message)
+                        return ErrorView(self.request, 500, comment=err.message).render()
 
                     return redirect(reverse("manager/expenses/expense", kwargs={"id": id}))
 
@@ -1623,12 +1635,12 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                             method.delete()
                             messages.success(self.request, "The payment method was successfully deleted")
                         except PaymentMethod.DoesNotExist:
-                            messages.warning(self.request, "The specified Payment method doesn't exist")
+                            return ErrorView(self.request, 404, title="Payment").render()
                         except ProtectedError:
-                            messages.error(self.request,
-                                           "The specified method can't be deleted as other records such as "
-                                           "payments or tills depend on it. You can remove it from the deposits "
-                                           "to prevent further use.")
+                            return ErrorView(self.request, 403,
+                                             comment="The specified method can't be deleted as other records such as "
+                                                     "payments or tills depend on it. You can remove it from the "
+                                                     "deposits to prevent further use.").render()
                         return redirect(reverse("director/finance/methods"))
 
         class Deposits(DirectorLoginRequiredMixin, BaseView):
@@ -1655,7 +1667,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                         deposit.delete()
                         messages.success(self.request, f'Deposit {deposit.name} deleted successfully')
                     except Deposit.DoesNotExist:
-                        messages.error(self.request, 'Deleting deposit failed, deposit does not exist')
+                        return ErrorView(self.request, 404, title="Deposit").render()
                 return self.get(self.request)
 
             class Edit(DirectorLoginRequiredMixin, BaseView):
@@ -1669,8 +1681,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                             context['form'] = CreateEditDepositForm(instance=deposit)
                             context.title = str(deposit)
                         except Deposit.DoesNotExist:
-                            messages.warning(self.request, "This deposit does not exist")
-                            return redirect(reverse('director/finance/deposits'))
+                            return ErrorView(self.request, 404, title="Deposit").render()
                     else:
                         context['form'] = CreateEditDepositForm()
                         context.title = "Create new deposit"
@@ -1685,8 +1696,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                             deposit = Deposit.objects.get(id=id)
                             context.title = str(deposit)
                         except Deposit.DoesNotExist:
-                            messages.error(self.request, "This deposit does not exist, so it could not be saved")
-                            return redirect(reverse('director/finance/deposits'))
+                            return ErrorView(self.request, 404, title="Deposit").render()
                     else:
                         deposit = Deposit()
                         context.title = "Create new deposit"
@@ -1718,7 +1728,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                     group.save()
                     messages.success(self.request, "The unit group was created successfully")
                 except ValidationError as err:
-                    messages.warning(self.request, f"An error occurred during saving of the group: {err.message}")
+                    return ErrorView(self.request, 500, comment=err.message).render()
             if check_dict(self.request.POST, ['groupId', 'newUnitName', 'newUnitSymbol', 'newUnitRatio']):
                 group_id = uuid.UUID(self.request.POST['groupId'])
                 try:
@@ -1732,9 +1742,9 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                         unit.save()
                         messages.success(self.request, "The unit was created successfully")
                     except ValidationError as err:
-                        messages.warning(self.request, f"An error occurred during saving of the unit: {err.message}")
+                        return ErrorView(self.request, 500, comment=err.message).render()
                 except UnitGroup.DoesNotExist:
-                    messages.error(self.request, "Creation failed: Unit Group does not exist!")
+                    return ErrorView(self.request, 404, title="Unit group").render()
 
             if 'deleteUnitId' in self.request.POST:
                 try:
@@ -1742,16 +1752,17 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                     unit.delete()
                     messages.success(self.request, "The unit was deleted successfully")
                 except Unit.DoesNotExist:
-                    messages.error(self.request, "Deletion failed: Unit does not exist!")
+                    return ErrorView(self.request, 404, title="Unit").render()
             if 'deleteUnitGroupId' in self.request.POST:
                 try:
                     group = UnitGroup.objects.get(id=uuid.UUID(self.request.POST['deleteUnitGroupId']))
                     group.delete()
                     messages.success(self.request, "The unit group was deleted successfully")
                 except UnitGroup.DoesNotExist:
-                    messages.error(self.request, "Deletion failed: Unit Group does not exist!")
+                    return ErrorView(self.request, 404, title="Unit group").render()
                 except ProtectedError:
-                    messages.warning(self.request, "Deletion failed: an Item depends on this Unit Group!")
+                    return ErrorView(self.request, 500, comment="Deletion failed: an Item depends on this Unit Group!")\
+                        .render()
             context['groups'] = UnitGroup.objects.all()
 
             return context.render()
@@ -1819,8 +1830,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                         context["show_form"] = True
                         context.title = str(product)
                     except Product.DoesNotExist:
-                        context["show_does_not_exist"] = True
-                        context.title = "Unknown product"
+                        return ErrorView(self.request, 404, title="Product").render()
                     return context.render()
 
                 def post(self, id, *args, **kwargs):
@@ -1863,8 +1873,7 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                         else:
                             messages.error(self.request, "Something went wrong, please retry your last action")
                     except Product.DoesNotExist:
-                        context["show_does_not_exist"] = True
-                        context.title = "Unknown product"
+                        return ErrorView(self.request, 404, title="Product").render()
                     return context.render()
 
                 class Delete(DirectorLoginRequiredMixin, BaseView):
@@ -1875,10 +1884,10 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                             messages.success(self.request, f"Product {product.name} was deleted.")
                             return redirect(reverse("director/menu/products"))
                         except Product.DoesNotExist:
-                            return redirect(reverse("director/menu/products/product", kwargs={"id": id}))
+                            return ErrorView(self.request, 404, title="Product").render()
                         except ProtectedError:
-                            messages.error(self.request, "This Product can't be deleted as it was already ordered")
-                            return redirect(reverse("director/menu/products/product", kwargs={"id": id}))
+                            return ErrorView(self.request, 403,
+                                             comment="This Product can't be deleted as it was already ordered").render()
 
         class Items(BaseView):
             def fill_data(self, request):
@@ -1928,9 +1937,12 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                             item.delete()
                             messages.success(self.request, f"The item {item.name} was successfully deleted")
                         except Item.DoesNotExist:
-                            messages.error(self.request, "The item wasn't deleted as it can't be found.")
+                            return ErrorView(self.request, 404, title="Item").render()
                         except ProtectedError:
-                            messages.error(self.request, "The item can't be deleted because it is used by a Product")
+                            return ErrorView(
+                                self.request, 403,
+                                comment="The item can't be deleted because it is used by a Product"
+                            ).render()
                         return redirect(reverse('director/menu/items'))
 
 
