@@ -1,0 +1,21 @@
+{% extends "_base.html" %}
+
+{% block content %}
+    <div class="error-page">
+        <h2 class="headline text-warning"> 400</h2>
+        <div class="error-content">
+            <h3><i class="fas fa-exclamation-triangle text-warning"></i> Oops! Bad request.</h3>
+            <p>
+                We could not process your request as it was made incorrectly.
+                Meanwhile, you may <a href="#" onclick="history.back();return false;">go back a step</a> and try doing
+                what you intended to do once again.
+            </p>
+            {% if comment %}
+                <p>
+                    Here is an explanation of what was wrong:
+                    {{ comment|safe }}
+                </p>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

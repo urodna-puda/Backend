@@ -1,0 +1,17 @@
+{% extends "_base.html" %}
+
+{% block content %}
+    <div class="error-page">
+        <h2 class="headline text-warning"> 403</h2>
+        <div class="error-content">
+            <h3><i class="fas fa-exclamation-triangle text-warning"></i> Oops! Forbidden.</h3>
+            <p>
+                You have permission to perform this action, normally. However, in this case, it is not possible to
+                perform it. It might be caused by workflow restrictions or data integrity checks.
+            </p>
+            {% if comment %}
+                <p>Here is perhaps a better explanation of why this happened: <code>{{ comment }}</code></p>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

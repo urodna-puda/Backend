@@ -1,0 +1,25 @@
+{% extends "_base.html" %}
+
+{% block content %}
+    <div class="error-page">
+        <h2 class="headline text-danger"> 500</h2>
+        <div class="error-content">
+            <h3><i class="fas fa-exclamation-triangle text-danger"></i> Oops! Something went wrong.</h3>
+            <p>
+                Something went wrong on the server while trying to process your request. This is not your fault.
+                Meanwhile, you may <a href="#" onclick="history.back();return false;">go back a step</a> and try doing
+                what you intended to do once again.
+            </p>
+            {% if comment %}
+                <p>
+                    Here is an explanation of what was wrong:
+                    {{ comment|safe }}
+                </p>
+            {% endif %}
+            <p>
+                You can also help us by <a href="mailto:issues@puda.pos.beer?subject=Error%20500%20report">reporting this
+                issue</a> and explaining what you were trying to do.
+            </p>
+        </div>
+    </div>
+{% endblock %}
