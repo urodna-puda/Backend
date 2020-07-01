@@ -896,12 +896,18 @@ class Member(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
     ACTIVE = "active"
     SUSPENDED = "suspended"
     TERMINATED = "terminated"
-    MEMBERSHIP_STATUS_CHOICES = [
+    MEMBERSHIP_STATES = [
         (NEW, "New"),
         (ACTIVE, "Active"),
         (SUSPENDED, "Suspended"),
         (TERMINATED, "Terminated"),
     ]
+    MEMBERSHIP_STATE_COLORS = {
+        NEW: "primary",
+        ACTIVE: "success",
+        SUSPENDED: "warning",
+        TERMINATED: "danger",
+    }
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
     first_name = models.CharField(max_length=256, null=False, blank=False)
     last_name = models.CharField(max_length=256, null=False, blank=False)
@@ -910,12 +916,13 @@ class Member(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
     telephone = PhoneNumberField()
     application_file = models.FileField(upload_to=generate_member_application_upload_to_filename, null=False,
                                         blank=False)
-    membership_status = FSMField(default=NEW, choices=MEMBERSHIP_STATUS_CHOICES, protected=True)
+    membership_status = FSMField(default=NEW, choices=MEMBERSHIP_STATES, protected=True)
 
     @fsm_log_by
     @fsm_log_description
     @transition(membership_status, source=[NEW], target=ACTIVE,
-                permission=lambda instance, user: user.is_director)
+                permission=lambda instance, user: user.is_director,
+                conditions=[lambda instance: instance.application_file])
     @action("membership_status")
     def accept(self, by: User, description: str = ""):
         pass
@@ -958,6 +965,10 @@ class Member(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
             return "empty"
         guess, _ = mimetypes.guess_type(self.application_file.name)
         return "image/*" if re.compile(r'^image/.*$').match(guess) else guess
+
+    @property
+    def membership_status_color(self):
+        return self.MEMBERSHIP_STATE_COLORS[self.membership_status]
 
 
 @receiver(models.signals.post_delete, sender=Member)
