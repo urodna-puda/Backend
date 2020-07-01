@@ -1948,15 +1948,49 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
 
     class Members(DirectorLoginRequiredMixin, BaseView):
         def get(self, *args, **kwargs):
-            pass
+            context = Context(self.request, "director/members/index.html", "Members")
+            search = self.request.GET.get('search', '')
+            membership_status_filter = self.request.GET.get('membership_status', '')
+
+            members = Member.objects.all()
+            if search:
+                members = members.filter(
+                    Q(first_name__icontains=search) |
+                    Q(last_name__icontains=search) |
+                    Q(email__icontains=search)
+                )
+            if membership_status_filter:
+                members = members.filter(membership_status=membership_status_filter)
+            context.add_pagination_context(members, "members")
+
+            context["membership_status_options"] = [{"value": value, "display": display} for value, display in
+                                                    Member.MEMBERSHIP_STATES]
+            context["membership_status_filter"] = membership_status_filter
+            context["search"] = search
+
+            return context.render()
 
         class Member(DirectorLoginRequiredMixin, BaseView):
             def get(self, id=None, *args, **kwargs):
                 pass
+                context = Context(self.request, "director/members/member.html")
+
+                try:
+                    member = Member.objects.get(id=id)
+                except Member.DoesNotExist:
+                    return ErrorView(self.request, 404, title="Member")
+
+                return context.render()
 
             class MembershipTransition(DirectorLoginRequiredMixin, BaseView):
                 def get(self, id, transition, *args, **kwargs):
                     pass
+                    try:
+                        member = Member.objects.get(id=id)
+                    except Member.DoesNotExist:
+                        return ErrorView(self.request, 404, title="Member")
+
+                    return redirect(reverse('director/members/member', kwargs={'id': id}))
 
 
 class Debug:
