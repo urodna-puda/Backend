@@ -1,8 +1,10 @@
+from bootstrap_datepicker_plus import DatePickerInput
 from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.validators import UnicodeUsernameValidator
+from phonenumber_field.widgets import PhoneNumberPrefixWidget
 
-from posapp.models import User, PaymentMethod, Product, ItemInProduct, Item, Deposit, Expense
+from posapp.models import User, PaymentMethod, Product, ItemInProduct, Item, Deposit, Expense, Member
 
 
 class CreateUserForm(forms.ModelForm):
@@ -140,3 +142,24 @@ class CreateEditExpenseForm(forms.ModelForm):
         super(CreateEditExpenseForm, self).__init__(*args, **kwargs)
         for visible in self.visible_fields():
             visible.field.widget.attrs['class'] = 'form-control'
+
+
+class CreateEditMemberForm(forms.ModelForm):
+    class Meta:
+        model = Member
+        fields = ['first_name', 'last_name', 'birth_date', 'email', 'telephone']
+        widgets = {
+            'telephone': PhoneNumberPrefixWidget(),
+            'birth_date': DatePickerInput(format="%Y-%m-%d")
+        }
+
+    def __init__(self, *args, **kwargs):
+        super(CreateEditMemberForm, self).__init__(*args, **kwargs)
+        for visible in self.visible_fields():
+            if isinstance(visible.field.widget, forms.widgets.TextInput):
+                visible.field.widget.attrs['class'] = 'form-control'
+            elif isinstance(visible.field.widget, forms.widgets.EmailInput):
+                visible.field.widget.attrs['class'] = 'form-control'
+            elif isinstance(visible.field.widget, PhoneNumberPrefixWidget):
+                visible.field.widget.attrs['data-live-search'] = 'true'
+                visible.field.widget.attrs['class'] = 'form-control'
