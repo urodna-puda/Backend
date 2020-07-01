@@ -23,13 +23,12 @@ from django.db.models import Q, ProtectedError
 from django.db.transaction import atomic
 from django.http import HttpResponseForbidden, HttpResponse
 from django.shortcuts import render, redirect
-from django.template.loader import render_to_string
 from django.urls import reverse
 from django_fsm import has_transition_perm
 from django_fsm_log.models import StateLog
 
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet, \
-    CreateItemForm, AuthenticationForm, CreateEditDepositForm, CreateEditExpenseForm
+    CreateItemForm, AuthenticationForm, CreateEditDepositForm, CreateEditExpenseForm, CreateEditMemberForm
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, Deposit, TillMoneyCount, \
     PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest, TabTransferRequest, Expense, \
     Member
@@ -1971,16 +1970,43 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
             return context.render()
 
         class Member(DirectorLoginRequiredMixin, BaseView):
-            def get(self, id=None, *args, **kwargs):
-                pass
+            def get(self, id=None, form=None, *args, **kwargs):
                 context = Context(self.request, "director/members/member.html")
 
-                try:
-                    member = Member.objects.get(id=id)
-                except Member.DoesNotExist:
-                    return ErrorView(self.request, 404, title="Member")
+                if id:
+                    try:
+                        member = Member.objects.get(id=id)
+                        member.set_transition_permissions(self.request.user)
+                        context["member"] = member
+                        context.title = member.full_name
+                        context["form"] = form or CreateEditMemberForm(instance=member)
+                    except Member.DoesNotExist:
+                        return ErrorView(self.request, 404, title="Member")
+                else:
+                    context["form"] = form or CreateEditMemberForm()
+                    context.title = "Create member"
 
                 return context.render()
+
+            def post(self, id=None, *args, **kwargs):
+                if id:
+                    try:
+                        member = Member.objects.get(id=id)
+                    except Member.DoesNotExist:
+                        return ErrorView(self.request, 404, title="Member")
+                else:
+                    member = Member()
+
+                form = CreateEditMemberForm(self.request.POST, instance=member)
+                if form.is_valid():
+                    form.save()
+                    form = None
+
+                if id or form:
+                    print(self.request.POST.get('birth_date', 'not-found'))
+                    return self.get(id, form, *args, **kwargs)
+                else:
+                    return redirect(reverse("director/members/member", kwargs={"id": member.id}))
 
             class MembershipTransition(DirectorLoginRequiredMixin, BaseView):
                 def post(self, id, transition, *args, **kwargs):
@@ -2004,6 +2030,58 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                         return ErrorView(self.request, 500, comment=err.message).render()
 
                     return redirect(reverse('director/members/member', kwargs={'id': id}))
+
+            class ApplicationFile(DirectorLoginRequiredMixin, BaseView):
+                def get(self, id, *args, **kwargs):
+                    try:
+                        member = Member.objects.get(id=id)
+                        file_path = os.path.join(settings.MEDIA_ROOT, member.application_file.name)
+                        if os.path.exists(file_path):
+                            with open(file_path, 'rb') as f:
+                                response = HttpResponse(f.read(),
+                                                        content_type=mimetypes.guess_type(
+                                                            member.application_file.name))
+                                name = member.application_file.name.split('/')[-1]
+                                response['Content-Disposition'] = f'inline;filename={name}'
+                                return response
+                        else:
+                            return ErrorView(self.request, 500,
+                                             comment="The file that was supposed to be there is missing. Information "
+                                                     f"for adminstrator: file path {file_path}").render()
+                    except Expense.DoesNotExist:
+                        return ErrorView(self.request, 404, title="Member").render()
+
+                def post(self, id, *args, **kwargs):
+                    try:
+                        member = Member.objects.get(id=id)
+                        if "application_file" in self.request.FILES:
+                            application_file = self.request.FILES["application_file"]
+                            data = io.BytesIO(application_file.read())
+                            try:
+                                Image.open(data)
+                                member.application_file = application_file
+                                member.clean()
+                                member.save()
+                                messages.success(self.request, "Image uploaded successfully, see for yourself")
+                            except UnidentifiedImageError:
+                                try:
+                                    PdfFileReader(data)
+                                    member.application_file = application_file
+                                    member.clean()
+                                    member.save()
+                                    messages.success(self.request, "PDF uploaded successfully")
+                                except PdfReadError:
+                                    messages.error(self.request,
+                                                   "Only image or PDF files are allowed. Upload one of those")
+                        else:
+                            messages.warning(self.request,
+                                             "The file was missing in the request. Please try it again.")
+                        return redirect(reverse("director/members/member", kwargs={"id": id}))
+                    except Expense.DoesNotExist:
+                        return ErrorView(self.request, 404, title="Member").render()
+                    except ValidationError as err:
+                        return ErrorView(self.request, 500,
+                                         comment=f"Something went wrong while saving the file: {err.message}").render()
 
 
 class Debug:

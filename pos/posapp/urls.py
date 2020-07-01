@@ -85,5 +85,7 @@ urlpatterns = [
     path('director/members/<uuid:id>', views.Director.Members.Member.as_view(), name='director/members/member'),
     path('director/members/<uuid:id>/<mss_tr:transition>', views.Director.Members.Member.MembershipTransition.as_view(),
          name='director/members/member/membership'),
+    path('director/members/<uuid:id>/application_file', views.Director.Members.Member.ApplicationFile.as_view(),
+         name='director/members/member/application_file'),
     path('debug/createUser', views.Debug.CreateUser.as_view(), name="debug/createUser"),
 ]
