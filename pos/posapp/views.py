@@ -1983,12 +1983,25 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                 return context.render()
 
             class MembershipTransition(DirectorLoginRequiredMixin, BaseView):
-                def get(self, id, transition, *args, **kwargs):
-                    pass
+                def post(self, id, transition, *args, **kwargs):
                     try:
                         member = Member.objects.get(id=id)
+                        transition_method = getattr(member, transition)
+
+                        if has_transition_perm(transition_method, self.request.user):
+                            with atomic():
+                                transition_method(self.request.user, self.request.POST.get('description', ''))
+                                member.clean()
+                                member.save()
+                                messages.success(self.request, "Membership status updated")
+                        else:
+                            messages.warning(self.request,
+                                             f"You don't have permission to perform {transition} on this member or "
+                                             "its state does not allow it.")
                     except Member.DoesNotExist:
                         return ErrorView(self.request, 404, title="Member")
+                    except ValidationError as err:
+                        return ErrorView(self.request, 500, comment=err.message).render()
 
                     return redirect(reverse('director/members/member', kwargs={'id': id}))
 
