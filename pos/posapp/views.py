@@ -1,3 +1,4 @@
+import datetime
 import decimal
 import io
 import logging
@@ -7,6 +8,7 @@ import random
 import string
 import uuid
 
+import pytz
 from PIL import Image, UnidentifiedImageError
 # Create your views here.
 from PyPDF2 import PdfFileReader
@@ -1980,6 +1982,48 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                         context["member"] = member
                         context.title = member.full_name
                         context["form"] = form or CreateEditMemberForm(instance=member)
+
+                        log_items = StateLog.objects.for_(member)
+                        timeline = []
+                        for item in log_items:
+                            ti = TimelineItem(item.timestamp)
+                            if item.state == Member.NEW:
+                                ti.icon_classes = 'fas fa-plus bg-primary'
+                                ti.header = f'<a href="#">{item.by.name}</a> created member {member.full_name}'
+                            elif item.state == Member.ACTIVE:
+                                ti.icon_classes = 'fas fa-play bg-success'
+                                if item.transition == "accept":
+                                    ti.header = f'<a href="#">{item.by.name}</a> accepted {member.full_name}\'s ' \
+                                                'membership request'
+                                elif item.transition == "restore":
+                                    ti.header = f'<a href="#">{item.by.name}</a> restored {member.full_name}\'s ' \
+                                                'membership'
+                                if item.description:
+                                    ti.header += ' with the following note:'
+                                    ti.body = item.description
+                            elif item.state == Member.SUSPENDED:
+                                ti.icon_classes = 'fas fa-pause bg-warning'
+                                ti.header = f'<a href="#">{item.by.name}</a> suspended {member.full_name}\'s ' \
+                                            'membership due to the following reason:'
+                                ti.body = item.description
+                            elif item.state == Member.TERMINATED:
+                                if item.transition == "reject":
+                                    ti.icon_classes = 'fas fa-ban bg-danger'
+                                    ti.header = f'<a href="#">{item.by.name}</a> rejected {member.full_name}\'s ' \
+                                                'membership request with the following reason:'
+                                elif item.transition == "terminate":
+                                    ti.icon_classes = 'fas fa-stop bg-danger'
+                                    ti.header = f'<a href="#">{item.by.name}</a> terminated {member.full_name}\'s ' \
+                                                'membership due to the following reason:'
+                                ti.body = item.description
+                            timeline.append(ti)
+                        ti = TimelineItem(
+                            datetime.datetime(member.created_at.year, member.created_at.month, member.created_at.day,
+                                              tzinfo=pytz.UTC))
+                        ti.icon_classes = 'bg-primary fas fa-asterisk'
+                        ti.header = f'<a href="#">{member.full_name}</a> requested membership'
+                        timeline.append(ti)
+                        context.add_timeline_context(timeline, "timeline", 'bg-info')
                     except Member.DoesNotExist:
                         return ErrorView(self.request, 404, title="Member")
                 else:
@@ -2016,7 +2060,8 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
 
                         if has_transition_perm(transition_method, self.request.user):
                             with atomic():
-                                transition_method(self.request.user, self.request.POST.get('description', ''))
+                                transition_method(by=self.request.user,
+                                                  description=self.request.POST.get('description', ''))
                                 member.clean()
                                 member.save()
                                 messages.success(self.request, "Membership status updated")
