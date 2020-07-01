@@ -2054,6 +2054,9 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                 def post(self, id, *args, **kwargs):
                     try:
                         member = Member.objects.get(id=id)
+                        if member.membership_status != Member.NEW:
+                            return ErrorView(self.request, 403, comment="New application file may only be uploaded for "
+                                                                        "new members").render()
                         if "application_file" in self.request.FILES:
                             application_file = self.request.FILES["application_file"]
                             data = io.BytesIO(application_file.read())

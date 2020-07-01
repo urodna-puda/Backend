@@ -122,65 +122,72 @@
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-lg-6">
-                <div class="card">
-                    {% if member.application_file %}
-                        {% if member.application_file_type == "image/*" %}
-                            <img class="card-img-top"
-                                 src="{% url "director/members/member/application_file" member.id %}">
-                        {% elif member.application_file_type == "application/pdf" %}
-                            <div class="card-header">
-                                <h2 class="card-title">A PDF file</h2>
-                                <div class="card-tools">
-                                    <a class="btn btn-outline-primary"
-                                       href="{% url "director/members/member/application_file" member.id %}">
-                                        <i class="far fa-file-pdf"></i> Download
-                                    </a>
+            {% if member %}
+                <div class="col-12 col-lg-6">
+                    <div class="card">
+                        {% if member.application_file %}
+                            {% if member.application_file_type == "image/*" %}
+                                <img class="card-img-top"
+                                     src="{% url "director/members/member/application_file" member.id %}">
+                            {% elif member.application_file_type == "application/pdf" %}
+                                <div class="card-header">
+                                    <h2 class="card-title">A PDF file</h2>
+                                    <div class="card-tools">
+                                        <a class="btn btn-outline-primary"
+                                           href="{% url "director/members/member/application_file" member.id %}">
+                                            <i class="far fa-file-pdf"></i> Download
+                                        </a>
+                                    </div>
                                 </div>
-                            </div>
+                            {% else %}
+                                <div class="card-header">
+                                    <h2 class="card-title">Unknown file type</h2>
+                                    <div class="card-tools">
+                                        <a class="btn btn-outline-primary"
+                                           href="{% url "director/members/member/application_file" member.id %}">
+                                            <i class="fas fa-download"></i> Download
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endif %}
                         {% else %}
                             <div class="card-header">
-                                <h2 class="card-title">Unknown file type</h2>
-                                <div class="card-tools">
-                                    <a class="btn btn-outline-primary"
-                                       href="{% url "director/members/member/application_file" member.id %}">
-                                        <i class="fas fa-download"></i> Download
-                                    </a>
-                                </div>
+                                <h2 class="card-title">
+                                    No application file
+                                    {% if member.membership_status == "new" %}
+                                        - upload one now
+                                    {% endif %}
+                                </h2>
                             </div>
                         {% endif %}
-                    {% else %}
-                        <div class="card-header">
-                            <h2 class="card-title">
-                                No application file - upload one now
-                            </h2>
-                        </div>
-                    {% endif %}
-                    <div class="card-body">
-                        <form action="{% url "director/members/member/application_file" member.id %}"
-                              method="post"
-                              id="newApplicationFileForm" enctype="multipart/form-data">
-                            {% csrf_token %}
-                            <div class="input-group mb-3">
-                                <div class="input-group-prepend">
+                        {% if member.state == "new" %}
+                            <div class="card-body">
+                                <form action="{% url "director/members/member/application_file" member.id %}"
+                                      method="post"
+                                      id="newApplicationFileForm" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <div class="input-group mb-3">
+                                        <div class="input-group-prepend">
                                             <span class="input-group-text"
                                                   id="newApplicationFileLabel">New application file</span>
-                                </div>
-                                <div class="custom-file">
-                                    <input type="file" class="custom-file-input" id="newInputFile" required
-                                           name="application_file" aria-describedby="newApplicationFileLabel">
-                                    <label class="custom-file-label" for="newInputFile">Choose file</label>
-                                </div>
-                                <div class="input-group-append">
-                                    <button type="submit" form="newApplicationFileForm" class="btn btn-primary">
-                                        <i class="fas fa-upload"></i>&nbsp;Upload
-                                    </button>
-                                </div>
+                                        </div>
+                                        <div class="custom-file">
+                                            <input type="file" class="custom-file-input" id="newInputFile" required
+                                                   name="application_file" aria-describedby="newApplicationFileLabel">
+                                            <label class="custom-file-label" for="newInputFile">Choose file</label>
+                                        </div>
+                                        <div class="input-group-append">
+                                            <button type="submit" form="newApplicationFileForm" class="btn btn-primary">
+                                                <i class="fas fa-upload"></i>&nbsp;Upload
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
                             </div>
-                        </form>
+                        {% endif %}
                     </div>
                 </div>
-            </div>
+            {% endif %}
         </div>
         <div class="row">
             <div class="col-12">

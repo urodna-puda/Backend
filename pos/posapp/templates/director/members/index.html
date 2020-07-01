@@ -94,11 +94,18 @@
                                                class="btn btn-sm btn-outline-primary">
                                                 <i class="fas fa-file-download"></i> Download
                                             </a>
-                                        {% else %}
+                                        {% elif member.membership_status == "new" %}
                                             <a href="{% url "director/members/member" member.id %}"
                                                class="btn btn-sm btn-outline-success">
                                                 <i class="fas fa-file-upload"></i>&nbsp;Add now
                                             </a>
+                                        {% else %}
+                                            <span class="btn btn-sm btn-outline-secondary">
+                                                <span class="fa-layers">
+                                                    <i class="far fa-file"></i>
+                                                    <i class="fas fa-times" data-fa-transform="shrink-8 right-0.4 down-1"></i>
+                                                </span> No file
+                                            </span>
                                         {% endif %}
                                     </td>
                                     <td>
