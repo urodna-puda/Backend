@@ -3,6 +3,7 @@ from django.urls import path, register_converter
 from posapp import converters, views
 
 register_converter(converters.ExpenseTransitionConverter, "exp_tr")
+register_converter(converters.MembershipTransitionConverter, "mss_tr")
 
 urlpatterns = [
     path('', views.index, name='index'),
@@ -79,5 +80,12 @@ urlpatterns = [
          name='director/menu/items/item'),
     path('director/menu/items/<uuid:id>/delete', views.Director.Menu.Items.Item.Delete.as_view(),
          name='director/menu/items/item/delete'),
+    path('director/members', views.Director.Members.as_view(), name='director/members'),
+    path('director/members/create', views.Director.Members.Member.as_view(), name='director/members/create'),
+    path('director/members/<uuid:id>', views.Director.Members.Member.as_view(), name='director/members/member'),
+    path('director/members/<uuid:id>/<mss_tr:transition>', views.Director.Members.Member.MembershipTransition.as_view(),
+         name='director/members/member/membership'),
+    path('director/members/<uuid:id>/application_file', views.Director.Members.Member.ApplicationFile.as_view(),
+         name='director/members/member/application_file'),
     path('debug/createUser', views.Debug.CreateUser.as_view(), name="debug/createUser"),
 ]

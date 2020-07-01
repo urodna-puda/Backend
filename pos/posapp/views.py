@@ -1,3 +1,4 @@
+import datetime
 import decimal
 import io
 import logging
@@ -7,6 +8,7 @@ import random
 import string
 import uuid
 
+import pytz
 from PIL import Image, UnidentifiedImageError
 # Create your views here.
 from PyPDF2 import PdfFileReader
@@ -23,15 +25,15 @@ from django.db.models import Q, ProtectedError
 from django.db.transaction import atomic
 from django.http import HttpResponseForbidden, HttpResponse
 from django.shortcuts import render, redirect
-from django.template.loader import render_to_string
 from django.urls import reverse
 from django_fsm import has_transition_perm
 from django_fsm_log.models import StateLog
 
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet, \
-    CreateItemForm, AuthenticationForm, CreateEditDepositForm, CreateEditExpenseForm
+    CreateItemForm, AuthenticationForm, CreateEditDepositForm, CreateEditExpenseForm, CreateEditMemberForm
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, Deposit, TillMoneyCount, \
-    PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest, TabTransferRequest, Expense
+    PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest, TabTransferRequest, Expense, \
+    Member
 from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, \
     DirectorLoginRequiredMixin
 
@@ -1944,6 +1946,190 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                                 comment="The item can't be deleted because it is used by a Product"
                             ).render()
                         return redirect(reverse('director/menu/items'))
+
+    class Members(DirectorLoginRequiredMixin, BaseView):
+        def get(self, *args, **kwargs):
+            context = Context(self.request, "director/members/index.html", "Members")
+            search = self.request.GET.get('search', '')
+            membership_status_filter = self.request.GET.get('membership_status', '')
+
+            members = Member.objects.all()
+            if search:
+                members = members.filter(
+                    Q(first_name__icontains=search) |
+                    Q(last_name__icontains=search) |
+                    Q(email__icontains=search)
+                )
+            if membership_status_filter:
+                members = members.filter(membership_status=membership_status_filter)
+            context.add_pagination_context(members, "members")
+
+            context["membership_status_options"] = [{"value": value, "display": display} for value, display in
+                                                    Member.MEMBERSHIP_STATES]
+            context["membership_status_filter"] = membership_status_filter
+            context["search"] = search
+
+            return context.render()
+
+        class Member(DirectorLoginRequiredMixin, BaseView):
+            def get(self, id=None, form=None, *args, **kwargs):
+                context = Context(self.request, "director/members/member.html")
+
+                if id:
+                    try:
+                        member = Member.objects.get(id=id)
+                        member.set_transition_permissions(self.request.user)
+                        context["member"] = member
+                        context.title = member.full_name
+                        context["form"] = form or CreateEditMemberForm(instance=member)
+
+                        log_items = StateLog.objects.for_(member)
+                        timeline = []
+                        for item in log_items:
+                            ti = TimelineItem(item.timestamp)
+                            if item.state == Member.NEW:
+                                ti.icon_classes = 'fas fa-plus bg-primary'
+                                ti.header = f'<a href="#">{item.by.name}</a> created member {member.full_name}'
+                            elif item.state == Member.ACTIVE:
+                                ti.icon_classes = 'fas fa-play bg-success'
+                                if item.transition == "accept":
+                                    ti.header = f'<a href="#">{item.by.name}</a> accepted {member.full_name}\'s ' \
+                                                'membership request'
+                                elif item.transition == "restore":
+                                    ti.header = f'<a href="#">{item.by.name}</a> restored {member.full_name}\'s ' \
+                                                'membership'
+                                if item.description:
+                                    ti.header += ' with the following note:'
+                                    ti.body = item.description
+                            elif item.state == Member.SUSPENDED:
+                                ti.icon_classes = 'fas fa-pause bg-warning'
+                                ti.header = f'<a href="#">{item.by.name}</a> suspended {member.full_name}\'s ' \
+                                            'membership due to the following reason:'
+                                ti.body = item.description
+                            elif item.state == Member.TERMINATED:
+                                if item.transition == "reject":
+                                    ti.icon_classes = 'fas fa-ban bg-danger'
+                                    ti.header = f'<a href="#">{item.by.name}</a> rejected {member.full_name}\'s ' \
+                                                'membership request with the following reason:'
+                                elif item.transition == "terminate":
+                                    ti.icon_classes = 'fas fa-stop bg-danger'
+                                    ti.header = f'<a href="#">{item.by.name}</a> terminated {member.full_name}\'s ' \
+                                                'membership due to the following reason:'
+                                ti.body = item.description
+                            timeline.append(ti)
+                        ti = TimelineItem(
+                            datetime.datetime(member.created_at.year, member.created_at.month, member.created_at.day,
+                                              tzinfo=pytz.UTC))
+                        ti.icon_classes = 'bg-primary fas fa-asterisk'
+                        ti.header = f'<a href="#">{member.full_name}</a> requested membership'
+                        timeline.append(ti)
+                        context.add_timeline_context(timeline, "timeline", 'bg-info')
+                    except Member.DoesNotExist:
+                        return ErrorView(self.request, 404, title="Member")
+                else:
+                    context["form"] = form or CreateEditMemberForm()
+                    context.title = "Create member"
+
+                return context.render()
+
+            def post(self, id=None, *args, **kwargs):
+                if id:
+                    try:
+                        member = Member.objects.get(id=id)
+                    except Member.DoesNotExist:
+                        return ErrorView(self.request, 404, title="Member")
+                else:
+                    member = Member()
+
+                form = CreateEditMemberForm(self.request.POST, instance=member)
+                if form.is_valid():
+                    form.save()
+                    form = None
+
+                if id or form:
+                    print(self.request.POST.get('birth_date', 'not-found'))
+                    return self.get(id, form, *args, **kwargs)
+                else:
+                    return redirect(reverse("director/members/member", kwargs={"id": member.id}))
+
+            class MembershipTransition(DirectorLoginRequiredMixin, BaseView):
+                def post(self, id, transition, *args, **kwargs):
+                    try:
+                        member = Member.objects.get(id=id)
+                        transition_method = getattr(member, transition)
+
+                        if has_transition_perm(transition_method, self.request.user):
+                            with atomic():
+                                transition_method(by=self.request.user,
+                                                  description=self.request.POST.get('description', ''))
+                                member.clean()
+                                member.save()
+                                messages.success(self.request, "Membership status updated")
+                        else:
+                            messages.warning(self.request,
+                                             f"You don't have permission to perform {transition} on this member or "
+                                             "its state does not allow it.")
+                    except Member.DoesNotExist:
+                        return ErrorView(self.request, 404, title="Member")
+                    except ValidationError as err:
+                        return ErrorView(self.request, 500, comment=err.message).render()
+
+                    return redirect(reverse('director/members/member', kwargs={'id': id}))
+
+            class ApplicationFile(DirectorLoginRequiredMixin, BaseView):
+                def get(self, id, *args, **kwargs):
+                    try:
+                        member = Member.objects.get(id=id)
+                        file_path = os.path.join(settings.MEDIA_ROOT, member.application_file.name)
+                        if os.path.exists(file_path):
+                            with open(file_path, 'rb') as f:
+                                response = HttpResponse(f.read(),
+                                                        content_type=mimetypes.guess_type(
+                                                            member.application_file.name))
+                                name = member.application_file.name.split('/')[-1]
+                                response['Content-Disposition'] = f'inline;filename={name}'
+                                return response
+                        else:
+                            return ErrorView(self.request, 500,
+                                             comment="The file that was supposed to be there is missing. Information "
+                                                     f"for adminstrator: file path {file_path}").render()
+                    except Expense.DoesNotExist:
+                        return ErrorView(self.request, 404, title="Member").render()
+
+                def post(self, id, *args, **kwargs):
+                    try:
+                        member = Member.objects.get(id=id)
+                        if member.membership_status != Member.NEW:
+                            return ErrorView(self.request, 403, comment="New application file may only be uploaded for "
+                                                                        "new members").render()
+                        if "application_file" in self.request.FILES:
+                            application_file = self.request.FILES["application_file"]
+                            data = io.BytesIO(application_file.read())
+                            try:
+                                Image.open(data)
+                                member.application_file = application_file
+                                member.clean()
+                                member.save()
+                                messages.success(self.request, "Image uploaded successfully, see for yourself")
+                            except UnidentifiedImageError:
+                                try:
+                                    PdfFileReader(data)
+                                    member.application_file = application_file
+                                    member.clean()
+                                    member.save()
+                                    messages.success(self.request, "PDF uploaded successfully")
+                                except PdfReadError:
+                                    messages.error(self.request,
+                                                   "Only image or PDF files are allowed. Upload one of those")
+                        else:
+                            messages.warning(self.request,
+                                             "The file was missing in the request. Please try it again.")
+                        return redirect(reverse("director/members/member", kwargs={"id": id}))
+                    except Expense.DoesNotExist:
+                        return ErrorView(self.request, 404, title="Member").render()
+                    except ValidationError as err:
+                        return ErrorView(self.request, 500,
+                                         comment=f"Something went wrong while saving the file: {err.message}").render()
 
 
 class Debug:

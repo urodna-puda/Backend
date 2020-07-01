@@ -864,14 +864,14 @@ class Expense(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
 
 
 @receiver(models.signals.post_delete, sender=Expense)
-def auto_delete_file_on_delete(sender, instance, **kwargs):
+def auto_delete_invoice_file_on_delete(sender, instance, **kwargs):
     if instance.invoice_file:
         if os.path.isfile(instance.invoice_file.path):
             os.remove(instance.invoice_file.path)
 
 
 @receiver(models.signals.pre_save, sender=Expense)
-def auto_delete_file_on_change(sender, instance, **kwargs):
+def auto_delete_invoice_file_on_change(sender, instance, **kwargs):
     if not instance.pk:
         return False
 
@@ -882,6 +882,126 @@ def auto_delete_file_on_change(sender, instance, **kwargs):
 
     if old_file:
         new_file = instance.invoice_file
+        if not old_file == new_file:
+            if os.path.isfile(old_file.path):
+                os.remove(old_file.path)
+
+
+def generate_member_application_upload_to_filename(instance, filename):
+    return f"posapp/member_applications/{instance.id}/{filename}"
+
+
+class Member(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
+    NEW = "new"
+    ACTIVE = "active"
+    SUSPENDED = "suspended"
+    TERMINATED = "terminated"
+    MEMBERSHIP_STATES = [
+        (NEW, "New"),
+        (ACTIVE, "Active"),
+        (SUSPENDED, "Suspended"),
+        (TERMINATED, "Terminated"),
+    ]
+    MEMBERSHIP_STATE_COLORS = {
+        NEW: "primary",
+        ACTIVE: "success",
+        SUSPENDED: "warning",
+        TERMINATED: "danger",
+    }
+    id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
+    first_name = models.CharField(max_length=256, null=False, blank=False)
+    last_name = models.CharField(max_length=256, null=False, blank=False)
+    birth_date = models.DateField()
+    email = models.EmailField()
+    telephone = PhoneNumberField()
+    application_file = models.FileField(upload_to=generate_member_application_upload_to_filename, null=False,
+                                        blank=False)
+    membership_status = FSMField(default=NEW, choices=MEMBERSHIP_STATES, protected=True)
+    created_at = models.DateField(auto_now_add=True)
+
+    @fsm_log_by
+    @fsm_log_description
+    @transition(membership_status, source=[NEW], target=ACTIVE,
+                permission=lambda instance, user: user.is_director,
+                conditions=[lambda instance: instance.application_file])
+    @action("membership_status")
+    def accept(self, by: User, description: str = ""):
+        pass
+
+    @fsm_log_by
+    @fsm_log_description
+    @transition(membership_status, source=[NEW], target=TERMINATED,
+                permission=lambda instance, user: user.is_director)
+    @action("membership_status")
+    def reject(self, by: User, description: str):
+        pass
+
+    @fsm_log_by
+    @fsm_log_description
+    @transition(membership_status, source=[ACTIVE], target=SUSPENDED,
+                permission=lambda instance, user: user.is_director)
+    @action("membership_status")
+    def suspend(self, by: User, description: str):
+        pass
+
+    @fsm_log_by
+    @fsm_log_description
+    @transition(membership_status, source=[SUSPENDED], target=ACTIVE,
+                permission=lambda instance, user: user.is_director)
+    @action("membership_status")
+    def restore(self, by: User, description: str):
+        pass
+
+    @fsm_log_by
+    @fsm_log_description
+    @transition(membership_status, source=[ACTIVE, SUSPENDED], target=TERMINATED,
+                permission=lambda instance, user: user.is_director)
+    @action("membership_status")
+    def terminate(self, by: User, description: str):
+        pass
+
+    @property
+    def application_file_type(self):
+        if not self.application_file:
+            return "empty"
+        guess, _ = mimetypes.guess_type(self.application_file.name)
+        return "image/*" if re.compile(r'^image/.*$').match(guess) else guess
+
+    @property
+    def membership_status_color(self):
+        return self.MEMBERSHIP_STATE_COLORS[self.membership_status]
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name.upper()}"
+
+    def set_transition_permissions(self, user):
+        self.can_accept = has_transition_perm(self.accept, user)
+        self.can_reject = has_transition_perm(self.reject, user)
+        self.can_suspend = has_transition_perm(self.suspend, user)
+        self.can_restore = has_transition_perm(self.restore, user)
+        self.can_terminate = has_transition_perm(self.terminate, user)
+
+
+@receiver(models.signals.post_delete, sender=Member)
+def auto_delete_member_application_file_on_delete(sender, instance, **kwargs):
+    if instance.application_file:
+        if os.path.isfile(instance.application_file.path):
+            os.remove(instance.application_file.path)
+
+
+@receiver(models.signals.pre_save, sender=Member)
+def auto_delete_member_application_file_on_change(sender, instance, **kwargs):
+    if not instance.pk:
+        return False
+
+    try:
+        old_file = Member.objects.get(pk=instance.pk).application_file
+    except Member.DoesNotExist:
+        return False
+
+    if old_file:
+        new_file = instance.application_file
         if not old_file == new_file:
             if os.path.isfile(old_file.path):
                 os.remove(old_file.path)

@@ -1,0 +1,372 @@
+{% extends "_base.html" %}
+{% load generic %}
+
+{% block page_name %}
+    <i class="far fa-address-book"></i>
+    {% if member %}
+        {{ member.full_name }}
+    {% else %}
+        Create member
+    {% endif %}
+    <span class="badge badge-{{ member.membership_status_color }}">{{ member.get_membership_status_display }}</span>
+{% endblock %}
+
+{% block no_description %}{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director" %}">Director</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director/members" %}">Members</a></li>
+    <li class="breadcrumb-item active" aria-current="page">
+        {% if member %}{{ member.full_name }}{% else %}Create member{% endif %}</li>
+{% endblock %}
+
+{% block page_actions %}
+    <div class="btn-group float-right" role="group">
+        {% if member.can_accept %}
+            <button type="button" data-toggle="modal" data-target="#acceptanceModal" class="btn btn-success">
+                Accept
+            </button>
+        {% endif %}
+        {% if member.can_reject %}
+            <button type="button" data-toggle="modal" data-target="#rejectionModal" class="btn btn-danger">
+                Reject
+            </button>
+        {% endif %}
+        {% if member.can_suspend %}
+            <button type="button" data-toggle="modal" data-target="#suspensionModal" class="btn btn-warning">
+                Suspend
+            </button>
+        {% endif %}
+        {% if member.can_restore %}
+            <button type="button" data-toggle="modal" data-target="#restorationModal" class="btn btn-success">
+                Restore
+            </button>
+        {% endif %}
+        {% if member.can_terminate %}
+            <button type="button" data-toggle="modal" data-target="#terminationModal" class="btn btn-danger">
+                Terminate
+            </button>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12 col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="far fa-id-badge"></i>&nbsp;
+                            Member details
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" id="editForm">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="{{ form.first_name.id_for_label }}">First name</label>
+                                {{ form.first_name }}
+                                {% if form.first_name.errors %}
+                                    <div class="text-danger">{{ form.first_name.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ form.last_name.id_for_label }}">Last name</label>
+                                {{ form.last_name }}
+                                {% if form.last_name.errors %}
+                                    <div class="text-danger">{{ form.last_name.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ form.birth_date.id_for_label }}">Birth date <small class="text-muted">(YYYY-MM-DD)</small></label>
+                                {{ form.birth_date }}
+                                {% if form.birth_date.errors %}
+                                    <div class="text-danger">{{ form.birth_date.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ form.email.id_for_label }}">E-mail</label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                    <div class="text-danger">{{ form.email.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ form.telephone.id_for_label }}">Phone number</label>
+                                <div class="input-group">
+                                    {{ form.telephone }}
+                                </div>
+                                {% if form.telephone.errors %}
+                                    <div class="text-danger">{{ form.telephone.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="form-group">
+                                <label>Application date</label>
+                                <div class="form-control">
+                                    {{ member.created_at }}
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-footer text-right border-top">
+                        <button type="submit" class="btn btn-primary" form="editForm">
+                            <i class="fas fa-save"></i>&nbsp;Save changes
+                        </button>
+                        {% if member.can_accept %}
+                            <button type="button" onclick="$('#acceptanceModal').modal('show');"
+                                    class="btn btn-success" data-toggle="tooltip"
+                                    title="This button does NOT save last changes of member details">
+                                    <span class="fa-layers">
+                                        <i class="far fa-comment-alt" data-fa-transform="right-0.5"></i>
+                                        <i class="fas fa-check" data-fa-transform="shrink-8 up-1.5"></i>
+                                    </span>&nbsp;
+                                Accept
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% if member %}
+                <div class="col-12 col-lg-6">
+                    <div class="card">
+                        {% if member.application_file %}
+                            {% if member.application_file_type == "image/*" %}
+                                <img class="card-img-top"
+                                     src="{% url "director/members/member/application_file" member.id %}">
+                            {% elif member.application_file_type == "application/pdf" %}
+                                <div class="card-header">
+                                    <h2 class="card-title">A PDF file</h2>
+                                    <div class="card-tools">
+                                        <a class="btn btn-outline-primary"
+                                           href="{% url "director/members/member/application_file" member.id %}">
+                                            <i class="far fa-file-pdf"></i> Download
+                                        </a>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="card-header">
+                                    <h2 class="card-title">Unknown file type</h2>
+                                    <div class="card-tools">
+                                        <a class="btn btn-outline-primary"
+                                           href="{% url "director/members/member/application_file" member.id %}">
+                                            <i class="fas fa-download"></i> Download
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="card-header">
+                                <h2 class="card-title">
+                                    No application file
+                                    {% if member.membership_status == "new" %}
+                                        - upload one now
+                                    {% endif %}
+                                </h2>
+                            </div>
+                        {% endif %}
+                        {% if member.membership_status == "new" %}
+                            <div class="card-body">
+                                <form action="{% url "director/members/member/application_file" member.id %}"
+                                      method="post"
+                                      id="newApplicationFileForm" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <div class="input-group mb-3">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"
+                                                  id="newApplicationFileLabel">New application file</span>
+                                        </div>
+                                        <div class="custom-file">
+                                            <input type="file" class="custom-file-input" id="newInputFile" required
+                                                   name="application_file" aria-describedby="newApplicationFileLabel">
+                                            <label class="custom-file-label" for="newInputFile">Choose file</label>
+                                        </div>
+                                        <div class="input-group-append">
+                                            <button type="submit" form="newApplicationFileForm" class="btn btn-primary">
+                                                <i class="fas fa-upload"></i>&nbsp;Upload
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        <div class="row">
+            <div class="col-12">
+                {% include "components/timeline.html" with timeline=timeline only %}
+            </div>
+        </div>
+    </div>
+    <!--MODALS-->
+    {% if member.can_accept %}
+        <div class="modal fade" tabindex="-1" role="dialog" id="acceptanceModal">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Accept member</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="post" id="acceptanceForm"
+                              action="{% url "director/members/member/membership" member.id "accept" %}">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="description">Acceptance notes <small
+                                        class="text-muted">(optional)</small></label>
+                                <textarea name="description" id="description" class="form-control"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" form="acceptanceForm" class="btn btn-success">Accept member</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    {% if member.can_reject %}
+        <div class="modal fade" tabindex="-1" role="dialog" id="rejectionModal">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Reject member</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="post" id="rejectionForm"
+                              action="{% url "director/members/member/membership" member.id "reject" %}">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="description">Rejection reason</label>
+                                <textarea name="description" id="description" class="form-control"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" form="rejectionForm" class="btn btn-danger">Reject member</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    {% if member.can_suspend %}
+        <div class="modal fade" tabindex="-1" role="dialog" id="suspensionModal">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Suspend member</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="post" id="suspensionForm"
+                              action="{% url "director/members/member/membership" member.id "suspend" %}">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="description">Suspension reason</label>
+                                <textarea name="description" id="description" class="form-control"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" form="suspensionForm" class="btn btn-warning">Suspend member</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    {% if member.can_restore %}
+        <div class="modal fade" tabindex="-1" role="dialog" id="restorationModal">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Accept member</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="post" id="restorationForm"
+                              action="{% url "director/members/member/membership" member.id "restore" %}">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="description">Restoration reason</label>
+                                <textarea name="description" id="description" class="form-control"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" form="restorationForm" class="btn btn-success">Restore member</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    {% if member.can_terminate %}
+        <div class="modal fade" tabindex="-1" role="dialog" id="terminationModal">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Terminate member</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="post" id="terminationeForm"
+                              action="{% url "director/members/member/membership" member.id "terminate" %}">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="description">Termination reason</label>
+                                <textarea name="description" id="description" class="form-control"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" form="terminationeForm" class="btn btn-danger">Terminate member</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/css/bootstrap-select.min.css">
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/js/bootstrap-select.min.js"></script>
+    <script>
+        let countryCodeSelect = $('#id_telephone_0');
+
+        countryCodeSelect.selectpicker({
+            dropupAuto: false
+        });
+
+        $(document).ready(function () {
+            let selectWrapper = countryCodeSelect.parent();
+            let inputGroup = selectWrapper.parent();
+
+            let groupPrepend = $('<div class="input-group-prepend"></div>').prependTo(inputGroup);
+            groupPrepend.append(selectWrapper);
+        })
+    </script>
+    {{ form.media }}
+{% endblock %}
