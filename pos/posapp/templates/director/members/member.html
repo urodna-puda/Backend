@@ -39,7 +39,7 @@
             </button>
         {% endif %}
         {% if member.can_restore %}
-            <button type="button" data-toggle="modal" data-target="#restorationModal" class="btn btn-primary">
+            <button type="button" data-toggle="modal" data-target="#restorationModal" class="btn btn-success">
                 Restore
             </button>
         {% endif %}
@@ -160,7 +160,7 @@
                                 </h2>
                             </div>
                         {% endif %}
-                        {% if member.state == "new" %}
+                        {% if member.membership_status == "new" %}
                             <div class="card-body">
                                 <form action="{% url "director/members/member/application_file" member.id %}"
                                       method="post"
