@@ -73,6 +73,7 @@
                                 <th scope="col">E-mail</th>
                                 <th scope="col">Phone number</th>
                                 <th scope="col">State</th>
+                                <th scope="col">Application date</th>
                                 <th scope="col">Application</th>
                                 <th scope="col">&nbsp;</th>
                             </tr>
@@ -88,6 +89,7 @@
                                     <td>
                                         <span class="badge badge-{{ member.membership_status_color }}">{{ member.get_membership_status_display }}</span>
                                     </td>
+                                    <td>{{ member.created_at }}</td>
                                     <td>
                                         {% if member.application_file %}
                                             <a href="{% url "director/members/member/application_file" member.id %}"
@@ -103,7 +105,8 @@
                                             <span class="btn btn-sm btn-outline-secondary">
                                                 <span class="fa-layers">
                                                     <i class="far fa-file"></i>
-                                                    <i class="fas fa-times" data-fa-transform="shrink-8 right-0.4 down-1"></i>
+                                                    <i class="fas fa-times"
+                                                       data-fa-transform="shrink-8 right-0.4 down-1"></i>
                                                 </span> No file
                                             </span>
                                         {% endif %}

@@ -102,9 +102,15 @@
                                     <div class="text-danger">{{ form.telephone.errors }}</div>
                                 {% endif %}
                             </div>
+                            <div class="form-group">
+                                <label>Application date</label>
+                                <div class="form-control">
+                                    {{ member.created_at }}
+                                </div>
+                            </div>
                         </form>
                     </div>
-                    <div class="card-footer text-right">
+                    <div class="card-footer text-right border-top">
                         <button type="submit" class="btn btn-primary" form="editForm">
                             <i class="fas fa-save"></i>&nbsp;Save changes
                         </button>
