@@ -15,6 +15,7 @@ daphne==2.5.0
 Django==3.0.7
 django-adminlte3==0.1.6
 django-appconf==1.0.4
+django-bootstrap-datepicker-plus==3.0.5
 django-countries==6.1.2
 django-fsm==2.7.0
 django-fsm-log @ git+https://github.com/dbinetti/django-fsm-log.git@85a90a91857d3adbf5edc407cab8745fd275279c

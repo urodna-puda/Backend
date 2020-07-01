@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'channels',
     'django_fsm',
     'django_fsm_log',
+    'bootstrap_datepicker_plus',
 ]
 
 MIDDLEWARE = [
