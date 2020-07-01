@@ -970,6 +970,17 @@ class Member(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
     def membership_status_color(self):
         return self.MEMBERSHIP_STATE_COLORS[self.membership_status]
 
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name.upper()}"
+
+    def set_transition_permissions(self, user):
+        self.can_accept = has_transition_perm(self.accept, user)
+        self.can_reject = has_transition_perm(self.reject, user)
+        self.can_suspend = has_transition_perm(self.suspend, user)
+        self.can_restore = has_transition_perm(self.restore, user)
+        self.can_terminate = has_transition_perm(self.terminate, user)
+
 
 @receiver(models.signals.post_delete, sender=Member)
 def auto_delete_member_application_file_on_delete(sender, instance, **kwargs):
