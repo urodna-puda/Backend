@@ -917,6 +917,7 @@ class Member(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
     application_file = models.FileField(upload_to=generate_member_application_upload_to_filename, null=False,
                                         blank=False)
     membership_status = FSMField(default=NEW, choices=MEMBERSHIP_STATES, protected=True)
+    created_at = models.DateField(auto_now_add=True)
 
     @fsm_log_by
     @fsm_log_description
