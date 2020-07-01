@@ -31,7 +31,8 @@ from django_fsm_log.models import StateLog
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet, \
     CreateItemForm, AuthenticationForm, CreateEditDepositForm, CreateEditExpenseForm
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, Deposit, TillMoneyCount, \
-    PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest, TabTransferRequest, Expense
+    PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest, TabTransferRequest, Expense, \
+    Member
 from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, \
     DirectorLoginRequiredMixin
 
@@ -1944,6 +1945,18 @@ class Director(DirectorLoginRequiredMixin, DisambiguationView):
                                 comment="The item can't be deleted because it is used by a Product"
                             ).render()
                         return redirect(reverse('director/menu/items'))
+
+    class Members(DirectorLoginRequiredMixin, BaseView):
+        def get(self, *args, **kwargs):
+            pass
+
+        class Member(DirectorLoginRequiredMixin, BaseView):
+            def get(self, id=None, *args, **kwargs):
+                pass
+
+            class MembershipTransition(DirectorLoginRequiredMixin, BaseView):
+                def get(self, id, transition, *args, **kwargs):
+                    pass
 
 
 class Debug:
