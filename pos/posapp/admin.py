@@ -143,9 +143,9 @@ class CurrencyAdmin(admin.ModelAdmin):
 
 
 class PaymentMethodAdmin(admin.ModelAdmin):
-    list_display = ['name', 'currency']
+    list_display = ['name', 'account']
     search_fields = ['name']
-    list_filter = ['currency']
+    list_filter = ['account']
     ordering = ['name']
 
 

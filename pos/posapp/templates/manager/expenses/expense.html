@@ -60,10 +60,10 @@
                             <form method="post" id="editForm">
                                 {% csrf_token %}
                                 <div class="form-group">
-                                    <label for="{{ form.amount.id_for_label }}">Amount</label>
-                                    {{ form.amount }}
-                                    {% if form.amount.errors %}
-                                        <div class="text-danger">{{ form.amount.errors }}</div>
+                                    <label for="{{ form._amount.id_for_label }}">Amount</label>
+                                    {{ form._amount }}
+                                    {% if form._amount.errors %}
+                                        <div class="text-danger">{{ form._amount.errors }}</div>
                                     {% endif %}
                                 </div>
                                 <div class="form-group">

@@ -71,7 +71,7 @@
                             <thead>
                             <tr>
                                 <th scope="col">Name</th>
-                                <th scope="col">Currency</th>
+                                <th scope="col">Account</th>
                                 <th scope="col">Change status</th>
                                 <th scope="col">
                                     Status<br>
@@ -88,7 +88,7 @@
                             {% for method in methods.data %}
                                 <tr>
                                     <td>{{ method.name }}</td>
-                                    <td>{{ method.currency.name }}</td>
+                                    <td>{{ method.account.name }}</td>
                                     <td>
                                         <button type="button" class="btn btn-tool"
                                                 onclick="toggleProperty('{{ method.id }}', 'change');">
@@ -225,10 +225,10 @@
                             {% endif %}
                         </div>
                         <div class="form-group">
-                            <label for="{{ form.currency.id_for_label }}">Currency</label>
-                            {{ form.currency }}
-                            {% if form.currency.errors %}
-                                <div class="text-danger">{{ form.currency.errors }}</div>
+                            <label for="{{ form.account.id_for_label }}">Account</label>
+                            {{ form.account }}
+                            {% if form.account.errors %}
+                                <div class="text-danger">{{ form.account.errors }}</div>
                             {% endif %}
                         </div>
                         <div class="form-group form-check">

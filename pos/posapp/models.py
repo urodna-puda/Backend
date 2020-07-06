@@ -381,16 +381,30 @@ class Currency(models.Model):
         return self.name
 
 
+class Account(models.Model):
+    id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
+    name = models.CharField(max_length=256, null=False)
+    currency = models.ForeignKey(Currency, on_delete=models.PROTECT, limit_choices_to={"enabled": True})
+
+
+class Transaction(models.Model):
+    id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
+    account = models.ForeignKey(Account, on_delete=models.PROTECT)
+    amount = models.DecimalField(max_digits=15, decimal_places=3)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+
 class PaymentMethod(models.Model):
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
     name = models.CharField(max_length=1024, null=False)
-    currency = models.ForeignKey(Currency, on_delete=models.PROTECT, limit_choices_to={"enabled": True})
     changeAllowed = models.BooleanField(default=False)
     _enabled = models.BooleanField(default=False, db_column='enabled')
+    account = models.ForeignKey(Account, on_delete=models.PROTECT)
 
     @property
     def enabled(self):
-        return self._enabled and self.currency.enabled
+        return self._enabled and self.account.currency.enabled
 
     @property
     def enabled_own(self):
@@ -519,7 +533,22 @@ class TillMoneyCount(models.Model):
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
     paymentMethod = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT)
     till = models.ForeignKey(Till, on_delete=models.CASCADE)
-    amount = models.DecimalField(max_digits=15, decimal_places=3, default=0)
+    _amount = models.DecimalField(max_digits=15, decimal_places=3, default=0)
+    transaction = models.ForeignKey(Transaction, on_delete=models.PROTECT, null=True)
+
+    @property
+    def amount(self):
+        if self.transaction:
+            return self.transaction.amount
+        else:
+            return self._amount
+
+    @amount.setter
+    def amount(self, value):
+        if self.transaction:
+            self.transaction.amount = value
+        else:
+            self._amount = value
 
     @property
     def expected(self):
@@ -551,15 +580,44 @@ class TillMoneyCount(models.Model):
         return edit
 
     def __str__(self):
-        return f"Money count of {self.paymentMethod.currency.code} {self.amount} via {self.paymentMethod} in till {self.till}"
+        return f"Money count of {self.paymentMethod.account.currency.code} {self.amount} via {self.paymentMethod} in " \
+               f"till {self.till}"
 
 
 class TillEdit(models.Model):
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
     count = models.ForeignKey(TillMoneyCount, on_delete=models.CASCADE)
-    amount = models.DecimalField(max_digits=15, decimal_places=3, default=0)
-    created = models.DateTimeField(auto_now_add=True)
     reason = models.TextField()
+    transaction = models.ForeignKey(Transaction, on_delete=models.PROTECT)
+
+    def __init__(self, *args, **kwargs):
+        super(TillEdit, self).__init__(*args, **kwargs)
+        if not self.transaction:
+            self.transaction = Transaction(account=self.count.paymentMethod.account)
+
+    @property
+    def amount(self):
+        return self.transaction.amount
+
+    @amount.setter
+    def amount(self, value):
+        self.transaction.amount = value
+
+    @property
+    def created(self):
+        return self.transaction.timestamp
+
+    def clean(self):
+        super(TillEdit, self).clean()
+        self.transaction.clean()
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        super().save(force_insert, force_update, using, update_fields)
+        self.transaction.save(force_insert=force_insert, force_update=force_update, using=using)
+
+    def delete(self, using=None, keep_parents=False):
+        self.transaction.delete(using=using, keep_parents=keep_parents)
+        return super().delete(using, keep_parents)
 
 
 class PaymentInTab(models.Model):
@@ -570,7 +628,7 @@ class PaymentInTab(models.Model):
 
     @property
     def converted_value(self):
-        return round(float(self.amount) * self.method.paymentMethod.currency.ratio, 3)
+        return round(float(self.amount) * self.method.paymentMethod.account.currency.ratio, 3)
 
     def clean(self):
         super(PaymentInTab, self).clean()
@@ -788,13 +846,28 @@ class Expense(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
         PAID: "info",
     }
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
-    amount = models.DecimalField(max_digits=15, decimal_places=3, validators=[MinValueValidator(0)])
+    _amount = models.DecimalField(max_digits=15, decimal_places=3, validators=[MinValueValidator(0)])
     requested_at = models.DateTimeField(auto_now_add=True)
     requested_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="expenses_requested")
     description = models.TextField()
     invoice_file = models.FileField(upload_to=generate_expense_upload_to_filename, null=True, blank=True)
     state = FSMField(default='new', choices=STATES, protected=True)
     state_sort = models.IntegerField(default=0)
+    transaction = models.ForeignKey(Transaction, on_delete=models.PROTECT, null=True)
+
+    @property
+    def amount(self):
+        if self.transaction:
+            return self.transaction.amount
+        else:
+            return self._amount
+
+    @amount.setter
+    def amount(self, value):
+        if self.transaction:
+            self.transaction.amount = value
+        else:
+            self._amount = value
 
     @fsm_log_by
     @transition(field=state, source=[NEW, APPEALED], target=REQUESTED,
@@ -830,8 +903,10 @@ class Expense(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
     @fsm_log_by
     @transition(field=state, source=ACCEPTED, target=PAID, permission=lambda instance, user: user.is_director)
     @action()
-    def pay(self, by, description):
+    def pay(self, by, description, account: Account):
         self.state_sort = 4
+        self.transaction = Transaction(account=account, amount=self._amount)
+        self.transaction.save()
 
     @property
     def state_color(self):
@@ -850,6 +925,8 @@ class Expense(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
 
     def clean(self):
         super(Expense, self).clean()
+        if self.transaction:
+            self.transaction.clean()
         if not self.invoice_file and self.state != "new":
             raise ValidationError("Invoice field may only be empty if the state is new.")
 
@@ -1005,3 +1082,8 @@ def auto_delete_member_application_file_on_change(sender, instance, **kwargs):
         if not old_file == new_file:
             if os.path.isfile(old_file.path):
                 os.remove(old_file.path)
+
+
+class RegularTransaction(models.Model):
+    id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
+    name = models.CharField(max_length=256, null=False, blank=False)

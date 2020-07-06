@@ -47,7 +47,7 @@ class CreateUserForm(forms.ModelForm):
 class CreatePaymentMethodForm(forms.ModelForm):
     class Meta:
         model = PaymentMethod
-        fields = ['name', 'currency', 'changeAllowed']
+        fields = ['name', 'account', 'changeAllowed']
 
     def __init__(self, *args, **kwargs):
         super(CreatePaymentMethodForm, self).__init__(*args, **kwargs)
@@ -136,7 +136,7 @@ class CreateEditDepositForm(forms.ModelForm):
 class CreateEditExpenseForm(forms.ModelForm):
     class Meta:
         model = Expense
-        fields = ["amount", "description"]
+        fields = ["_amount", "description"]
 
     def __init__(self, *args, **kwargs):
         super(CreateEditExpenseForm, self).__init__(*args, **kwargs)
