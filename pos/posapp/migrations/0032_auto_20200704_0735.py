@@ -14,6 +14,9 @@ def create_default(apps, schema_editor):
     Account = apps.get_model('posapp', 'Account')
     Transaction = apps.get_model('posapp', 'Transaction')
 
+    if User.objects.count() == 0:
+        return  # Don't do anything if this is a fresh install
+
     default_account = Account(name="DEFAULT ACCOUNT IN CZK", currency_id=203)
     default_account.save()
 
@@ -36,6 +39,9 @@ def to_transactions(apps, schema_editor):
     TillMoneyCount = apps.get_model('posapp', 'TillMoneyCount')
     PaymentMethod = apps.get_model('posapp', 'PaymentMethod')
     TillEdit = apps.get_model('posapp', 'TillEdit')
+
+    if User.objects.count() == 0:
+        return  # Don't do anything if this is a fresh install
 
     default_account = Account.objects.first()
 
