@@ -54,7 +54,7 @@
                                 </h2>
                             </div>
                             <div class="card-body">
-                                <form method="post" action="{% url "waiter/tabs/tab/requestTransfer" id %}"
+                                <form method="post" action="{% url "waiter/tabs/tab/request_transfer" id %}"
                                       id="transferRequestForm">
                                     {% csrf_token %}
                                     <div class="form-group">
@@ -107,7 +107,7 @@
                             <div class="card-body">
                                 You can request claim of this Tab to be able to create payments. A manager needs to
                                 review the task. By clicking the button you can create a request to claim this Tab.<br>
-                                <a href="{% url "waiter/tabs/tab/requestClaim" id %}"
+                                <a href="{% url "waiter/tabs/tab/request_claim" id %}"
                                    class="float-right btn btn-primary">Request claim</a>
                             </div>
                         </div>
@@ -124,7 +124,7 @@
                             </h2>
                         </div>
                         <div class="card-body">
-                            <form method="post" action="{% url "waiter/tabs/tab/changeOwner" id %}"
+                            <form method="post" action="{% url "waiter/tabs/tab/change_owner" id %}"
                                   id="ownerChangeForm">
                                 {% csrf_token %}
                                 <div class="form-group">

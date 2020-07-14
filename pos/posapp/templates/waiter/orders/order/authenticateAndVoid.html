@@ -82,7 +82,7 @@
                     <div class="card-body">
                         <form method="post"
                               action="
-                                      {% url "waiter/orders/order/authenticateAndVoid" id %}{% if next %}?next={{ next }}{% endif %}"
+                                      {% url "waiter/orders/order/authenticate_and_void" id %}{% if next %}?next={{ next }}{% endif %}"
                               id="authenticateForm">
                             {% csrf_token %}
                             <div class="form-group">

@@ -71,8 +71,8 @@
                                                             data-order-state="{{ order.get_state_display }}"
                                                             data-order-product-name="{{ product.name }}"
                                                             {% if manager_role %}data-order-void-url="{% url "waiter/orders/order/void" order.id %}?next={{ next_url }}"{% endif %}
-                                                            data-order-request-url="{% url "waiter/orders/order/requestVoid" order.id %}?next={{ next_url }}"
-                                                            data-order-authenticate-url="{% url "waiter/orders/order/authenticateAndVoid" order.id %}?next={{ next_url }}">
+                                                            data-order-request-url="{% url "waiter/orders/order/request_void" order.id %}?next={{ next_url }}"
+                                                            data-order-authenticate-url="{% url "waiter/orders/order/authenticate_and_void" order.id %}?next={{ next_url }}">
                                                         <i class="fas fa-trash" data-toggle="tooltip"
                                                            data-position="top"
                                                            title="Void item"></i>
