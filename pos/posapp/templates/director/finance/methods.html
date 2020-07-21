@@ -27,11 +27,29 @@
                         </h2>
                         <div class="card-tools">
                             <div class="container-fluid">
-                                <div class="row">
-                                    <div class="col-5">
+                                <div class="row flex-row-reverse">
+                                    <div class="col-1">
+                                        <button type="button" class="btn btn-tool"
+                                                onclick="$('#createPaymentMethodModal').modal('show')"
+                                                data-toggle="tooltip" data-position="top" title="Create payment method">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="input-group mb-3">
+                                            <select id="accountFilterSelect" class="form-control"
+                                                    data-live-search="true" onchange="clearCurrency(); refreshPage();">
+                                                <option value="">-----</option>
+                                                {% for account in accounts %}
+                                                    <option value="{{ account.id }}" {% if account.id == account_filter %}selected{% endif %}>{{ account.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-3">
                                         <div class="input-group mb-3">
                                             <select id="currencyFilterSelect" class="form-control"
-                                                    data-live-search="true" onchange="refreshPage();">
+                                                    data-live-search="true" onchange="clearAccount(); refreshPage();">
                                                 <option value="">-----</option>
                                                 {% for currency in currencies %}
                                                     <option value="{{ currency.id }}" {% if currency.id == currency_filter %}selected{% endif %}>{{ currency.name }}</option>
@@ -39,7 +57,7 @@
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-5">
+                                    <div class="col-3">
                                         <form id="searchForm">
                                             <div class="input-group mb-3">
                                                 <input type="text" class="form-control border-right-0 border-secondary"
@@ -54,13 +72,6 @@
                                                 </div>
                                             </div>
                                         </form>
-                                    </div>
-                                    <div class="col-1">
-                                        <button type="button" class="btn btn-tool"
-                                                onclick="$('#createPaymentMethodModal').modal('show')"
-                                                data-toggle="tooltip" data-position="top" title="Create payment method">
-                                            <i class="fas fa-plus"></i>
-                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -104,7 +115,7 @@
                                     </td>
                                     <td>
                                         <div class="btn btn-tool">
-                                            {% if method.currency.enabled %}
+                                            {% if method.account.currency.enabled %}
                                                 <i class="text-success fas fa-check-circle"
                                                    id="currency-indicator-{{ method.id }}"
                                                    data-toggle="tooltip" title="Currency enabled"></i>
@@ -308,23 +319,38 @@
         let currencyFilterSelect = $('#currencyFilterSelect');
         currencyFilterSelect.selectpicker();
 
+        let accountFilterSelect = $('#accountFilterSelect');
+        accountFilterSelect.selectpicker();
+
         $('#searchForm').on('submit', function (e) {
             e.preventDefault();
             refreshPage();
             return false
         });
 
+        function clearCurrency() {
+            currencyFilterSelect.val('');
+            console.log('currencyFilterSelect\'s new value is ' + currencyFilterSelect.val());
+        }
+
+        function clearAccount() {
+            accountFilterSelect.val('');
+            console.log('accountFilterSelect\'s new value is ' + accountFilterSelect.val());
+        }
+
         function refreshPage(pageNumber) {
             let page = (pageNumber || pageNumber === 0) ? pageNumber :{{ methods.pages.page }};
             let pageLength = $('#pageLengthSelect').val();
             let search = $('#searchField').val();
             let currency = currencyFilterSelect.val();
+            let account = accountFilterSelect.val();
 
             let params = {};
             if (page) params.page = page;
             if (pageLength) params.page_length = pageLength;
             if (search) params.search = search;
             if (currency) params.currency = currency;
+            if (account) params.account = account;
 
             window.location = `{% url "director/finance/methods" %}?${$.param(params)}`;
         }

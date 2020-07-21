@@ -37,7 +37,7 @@ from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProd
     CreateItemForm, AuthenticationForm, CreateEditDepositForm, CreateEditExpenseForm, CreateEditMemberForm
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, Deposit, TillMoneyCount, \
     PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest, TabTransferRequest, Expense, \
-    Member
+    Member, Account, Transaction
 from posapp.security.role_decorators import WaiterLoginRequiredMixin, ManagerLoginRequiredMixin, \
     DirectorLoginRequiredMixin
 
@@ -1678,17 +1678,32 @@ class Index(LoginRequiredMixin, DisambiguationView):
                     form = form or CreatePaymentMethodForm()
                     context['form'] = form
                     search = self.request.GET.get('search', '')
+                    account_filter = uuid.UUID(self.request.GET['account']) if 'account' in self.request.GET else None
                     currency_filter = int(self.request.GET['currency']) if 'currency' in self.request.GET else None
+                    if account_filter and currency_filter:
+                        link = reverse("director/finance/methods")
+                        comment = 'Filtering by account and currency at the same time is not possible. <br>' \
+                                  f'<a href="{link}" class="btn btn-sm btn-outline-secondary">Reset</a> the filters ' \
+                                  'and try again.'
+                        return ErrorView(self.request, 400, comment=comment)
+
                     context["currency_filter"] = currency_filter
+                    context["account_filter"] = account_filter
 
                     methods = PaymentMethod.objects.filter(
-                        Q(name__icontains=search) | Q(currency__name__icontains=search))
+                        Q(name__icontains=search) |
+                        Q(account__name__icontains=search) |
+                        Q(account__currency__name__icontains=search)
+                    )
+                    if account_filter:
+                        methods = methods.filter(account__id=account_filter)
                     if currency_filter:
-                        methods = methods.filter(currency__pk=currency_filter)
+                        methods = methods.filter(account__currency__pk=currency_filter)
 
                     context.add_pagination_context(methods, 'methods')
 
                     context["search"] = search
+                    context["accounts"] = Account.objects.all().order_by("name")
                     context["currencies"] = Currency.objects.all().order_by("name")
 
                     context["showModal"] = show_modal
