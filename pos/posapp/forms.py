@@ -4,7 +4,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from phonenumber_field.widgets import PhoneNumberPrefixWidget
 
-from posapp.models import User, PaymentMethod, Product, ItemInProduct, Item, Deposit, Expense, Member
+from posapp.models import User, PaymentMethod, Product, ItemInProduct, Item, Deposit, Expense, Member, Account
 
 
 class CreateUserForm(forms.ModelForm):
@@ -163,3 +163,14 @@ class CreateEditMemberForm(forms.ModelForm):
             elif isinstance(visible.field.widget, PhoneNumberPrefixWidget):
                 visible.field.widget.attrs['data-live-search'] = 'true'
                 visible.field.widget.attrs['class'] = 'form-control'
+
+
+class CreateAccountForm(forms.ModelForm):
+    class Meta:
+        model = Account
+        fields = ['name', 'currency']
+
+    def __init__(self, *args, **kwargs):
+        super(CreateAccountForm, self).__init__(*args, **kwargs)
+        for visible in self.visible_fields():
+            visible.field.widget.attrs['class'] = 'form-control'

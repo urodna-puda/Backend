@@ -130,6 +130,13 @@
                 </a>
                 <ul class="nav nav-treeview">
                     <li class="nav-item">
+                        <a href="{% url "director/finance/accounts" %}"
+                           class="nav-link {% isactive page "director/finance/accounts" %}">
+                            <i class="nav-icon fas fa-book"></i>
+                            <p>Accounts</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a href="{% url "director/finance/currencies" %}"
                            class="nav-link {% isactive page "director/finance/currencies" %}">
                             <i class="nav-icon fas fa-euro-sign"></i>

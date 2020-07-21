@@ -34,7 +34,8 @@ from django_fsm import has_transition_perm
 from django_fsm_log.models import StateLog
 
 from posapp.forms import CreateUserForm, CreatePaymentMethodForm, CreateEditProductForm, ItemsInProductFormSet, \
-    CreateItemForm, AuthenticationForm, CreateEditDepositForm, CreateEditExpenseForm, CreateEditMemberForm
+    CreateItemForm, AuthenticationForm, CreateEditDepositForm, CreateEditExpenseForm, CreateEditMemberForm, \
+    CreateAccountForm
 from posapp.models import Tab, ProductInTab, Product, User, Currency, Till, Deposit, TillMoneyCount, \
     PaymentInTab, PaymentMethod, UnitGroup, Unit, ItemInProduct, Item, OrderVoidRequest, TabTransferRequest, Expense, \
     Member, Account, Transaction
@@ -1648,6 +1649,39 @@ class Index(LoginRequiredMixin, DisambiguationView):
 
     class Director(DirectorLoginRequiredMixin, DisambiguationView):
         class Finance(DirectorLoginRequiredMixin, DisambiguationView):
+            class Accounts(DirectorLoginRequiredMixin, BaseView):
+                def get(self, form=None, *args, **kwargs):
+                    context = Context(self.request, "director/finance/accounts/index.html", "Accounts")
+                    search = self.request.GET.get('search', '')
+
+                    accounts = Account.objects.all()
+                    if search:
+                        accounts = accounts.filter(name__icontains=search)
+
+                    context.add_pagination_context(accounts, "accounts")
+                    context["search"] = search
+                    context["form"] = form or CreateAccountForm()
+                    context["show_modal"] = bool(form)
+
+                    return context.render()
+
+                def post(self, *args, **kwargs):
+                    account = Account()
+                    form = CreateAccountForm(self.request.POST, instance=account)
+                    if form.is_valid():
+                        form.save()
+                        messages.success(self.request, f"Account {account.name} created")
+                        form = None
+                    return self.get(form, *args, **kwargs)
+
+                class Account(DirectorLoginRequiredMixin, BaseView):
+                    _url = "<uuid:id>"
+                    _advertise = False
+                    pass
+
+                    class Transactions(DirectorLoginRequiredMixin, BaseView):
+                        pass
+
             class Currencies(DirectorLoginRequiredMixin, BaseView):
                 def get(self, *args, **kwargs):
                     context = Context(self.request, "director/finance/currencies.html", "Currencies")
