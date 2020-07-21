@@ -11,6 +11,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.db.models import Sum
 from django.dispatch import receiver
 from django.urls import reverse
 from django_countries.fields import CountryField
@@ -386,6 +387,13 @@ class Account(models.Model):
     name = models.CharField(max_length=256, null=False)
     currency = models.ForeignKey(Currency, on_delete=models.PROTECT, limit_choices_to={"enabled": True})
 
+    @property
+    def value(self):
+        return self.transaction_set.aggregate(Sum('amount'))['amount__sum'] or 0
+
+    def __str__(self):
+        return self.name
+
 
 class Transaction(models.Model):
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
@@ -393,6 +401,9 @@ class Transaction(models.Model):
     amount = models.DecimalField(max_digits=15, decimal_places=3)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Transaction in account {self.account}"
 
 
 class PaymentMethod(models.Model):
