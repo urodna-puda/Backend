@@ -9,14 +9,15 @@
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/pos/manage.py",
-            "pythonPath": "${command:python.interpreterPath}",
+            "pythonPath": "${workspaceFolder}/pos/venv/bin/python",
             "args": [
                 "runserver",
                 "0.0.0.0:8000",
                 "--noreload"
             ],
             "django": true,
-            "envFile": "${workspaceFolder}/.env.dev"
+            "envFile": "${workspaceFolder}/.env.dev",
+            "console": "internalConsole"
         }
     ]
 }
