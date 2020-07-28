@@ -1,0 +1,164 @@
+{% extends "_base.html" %}
+{% load generic %}
+
+{% block page_name %}
+    <i class="far fa-address-book"></i>
+   Current Members
+{% endblock %}
+
+{% block no_description %}{% endblock %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "waiter" %}">Waiter</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Current Members</li>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header border-bottom-0 pb-0">
+                        <h2 class="card-title">
+                            <i class="fas fa-table"></i>&nbsp;Current members
+                        </h2>
+                        <div class="card-tools text-right">
+                            <div class="container-fluid">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <form id="searchForm">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control border-right-0 border-secondary"
+                                                       placeholder="Search" aria-label="Search"
+                                                       aria-describedby="search-addon-button" id="searchField"
+                                                       name="search"{% if search %} value="{{ search }}"{% endif %}>
+                                                <div class="input-group-append">
+                                                    <button class="btn btn-outline-secondary border-left-0"
+                                                            type="submit"
+                                                            id="search-addon-button"><i
+                                                            class="fas fa-search"></i></button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover table-striped table-valign-middle">
+                            <thead>
+                            <tr>
+                                <th scope="col">First name</th>
+                                <th scope="col">Last name</th>
+                                <th scope="col">Age</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for member in members.data %}
+                                <tr>
+                                    <td>{{ member.first_name }}</td>
+                                    <td>{{ member.last_name }}</td>
+                                    <td><span class="badge badge-{% if member.age >= 18 %}success{% else %}danger{% endif %}">{{ member.age }} years</span></td>
+                                </tr>
+                            {% endfor %}
+                            {% if not members.data %}
+                                <tr>
+                                    <td colspan="8">There are no members to display</td>
+                                </tr>
+                            {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer border-top">
+                        <div class="row">
+                            <div class="col-6">
+                                Showing items {{ members.showing.from|add_one }}
+                                through {{ members.showing.to|add_one }}
+                                of {{ members.showing.of }}.
+                                &nbsp;
+                                Items per page:
+                                <select onchange="refreshPage();" id="pageLengthSelect">
+                                    {% for option in members.pages.page_length.options %}
+                                        <option value="{{ option }}"
+                                                {% if option == members.pages.page_length.value %}selected{% endif %}>{{ option }}
+                                            items
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-6 text-right">
+                                <div class="btn-group" role="group">
+                                    {% if members.pages.showPrevious %}
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="refreshPage(0);">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="refreshPage({{ members.pages.previous }})">
+                                            <i class=" fas fa-angle-left"></i>
+                                        </button>
+                                    {% endif %}
+                                    {% for link in members.pages.links %}
+                                        <button type="button"
+                                                class="btn btn-outline-secondary{% if link.active %} active{% endif %}"
+                                                onclick="refreshPage({{ link.page }})">
+                                            {{ link.page|add_one }}
+                                        </button>
+                                    {% endfor %}
+                                    {% if members.pages.showNext %}
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="refreshPage({{ members.pages.next }})">
+                                            <i class="fas fa-angle-right"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                onclick="refreshPage({{ members.pages.last }})">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/css/bootstrap-select.min.css">
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/js/bootstrap-select.min.js"></script>
+    <script>
+        $('#searchForm').on('submit', function (e) {
+            e.preventDefault();
+            refreshPage();
+            return false
+        });
+
+        let membershipStatusSelect = $('#membershipStatusSelect');
+
+        membershipStatusSelect.selectpicker();
+
+        function refreshPage(pageNumber) {
+            let page = (pageNumber || pageNumber === 0) ? pageNumber : {{ members.pages.page }};
+            let pageLength = $('#pageLengthSelect').val();
+            let membershipStatus = membershipStatusSelect.val();
+            let search = $('#searchField').val();
+
+            let params = {};
+            if (page) params.page = page;
+            if (pageLength) params.page_length = pageLength;
+            if (membershipStatus) params.membership_status = membershipStatus;
+            if (search) params.search = search;
+
+            window.location = `{% url "director/members" %}?${$.param(params)}`;
+        }
+    </script>
+{% endblock %}
