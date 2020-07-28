@@ -6,6 +6,7 @@ include:
   - template: SAST.gitlab-ci.yml
 
 stages:
+  - lint 
   - test
   - deploy
 
@@ -25,6 +26,13 @@ variables:
 license_scanning:
   variables:
     LICENSE_FINDER_CLI_OPTS: --pip-requirements-path=pos/requirements.txt
+
+pylint:
+  stage: lint
+  script:
+    - cd pos
+    - pip install -r requirements.txt
+    - pylint posapp --ignore posapp/migrations || pylint-exit $?
 
 django:
   extends: .base_job
