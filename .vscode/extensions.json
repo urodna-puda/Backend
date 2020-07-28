@@ -1,0 +1,8 @@
+{
+    "recommendations": [
+        "batisteo.vscode-django",
+        "GitLab.gitlab-workflow",
+        "ms-python.python",
+        "PKief.material-icon-theme",
+    ]
+}
