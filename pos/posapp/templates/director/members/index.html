@@ -27,8 +27,7 @@
                             <div class="container-fluid">
                                 <div class="row">
                                     <div class="col-5">
-                                        <select id="membershipStatusSelect" onchange="refreshPage()"
-                                                data-live-search="true">
+                                        <select id="membershipStatusSelect" onchange="refreshPage()">
                                             <option value="">Membership status...</option>
                                             {% for status in membership_status_options %}
                                                 <option value="{{ status.value }}"
