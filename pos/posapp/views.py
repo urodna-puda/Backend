@@ -925,7 +925,7 @@ class Index(LoginRequiredMixin, DisambiguationView):
             def get(self, *args, **kwargs):
                 context = Context(self.request, "waiter/current_members.html","Current Members")
                 search = self.request.GET.get('search', '')
-                members = Member.objects.all()
+                members = Member.objects.filter(membership_status=Member.ACTIVE)
 
                 if search:
                     members = members.filter(
