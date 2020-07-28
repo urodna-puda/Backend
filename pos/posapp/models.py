@@ -1,7 +1,7 @@
 import mimetypes
 import os
 import re
-from datetime import datetime
+from datetime import datetime, date
 from hashlib import md5
 from uuid import uuid4
 
@@ -982,6 +982,13 @@ class Member(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
         self.can_restore = has_transition_perm(self.restore, user)
         self.can_terminate = has_transition_perm(self.terminate, user)
 
+    @property
+    def age(self):
+        today = date.today() 
+        age = today.year - self.birth_date.year - \
+         ((today.month, today.day) < 
+         (self.birth_date.month, self.birth_date.day))
+        return age
 
 @receiver(models.signals.post_delete, sender=Member)
 def auto_delete_member_application_file_on_delete(sender, instance, **kwargs):
