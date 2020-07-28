@@ -6,7 +6,7 @@
 
 {% block javascript %}
     <script type="text/javascript">
-        window.FontAwesomeConfig = {autoReplaceSvg: "nest"}
+        window.FontAwesomeConfig = {autoReplaceSvg: "nest", observeMutations: false}
     </script>
     <script src="https://kit.fontawesome.com/7635efe91d.js" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.4.456/pdf.min.js" integrity="sha256-O6polm3ZRTZEOAneYbvsKty3c3KRcDf20McwtlCga5s=" crossorigin="anonymous"></script>
@@ -20,6 +20,8 @@
             let hash = "{{ user.email_hash }}";
             let url = `https://www.gravatar.com/avatar/${hash}&d=identicon`
             $('.profile-picture, .user-panel>.image>img').attr('src', url);
+
+            setTimeout(() => $('.add-fas').removeClass('add-fas').addClass('fas'), 100);
         });
 
         $('[data-toggle="collapse-toggle"]').each(function () {
