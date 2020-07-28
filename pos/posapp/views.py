@@ -297,7 +297,7 @@ class BaseView(views.View):
 
     @classmethod
     def name(cls):
-        return cls.__name__ if cls._name is None else cls._name
+        return stringcase.titlecase(cls.__name__) if cls._name is None else cls._name
 
     @classmethod
     def url(cls):
