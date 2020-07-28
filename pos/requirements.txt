@@ -22,6 +22,7 @@ django-fsm-log @ git+https://github.com/dbinetti/django-fsm-log.git@85a90a91857d
 django-phonenumber-field==4.0.0
 djangorestframework==3.11.0
 djangorestframework-jsonapi==3.1.0
+graphviz==0.14
 gunicorn==20.0.4
 hiredis==1.0.1
 hyperlink==19.0.0
@@ -41,6 +42,7 @@ pycparser==2.20
 PyHamcrest==2.0.2
 pylint==2.5.0
 pylint-django==2.0.15
+pylint-exit==1.2.0
 pylint-plugin-utils==0.6
 pyOpenSSL==19.1.0
 PyPDF2==1.26.0
