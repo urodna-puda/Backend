@@ -9,9 +9,11 @@
         <li class="nav-item">
             <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
         </li>
-        <li class="nav-item d-none d-sm-inline-block">
-            <a href="/" class="nav-link">Home</a>
-        </li>
+        {% if waiter_role or manager_role or director_role %}
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="{% url "index" %}" class="nav-link">POS App</a>
+            </li>
+        {% endif %}
         {% if request.user.is_staff %}
             <li class="nav-item d-none d-sm-inline-block">
                 <a href="{% url "admin:index" %}" class="nav-link">Admin</a>
