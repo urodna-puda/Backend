@@ -4,6 +4,7 @@ from django.db import OperationalError, ProgrammingError
 
 class PosappConfig(AppConfig):
     name = 'posapp'
+    verbose_name = 'PUDA POS Point-of-sale'
 
     def ready(self):
         User = self.get_model('User')
