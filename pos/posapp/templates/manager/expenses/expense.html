@@ -124,15 +124,7 @@
                                 <img class="card-img-top"
                                      src="{% url "manager/expenses/expense/invoice_file" expense.id %}">
                             {% elif invoice_file_type == "application/pdf" %}
-                                <div class="card-header">
-                                    <h2 class="card-title">A PDF file</h2>
-                                    <div class="card-tools">
-                                        <a class="btn btn-outline-primary"
-                                           href="{% url "manager/expenses/expense/invoice_file" expense.id %}">
-                                            <i class="far fa-file-pdf"></i> Download
-                                        </a>
-                                    </div>
-                                </div>
+                                <div class="card-img-top" id="invoiceFileContainer"></div>
                             {% else %}
                                 <div class="card-header">
                                     <h2 class="card-title">Unknown file type</h2>
@@ -267,4 +259,27 @@
             {% csrf_token %}
         </form>
     {% endif %}
+{% endblock %}
+
+{% block extra_head %}
+    <style>
+        .pdfobject-container {
+            height: 30rem;
+        }
+        
+        .pdfobject {
+            border: 0 solid rgba(0,0,0,.125);
+            border-radius: .25rem;
+        }
+    </style>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfobject/2.1.1/pdfobject.js"></script>
+    <script>
+        $(document).ready(function () {
+            PDFObject.embed("{% url "manager/expenses/expense/invoice_file" expense.id %}", "#invoiceFileContainer");
+        })
+    </script>
 {% endblock %}

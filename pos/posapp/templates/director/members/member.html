@@ -138,15 +138,7 @@
                                 <img class="card-img-top"
                                      src="{% url "director/members/member/application_file" member.id %}">
                             {% elif member.application_file_type == "application/pdf" %}
-                                <div class="card-header">
-                                    <h2 class="card-title">A PDF file</h2>
-                                    <div class="card-tools">
-                                        <a class="btn btn-outline-primary"
-                                           href="{% url "director/members/member/application_file" member.id %}">
-                                            <i class="far fa-file-pdf"></i> Download
-                                        </a>
-                                    </div>
-                                </div>
+                                <div class="card-img-top" id="applicationFileContainer"></div>
                             {% else %}
                                 <div class="card-header">
                                     <h2 class="card-title">Unknown file type</h2>
@@ -350,11 +342,22 @@
 {% block extra_head %}
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/css/bootstrap-select.min.css">
+    <style>
+        .pdfobject-container {
+            height: 30rem;
+        }
+        
+        .pdfobject {
+            border: 0 solid rgba(0,0,0,.125);
+            border-radius: .25rem;
+        }
+    </style>
 {% endblock %}
 
 {% block javascript %}
     {{ block.super }}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/js/bootstrap-select.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfobject/2.1.1/pdfobject.js"></script>
     <script>
         let countryCodeSelect = $('#id_telephone_0');
 
@@ -368,6 +371,7 @@
 
             let groupPrepend = $('<div class="input-group-prepend"></div>').prependTo(inputGroup);
             groupPrepend.append(selectWrapper);
+            PDFObject.embed("{% url "director/members/member/application_file" member.id %}", "#applicationFileContainer");
         })
     </script>
     {{ form.media }}
