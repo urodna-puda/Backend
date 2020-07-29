@@ -298,7 +298,7 @@ class BaseView(views.View):
 
     @classmethod
     def name(cls):
-        return cls.__name__ if cls._name is None else cls._name
+        return stringcase.titlecase(cls.__name__) if cls._name is None else cls._name
 
     @classmethod
     def url(cls):
@@ -921,6 +921,23 @@ class Index(LoginRequiredMixin, DisambiguationView):
                     context = self.fill_data(self.request.user.current_temp_tab, True)
                     context["show_back_button"] = True
                     return context.render()
+
+        class CurrentMembers(WaiterLoginRequiredMixin, BaseView):
+            def get(self, *args, **kwargs):
+                context = Context(self.request, "waiter/current_members.html","Current Members")
+                search = self.request.GET.get('search', '')
+                members = Member.objects.filter(membership_status=Member.ACTIVE)
+
+                if search:
+                    members = members.filter(
+                        Q(first_name__icontains=search) |
+                        Q(last_name__icontains=search)
+                        )
+
+                context.add_pagination_context(members, "members")
+                context["search"] = search
+
+                return context.render()
 
     class Manager(ManagerLoginRequiredMixin, DisambiguationView):
         class Users(ManagerLoginRequiredMixin, BaseView):

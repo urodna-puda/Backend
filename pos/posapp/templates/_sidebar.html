@@ -31,6 +31,12 @@
                     <p>Direct order</p>
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="{% url "waiter/current_members" %}" class="nav-link {% isactive page "waiter/current_members" %}">
+                    <i class="nav-icon far fa-address-book"></i>
+                    <p>Current members</p>
+                </a>
+            </li>
         {% endif %}
         {% if manager_role or director_role %}
             <li class="nav-header">Manager tasks</li>

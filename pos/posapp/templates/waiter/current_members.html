@@ -3,15 +3,15 @@
 
 {% block page_name %}
     <i class="far fa-address-book"></i>
-    Members
+   Current Members
 {% endblock %}
 
 {% block no_description %}{% endblock %}
 
 {% block breadcrumbs %}
     <li class="breadcrumb-item" aria-current="page"><a href="{% url "index" %}">Home</a></li>
-    <li class="breadcrumb-item" aria-current="page"><a href="{% url "director" %}">Director</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Members</li>
+    <li class="breadcrumb-item" aria-current="page"><a href="{% url "waiter" %}">Waiter</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Current Members</li>
 {% endblock %}
 
 {% block content %}
@@ -21,23 +21,12 @@
                 <div class="card">
                     <div class="card-header border-bottom-0 pb-0">
                         <h2 class="card-title">
-                            <i class="fas fa-table"></i>&nbsp;Current and historical members
+                            <i class="fas fa-table"></i>&nbsp;Current members
                         </h2>
                         <div class="card-tools text-right">
                             <div class="container-fluid">
                                 <div class="row">
-                                    <div class="col-5">
-                                        <select id="membershipStatusSelect" onchange="refreshPage()">
-                                            <option value="">Membership status...</option>
-                                            {% for status in membership_status_options %}
-                                                <option value="{{ status.value }}"
-                                                        {% if status.value == membership_status_filter %}selected{% endif %}>
-                                                    {{ status.display }}
-                                                </option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-6">
+                                    <div class="col-12">
                                         <form id="searchForm">
                                             <div class="input-group">
                                                 <input type="text" class="form-control border-right-0 border-secondary"
@@ -53,12 +42,6 @@
                                             </div>
                                         </form>
                                     </div>
-                                    <div class="col-1">
-                                        <a href="{% url "director/members/create" %}" class="btn btn-tool"
-                                           data-toggle="tooltip" title="Create new user">
-                                            <i class="fas fa-plus"></i>
-                                        </a>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -69,13 +52,7 @@
                             <tr>
                                 <th scope="col">First name</th>
                                 <th scope="col">Last name</th>
-                                <th scope="col">Birth date</th>
-                                <th scope="col">E-mail</th>
-                                <th scope="col">Phone number</th>
-                                <th scope="col">State</th>
-                                <th scope="col">Application date</th>
-                                <th scope="col">Application</th>
-                                <th scope="col">&nbsp;</th>
+                                <th scope="col">Age</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -83,45 +60,12 @@
                                 <tr>
                                     <td>{{ member.first_name }}</td>
                                     <td>{{ member.last_name }}</td>
-                                    <td>{{ member.birth_date }}</td>
-                                    <td><a href="mailto:{{ member.email }}">{{ member.email }}</a></td>
-                                    <td>{{ member.telephone }}</td>
-                                    <td>
-                                        <span class="badge badge-{{ member.membership_status_color }}">{{ member.get_membership_status_display }}</span>
-                                    </td>
-                                    <td>{{ member.created_at }}</td>
-                                    <td>
-                                        {% if member.application_file %}
-                                            <a href="{% url "director/members/member/application_file" member.id %}"
-                                               class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-file-download"></i> Download
-                                            </a>
-                                        {% elif member.membership_status == "new" %}
-                                            <a href="{% url "director/members/member" member.id %}"
-                                               class="btn btn-sm btn-outline-success">
-                                                <i class="fas fa-file-upload"></i>&nbsp;Add now
-                                            </a>
-                                        {% else %}
-                                            <span class="btn btn-sm btn-outline-secondary">
-                                                <span class="fa-layers">
-                                                    <i class="far fa-file"></i>
-                                                    <i class="fas fa-times"
-                                                       data-fa-transform="shrink-8 right-0.4 down-1"></i>
-                                                </span> No file
-                                            </span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <a href="{% url "director/members/member" member.id %}"
-                                           class="btn btn-tool" data-toggle="tooltip" title="Details">
-                                            <i class="far fa-id-badge"></i>
-                                        </a>
-                                    </td>
+                                    <td><span class="badge badge-{% if member.age >= 18 %}success{% else %}danger{% endif %}">{{ member.age }} years</span></td>
                                 </tr>
                             {% endfor %}
                             {% if not members.data %}
                                 <tr>
-                                    <td colspan="8">No member conforms to the specified filters</td>
+                                    <td colspan="8">There are no members to display</td>
                                 </tr>
                             {% endif %}
                             </tbody>
