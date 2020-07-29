@@ -17,7 +17,8 @@
             ],
             "django": true,
             "envFile": "${workspaceFolder}/.env.dev",
-            "console": "internalConsole"
+            "console": "internalConsole",
+            "cwd": "${workspaceFolder}/pos",
         }
     ]
 }
