@@ -544,7 +544,7 @@ class TillMoneyCount(models.Model):
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
     paymentMethod = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT)
     till = models.ForeignKey(Till, on_delete=models.CASCADE)
-    _amount = models.DecimalField(max_digits=15, decimal_places=3, default=0)
+    own_amount = models.DecimalField(max_digits=15, decimal_places=3, default=0)
     transaction = models.ForeignKey(Transaction, on_delete=models.PROTECT, null=True)
 
     @property
@@ -552,14 +552,14 @@ class TillMoneyCount(models.Model):
         if self.transaction:
             return self.transaction.amount
         else:
-            return self._amount
+            return self.own_amount
 
     @amount.setter
     def amount(self, value):
         if self.transaction:
             self.transaction.amount = value
         else:
-            self._amount = value
+            self.own_amount = value
 
     @property
     def expected(self):
@@ -857,7 +857,7 @@ class Expense(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
         PAID: "info",
     }
     id = models.UUIDField(primary_key=True, null=False, editable=False, default=uuid4)
-    _amount = models.DecimalField(max_digits=15, decimal_places=3, validators=[MinValueValidator(0)])
+    own_amount = models.DecimalField(max_digits=15, decimal_places=3, validators=[MinValueValidator(0)])
     requested_at = models.DateTimeField(auto_now_add=True)
     requested_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="expenses_requested")
     description = models.TextField()
@@ -871,14 +871,14 @@ class Expense(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
         if self.transaction:
             return self.transaction.amount
         else:
-            return self._amount
+            return self.own_amount
 
     @amount.setter
     def amount(self, value):
         if self.transaction:
             self.transaction.amount = value
         else:
-            self._amount = value
+            self.own_amount = value
 
     @fsm_log_by
     @transition(field=state, source=[NEW, APPEALED], target=REQUESTED,
@@ -916,7 +916,7 @@ class Expense(HasActionsMixin, ConcurrentTransitionMixin, models.Model):
     @action()
     def pay(self, by, description, account: Account):
         self.state_sort = 4
-        self.transaction = Transaction(account=account, amount=self._amount)
+        self.transaction = Transaction(account=account, amount=self.own_amount)
         self.transaction.save()
 
     @property

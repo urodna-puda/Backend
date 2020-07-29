@@ -136,7 +136,7 @@ class CreateEditDepositForm(forms.ModelForm):
 class CreateEditExpenseForm(forms.ModelForm):
     class Meta:
         model = Expense
-        fields = ["_amount", "description"]
+        fields = ["own_amount", "description"]
 
     def __init__(self, *args, **kwargs):
         super(CreateEditExpenseForm, self).__init__(*args, **kwargs)
