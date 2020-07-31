@@ -1587,7 +1587,7 @@ class Index(LoginRequiredMixin, DisambiguationView):
                                     with open(file_path, 'rb') as f:
                                         response = HttpResponse(f.read(),
                                                                 content_type=mimetypes.guess_type(
-                                                                    expense.invoice_file.name))
+                                                                    expense.invoice_file.name)[0])
                                         name = expense.invoice_file.name.split('/')[-1]
                                         response['Content-Disposition'] = f'inline;filename={name}'
                                         return response
@@ -2247,7 +2247,7 @@ class Index(LoginRequiredMixin, DisambiguationView):
                                 with open(file_path, 'rb') as f:
                                     response = HttpResponse(f.read(),
                                                             content_type=mimetypes.guess_type(
-                                                                member.application_file.name))
+                                                                member.application_file.name)[0])
                                     name = member.application_file.name.split('/')[-1]
                                     response['Content-Disposition'] = f'inline;filename={name}'
                                     return response

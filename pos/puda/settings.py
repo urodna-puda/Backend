@@ -157,3 +157,5 @@ PHONENUMBER_DEFAULT_REGION = 'CZ'
 VERSION = os.environ.get("VERSION", default="dev")
 
 DEFAULT_PAGE_TITLE = os.environ.get("DEFAULT_PAGE_TITLE", default="PUDA POS")
+
+X_FRAME_OPTIONS = 'SAMEORIGIN'
