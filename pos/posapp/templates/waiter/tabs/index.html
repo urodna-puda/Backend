@@ -233,7 +233,7 @@
                     "note": note,
                     "state": state,
                 }).then(() => {
-                    location.reload();
+                    window.location = "{% url "waiter/tabs" %}";
                 });
             });
         });
